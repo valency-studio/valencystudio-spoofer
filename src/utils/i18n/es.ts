@@ -4,7 +4,8 @@ export const es: TranslationTree = {
   misc: {
     toggleRigType: 'Toggle Rig Type',
     maintenanceBreak: 'Pausa de Mantenimiento',
-    maintenanceDesc: 'ValencyStudio - Spoofer se encuentra actualmente en mantenimiento. ¡Vuelve más tarde!',
+    maintenanceDesc:
+      'ValencyStudio - Spoofer se encuentra actualmente en mantenimiento. ¡Vuelve más tarde!',
     fetchingAnimation: 'Obteniendo animación…',
     assetIdMappings: 'Mapeos de ID de Activos',
     originalId: 'ID Original',

@@ -83,8 +83,8 @@ ValencyStudio - Spoofer keeps the desktop application and Studio plugin synchron
 
 Download the latest release for your platform from the [releases page](https://github.com/valency-studio/valencystudio-spoofer/releases/latest).
 
-| Platform | Package                               |
-| -------- | ------------------------------------- |
+| Platform | Package                                        |
+| -------- | ---------------------------------------------- |
 | Windows  | `ValencyStudio - Spoofer_x.x.x_x64-setup.exe`  |
 | macOS    | `ValencyStudio - Spoofer_x.x.x_x64.dmg`        |
 | Linux    | `ValencyStudio - Spoofer_x.x.x_amd64.AppImage` |

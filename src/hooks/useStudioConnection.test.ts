@@ -74,7 +74,9 @@ describe('useStudioConnection', () => {
     expect(result.current.studioConnected).toBe(true);
     expect(result.current.studioPlaceId).toBe('123456789');
 
-    expect(window.localStorage.getItem('ValencyStudio - Spoofer_LastStudioPlaceId')).toBe('123456789');
+    expect(window.localStorage.getItem('ValencyStudio - Spoofer_LastStudioPlaceId')).toBe(
+      '123456789',
+    );
   });
 
   it('caches and loads place ID from local storage', async () => {

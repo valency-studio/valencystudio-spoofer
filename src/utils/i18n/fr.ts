@@ -4,7 +4,8 @@ export const fr: TranslationTree = {
   misc: {
     toggleRigType: 'Toggle Rig Type',
     maintenanceBreak: 'Pause de Maintenance',
-    maintenanceDesc: 'ValencyStudio - Spoofer est actuellement en maintenance. Veuillez revenir plus tard !',
+    maintenanceDesc:
+      'ValencyStudio - Spoofer est actuellement en maintenance. Veuillez revenir plus tard !',
     fetchingAnimation: "Récupération de l'animation…",
     assetIdMappings: "Mappages d'ID de Ressources",
     originalId: 'ID Original',
@@ -36,7 +37,8 @@ export const fr: TranslationTree = {
     dragToOrbit: 'Faites glisser pour tourner · Faites défiler pour zoomer',
     speed: 'Vitesse',
     errorBoundaryTitle: "Oups, quelque chose s'est cassé.",
-    errorBoundaryDesc: "ValencyStudio - Spoofer a rencontré une erreur fatale et n'a pas pu continuer.",
+    errorBoundaryDesc:
+      "ValencyStudio - Spoofer a rencontré une erreur fatale et n'a pas pu continuer.",
     crashReportSent: 'Un rapport de plantage a été envoyé silencieusement aux développeurs.',
     crashReportDisabled: 'Le rapport de plantage est désactivé.',
     reloadApplication: "Recharger l'Application",
