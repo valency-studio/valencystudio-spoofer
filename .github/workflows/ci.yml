@@ -432,7 +432,8 @@ jobs:
           RELEASE_URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.prepare-release.outputs.RELEASE_TAG }}
           RELEASE_PRERELEASE: false
           RELEASE_EVENT_ACTION: published
-          DISCORD_RELEASE_ROLE_ID: '1457029900291670210'
+          DISCORD_RELEASE_ROLE_ID: ${{ secrets.DISCORD_RELEASE_ROLE_ID }}
+          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
 
         run: |
           python3 <<'PY'
@@ -450,13 +451,23 @@ jobs:
           event_action = os.environ.get("RELEASE_EVENT_ACTION", "").strip()
           is_release_edit = event_action == "edited"
           role_id = os.environ.get("DISCORD_RELEASE_ROLE_ID", "").strip()
-          channel_id = "1400781818780717056"
+          channel_id = os.environ.get("DISCORD_CHANNEL_ID", "").strip()
 
           release_record_cache = None
 
           if not bot_token:
               raise RuntimeError(
                   "Missing GitHub Actions secret DISCORD_BOT_TOKEN."
+              )
+
+          if not channel_id:
+              raise RuntimeError(
+                  "Missing GitHub Actions secret DISCORD_CHANNEL_ID."
+              )
+
+          if not role_id:
+              raise RuntimeError(
+                  "Missing GitHub Actions secret DISCORD_RELEASE_ROLE_ID."
               )
 
           if not release_tag:
