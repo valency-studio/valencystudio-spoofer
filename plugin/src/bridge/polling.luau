@@ -250,7 +250,11 @@ end
 
 local function markConnectionLost(baseUrl: string, reason: string)
 	logToPlugin(
-		"[Warning] [ValencyStudio - Spoofer] Lost connection to " .. baseUrl .. " (" .. reason .. ")"
+		"[Warning] [ValencyStudio - Spoofer] Lost connection to "
+			.. baseUrl
+			.. " ("
+			.. reason
+			.. ")"
 	)
 	setConnectionStatus(false)
 	setPluginGuiStatus("Lost connection; reconnecting...")

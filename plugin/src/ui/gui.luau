@@ -675,7 +675,7 @@ local function createPluginGui()
 			return
 		end
 		-- selene: allow(global_usage)
-		local _G_plugin = _G.ValencyStudio - SpooferPlugin
+		local _G_plugin = _G.ValencyStudioSpooferPlugin
 		if _G_plugin and _G_plugin.runManualReplacements then
 			manualRunning = true
 			runManualBtn.Text = "Starting..."

@@ -279,7 +279,10 @@ local function runManualReplacements(
 				pcall(function()
 					newPart:Destroy()
 				end)
-				warn("[ValencyStudio - Spoofer] Manual Swap: could not parent replacement for " .. obj.Name)
+				warn(
+					"[ValencyStudio - Spoofer] Manual Swap: could not parent replacement for "
+						.. obj.Name
+				)
 				return
 			end
 
@@ -304,7 +307,10 @@ local function runManualReplacements(
 			end)
 			replacedCount += 1
 			logToPlugin(
-				string.format("[ValencyStudio - Spoofer] Manual Swap: Recreated MeshPart %s", newPart.Name)
+				string.format(
+					"[ValencyStudio - Spoofer] Manual Swap: Recreated MeshPart %s",
+					newPart.Name
+				)
 			)
 			return
 		else
@@ -368,7 +374,9 @@ local function runManualReplacements(
 					end)
 					if assignOk then
 						replacedCount += 1
-						logToPlugin("[ValencyStudio - Spoofer] Manual Swap: Updated Source in " .. obj.Name)
+						logToPlugin(
+							"[ValencyStudio - Spoofer] Manual Swap: Updated Source in " .. obj.Name
+						)
 					end
 				end
 			end
@@ -485,7 +493,7 @@ local function runManualReplacementsAsync(
 	task.spawn(runManualReplacements, text, progressCallback, customBatchSize)
 end
 
-_G.ValencyStudio - SpooferPlugin = {
+_G.ValencyStudioSpooferPlugin = {
 	runManualReplacements = runManualReplacementsAsync,
 	runManualReplacementsSync = runManualReplacements,
 }
@@ -494,8 +502,11 @@ print("[ValencyStudio - Spoofer] Plugin loaded. Starting background connection t
 startPolling()
 
 local toolbar = plugin:CreateToolbar("ValencyStudio - Spoofer")
-local toggleButton =
-	toolbar:CreateButton("Toggle UI", "Show/Hide ValencyStudio - Spoofer UI", "rbxassetid://137844667859456")
+local toggleButton = toolbar:CreateButton(
+	"Toggle UI",
+	"Show/Hide ValencyStudio - Spoofer UI",
+	"rbxassetid://137844667859456"
+)
 
 toggleButton.Click:Connect(function()
 	togglePluginGui()
