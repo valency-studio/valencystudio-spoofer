@@ -183,7 +183,10 @@ jobs:
 
           - platform: macos-latest
             os: macos
-            bundles: dmg
+            # "app" is required for the macOS updater artifact (.app.tar.gz).
+            # Without it the bundler skips updater bundling and only warns,
+            # so latest.json ships with no darwin-* entries.
+            bundles: app,dmg
             args: '--target universal-apple-darwin'
 
           - platform: ubuntu-22.04
