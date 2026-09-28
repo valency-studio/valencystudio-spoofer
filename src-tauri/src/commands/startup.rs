@@ -61,20 +61,35 @@ fn roblox_plugins_dirs() -> Vec<PathBuf> {
     dirs
 }
 
-fn is_owned_plugin_file_name(file_name: &str) -> bool {
-    if matches!(
-        file_name,
-        "ISpooferMotion.rbxmx" | ".ISpooferMotion.rbxmx.tmp" | ".ISpooferMotion.rbxmx.backup"
-    ) {
+/// Name of the plugin bundle the app installs into the Roblox plugins directory.
+const PLUGIN_FILE_STEM: &str = "ValencyStudioSpoofer";
+
+/// Bundle names shipped by earlier releases. They stay in the owned-file list so
+/// that upgrading installs clean up the copies the old name left behind instead
+/// of leaving Roblox Studio with the plugin loaded twice.
+const LEGACY_PLUGIN_FILE_STEMS: &[&str] = &["ISpooferMotion"];
+
+fn is_plugin_file_name_for(file_name: &str, stem: &str) -> bool {
+    if file_name == format!("{stem}.rbxmx")
+        || file_name == format!(".{stem}.rbxmx.tmp")
+        || file_name == format!(".{stem}.rbxmx.backup")
+    {
         return true;
     }
 
     file_name
-        .strip_prefix("ISpooferMotion (")
+        .strip_prefix(format!("{stem} (").as_str())
         .and_then(|rest| rest.strip_suffix(").rbxmx"))
         .is_some_and(|copy_number| {
             !copy_number.is_empty() && copy_number.chars().all(|ch| ch.is_ascii_digit())
         })
+}
+
+fn is_owned_plugin_file_name(file_name: &str) -> bool {
+    is_plugin_file_name_for(file_name, PLUGIN_FILE_STEM)
+        || LEGACY_PLUGIN_FILE_STEMS
+            .iter()
+            .any(|stem| is_plugin_file_name_for(file_name, stem))
 }
 
 #[tauri::command]
@@ -91,22 +106,22 @@ pub async fn sync_roblox_plugin(app: AppHandle) -> crate::error::Result<bool> {
 
         if let Ok(p) = app
             .path()
-            .resolve("_up_/dist-plugin/ISpooferMotion.rbxmx", tauri::path::BaseDirectory::Resource)
+            .resolve("_up_/dist-plugin/ValencyStudioSpoofer.rbxmx", tauri::path::BaseDirectory::Resource)
         {
             candidates.push(p);
         }
         if let Ok(p) = app
             .path()
-            .resolve("dist-plugin/ISpooferMotion.rbxmx", tauri::path::BaseDirectory::Resource)
+            .resolve("dist-plugin/ValencyStudioSpoofer.rbxmx", tauri::path::BaseDirectory::Resource)
         {
             candidates.push(p);
         }
 
         let local_candidates = [
-            PathBuf::from("dist-plugin").join("ISpooferMotion.rbxmx"),
-            PathBuf::from("tmp_clone").join("dist-plugin").join("ISpooferMotion.rbxmx"),
-            PathBuf::from("../dist-plugin").join("ISpooferMotion.rbxmx"),
-            PathBuf::from("../../dist-plugin").join("ISpooferMotion.rbxmx"),
+            PathBuf::from("dist-plugin").join("ValencyStudioSpoofer.rbxmx"),
+            PathBuf::from("tmp_clone").join("dist-plugin").join("ValencyStudioSpoofer.rbxmx"),
+            PathBuf::from("../dist-plugin").join("ValencyStudioSpoofer.rbxmx"),
+            PathBuf::from("../../dist-plugin").join("ValencyStudioSpoofer.rbxmx"),
         ];
         for c in local_candidates {
             candidates.push(c);
@@ -122,12 +137,12 @@ pub async fn sync_roblox_plugin(app: AppHandle) -> crate::error::Result<bool> {
                     let mut p_tmp = base.clone();
                     p_tmp.push("tmp_clone");
                     p_tmp.push("dist-plugin");
-                    p_tmp.push("ISpooferMotion.rbxmx");
+                    p_tmp.push("ValencyStudioSpoofer.rbxmx");
                     candidates.push(p_tmp);
 
                     let mut p_root = base.clone();
                     p_root.push("dist-plugin");
-                    p_root.push("ISpooferMotion.rbxmx");
+                    p_root.push("ValencyStudioSpoofer.rbxmx");
                     candidates.push(p_root);
                 }
             }
@@ -155,8 +170,8 @@ pub async fn sync_roblox_plugin(app: AppHandle) -> crate::error::Result<bool> {
             let _ = tokio::fs::create_dir_all(&dest_dir).await;
         }
 
-        let dest_path = dest_dir.join("ISpooferMotion.rbxmx");
-        let temp_path = dest_dir.join(".ISpooferMotion.rbxmx.tmp");
+        let dest_path = dest_dir.join("ValencyStudioSpoofer.rbxmx");
+        let temp_path = dest_dir.join(".ValencyStudioSpoofer.rbxmx.tmp");
         let copied = match tokio::fs::copy(&resource_path, &temp_path).await {
             Ok(bytes) => bytes,
             Err(error) => {
@@ -167,7 +182,7 @@ pub async fn sync_roblox_plugin(app: AppHandle) -> crate::error::Result<bool> {
 
         #[cfg(target_os = "windows")]
         let install_result = {
-            let backup_path = dest_dir.join(".ISpooferMotion.rbxmx.backup");
+            let backup_path = dest_dir.join(".ValencyStudioSpoofer.rbxmx.backup");
             let _ = tokio::fs::remove_file(&backup_path).await;
             let had_previous = tokio::fs::try_exists(&dest_path).await.unwrap_or(false);
 
@@ -252,10 +267,20 @@ mod tests {
 
     #[test]
     fn plugin_cleanup_only_matches_files_owned_by_the_app() {
+        assert!(is_owned_plugin_file_name("ValencyStudioSpoofer.rbxmx"));
+        assert!(is_owned_plugin_file_name("ValencyStudioSpoofer (2).rbxmx"));
+        assert!(is_owned_plugin_file_name(".ValencyStudioSpoofer.rbxmx.tmp"));
+        assert!(!is_owned_plugin_file_name("MyValencyStudioSpooferNotes.rbxmx"));
+        assert!(!is_owned_plugin_file_name("ValencyStudioSpoofer (backup).rbxmx"));
+        assert!(!is_owned_plugin_file_name("ValencyStudioSpoofer-helper.lua"));
+    }
+
+    #[test]
+    fn plugin_cleanup_also_covers_bundles_from_earlier_releases() {
         assert!(is_owned_plugin_file_name("ISpooferMotion.rbxmx"));
         assert!(is_owned_plugin_file_name("ISpooferMotion (2).rbxmx"));
         assert!(is_owned_plugin_file_name(".ISpooferMotion.rbxmx.tmp"));
-        assert!(!is_owned_plugin_file_name("MyISpooferMotionNotes.rbxmx"));
+        assert!(is_owned_plugin_file_name(".ISpooferMotion.rbxmx.backup"));
         assert!(!is_owned_plugin_file_name("ISpooferMotion (backup).rbxmx"));
         assert!(!is_owned_plugin_file_name("ISpooferMotion-helper.lua"));
     }

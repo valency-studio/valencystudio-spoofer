@@ -432,7 +432,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.prepare-release.outputs.RELEASE_TAG }}
-          files: dist-plugin/ISpooferMotion.rbxmx
+          files: dist-plugin/ValencyStudioSpoofer.rbxmx
           fail_on_unmatched_files: true
 
   announce-release:

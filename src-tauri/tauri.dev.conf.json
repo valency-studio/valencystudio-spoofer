@@ -50,7 +50,7 @@
   "bundle": {
     "active": true,
     "createUpdaterArtifacts": true,
-    "resources": ["../dist-plugin/ISpooferMotion.rbxmx"],
+    "resources": ["../dist-plugin/ValencyStudioSpoofer.rbxmx"],
     "windows": {
       "nsis": {
         "installerIcon": "assets/app_icon.ico",

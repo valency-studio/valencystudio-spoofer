@@ -34,7 +34,7 @@ pub const ROBLOX_STUDIO_COOKIE_TARGET: &str =
 #[cfg(not(target_os = "windows"))]
 pub const BROWSER_COOKIE_SCAN_BYTES: u64 = 25 * 1024 * 1024;
 
-pub const PROFILE_COOKIE_SERVICE: &str = "ISpooferMotion.RobloxProfileCookie";
+pub const PROFILE_COOKIE_SERVICE: &str = "ValencyStudioSpoofer.RobloxProfileCookie";
 
 fn roblosecurity_regex() -> &'static Regex {
     static REGEX: OnceLock<Regex> = OnceLock::new();
