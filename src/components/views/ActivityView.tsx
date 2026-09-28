@@ -226,7 +226,7 @@ export default function ActivityView() {
                             >
                               <div className="flex items-center gap-3 overflow-hidden">
                                 {res.success ? (
-                                  <CheckCircle2 size={14} className="text-green-500 shrink-0" />
+                                  <CheckCircle2 size={14} className="text-signal-live shrink-0" />
                                 ) : res.skipped ? (
                                   <div className="w-3.5 h-3.5 rounded-full border border-yellow-500/50 flex items-center justify-center shrink-0">
                                     <div className="w-1.5 h-0.5 bg-yellow-500/50 rounded-full" />
@@ -243,7 +243,7 @@ export default function ActivityView() {
                               </div>
                               <div className="flex items-center gap-3">
                                 {res.newId && (
-                                  <span className="font-mono text-green-500">
+                                  <span className="font-mono text-signal-live">
                                     &rarr; {res.newId}
                                   </span>
                                 )}

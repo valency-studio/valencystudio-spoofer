@@ -328,7 +328,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
             },
             done: {
               icon: <Check size={10} />,
-              color: 'text-green-400',
+              color: 'text-signal-live',
               label: status.message || 'Completed',
             },
             error: {
@@ -403,7 +403,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
             <Tooltip>
               <TooltipTrigger
                 render={
-                  <div className="flex items-center justify-center h-5 w-6 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shrink-0 cursor-help ml-1">
+                  <div className="flex items-center justify-center h-5 w-6 rounded border border-signal-spoofed/30 bg-signal-spoofed/10 text-signal-spoofed shrink-0 cursor-help ml-1">
                     <Inbox size={11} />
                   </div>
                 }
@@ -559,7 +559,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
             },
             done: {
               icon: <Check size={10} />,
-              color: 'text-green-400',
+              color: 'text-signal-live',
               label: status?.message || 'Completed',
             },
             error: {
@@ -637,7 +637,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
                 <Tooltip>
                   <TooltipTrigger
                     render={
-                      <div className="flex items-center justify-center h-5 w-6 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shrink-0 cursor-help">
+                      <div className="flex items-center justify-center h-5 w-6 rounded border border-signal-spoofed/30 bg-signal-spoofed/10 text-signal-spoofed shrink-0 cursor-help">
                         <Inbox size={11} />
                       </div>
                     }

@@ -51,10 +51,10 @@ const LEVEL_CONFIG: Record<string, { color: string; bg: string; border: string; 
     dot: 'bg-yellow-500',
   },
   success: {
-    color: 'text-green-400',
-    bg: 'bg-green-500/5',
-    border: 'border-green-500/10',
-    dot: 'bg-green-500',
+    color: 'text-signal-live',
+    bg: 'bg-signal-live/5',
+    border: 'border-signal-live/10',
+    dot: 'bg-signal-live',
   },
   info: {
     color: 'text-blue-400',

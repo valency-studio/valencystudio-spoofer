@@ -61,6 +61,8 @@ export const es: TranslationTree = {
     activity: 'Actividad',
     experimental: 'Experimental',
     supportMe: 'Apóyame',
+    collapseSidebar: 'Contraer barra lateral',
+    expandSidebar: 'Expandir barra lateral',
   },
   home: {
     title: 'Bienvenido a ValencyStudio - Spoofer',

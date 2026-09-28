@@ -565,7 +565,7 @@ export default function AccountsView() {
                           {acc.name}
                           {(acc.cookieValidated === true || acc.apiKeyValidated === true) && (
                             <span title={t('accounts.validated') || 'Validated Account'}>
-                              <CheckCircle2 size={14} className="text-green-500" />
+                              <CheckCircle2 size={14} className="text-signal-live" />
                             </span>
                           )}
                         </h3>
@@ -593,12 +593,12 @@ export default function AccountsView() {
 
                     <div className="flex flex-wrap gap-2">
                       {acc.isDownloader && (
-                        <div className="flex items-center gap-1.5 text-sm px-2 py-1 rounded-md w-fit bg-green-500/10">
-                          <Cookie size={13} className="text-green-500" />
-                          <span className="text-green-500">{t('accounts.downloader')}</span>
+                        <div className="flex items-center gap-1.5 text-sm px-2 py-1 rounded-md w-fit bg-signal-live/10">
+                          <Cookie size={13} className="text-signal-live" />
+                          <span className="text-signal-live">{t('accounts.downloader')}</span>
                           {secrets?.cookie && acc.cookieValidated === true && (
                             <span title={t('accounts.cookieValid')}>
-                              <CheckCircle2 size={13} className="text-green-400" />
+                              <CheckCircle2 size={13} className="text-signal-live" />
                             </span>
                           )}
                         </div>

@@ -14,7 +14,6 @@ import IsmLogo from '../../assets/app_icon.png';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useStudioConnectionState } from '../../contexts/StudioConnectionContext';
 import { cn } from '../../lib/utils';
-import { isTauriRuntime } from '../../utils/tauriRuntime';
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import ProfilePopup from './ProfilePopup';
@@ -50,11 +49,10 @@ export default function Sidebar({
     <TooltipProvider delay={200}>
       <div
         className={cn(
-          'h-full bg-bg-surface/30 border-r border-border-subtle p-2 flex flex-col shrink-0 relative z-20',
-          isCollapsed ? 'w-16' : 'w-[220px]',
+          'h-full w-[232px] bg-bg-surface border-r border-border-subtle p-2 flex flex-col shrink-0 relative z-20',
+          isCollapsed ? 'w-16' : 'w-[232px]',
         )}
       >
-        {}
         <div
           className={cn(
             'flex items-center gap-2 mb-2 pl-[12px] pr-3 h-10 shrink-0 justify-between',
@@ -70,7 +68,7 @@ export default function Sidebar({
             }}
             onMouseEnter={() => isCollapsed && setLogoHovered(true)}
             onMouseLeave={() => setLogoHovered(false)}
-            title={isCollapsed ? 'Expand' : undefined}
+            title={isCollapsed ? t('nav.expandSidebar') : undefined}
           >
             <div className="w-7 h-7 flex items-center justify-center shrink-0 relative">
               {isCollapsed && logoHovered ? (
@@ -79,21 +77,11 @@ export default function Sidebar({
                 </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  {isTauriRuntime() ? (
-                    <>
-                      <img
-                        src={IsmLogo}
-                        className="w-full h-full object-contain block select-none pointer-events-none"
-                        alt="Logo"
-                      />
-                    </>
-                  ) : (
-                    <img
-                      src="/ispoofermotion-logo-dark.png"
-                      className="w-full h-full object-contain"
-                      alt="Logo"
-                    />
-                  )}
+                  <img
+                    src={IsmLogo}
+                    className="w-full h-full object-contain block select-none pointer-events-none"
+                    alt=""
+                  />
                 </div>
               )}
             </div>
@@ -102,17 +90,15 @@ export default function Sidebar({
                 <span className="text-[12px] font-semibold tracking-tight text-foreground truncate">
                   ValencyStudio - Spoofer
                 </span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <span
                     title={studioConnected ? t('misc.syncedToStudio') : t('misc.notSyncedToStudio')}
-                    className={
-                      'w-1.5 h-1.5 rounded-full shrink-0 ' +
-                      (studioConnected
-                        ? 'bg-primary shadow-[0_0_6px_var(--primary)]'
-                        : 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)]')
-                    }
+                    className={cn(
+                      'w-1.5 h-1.5 rounded-full shrink-0',
+                      studioConnected ? 'bg-signal-live' : 'bg-danger',
+                    )}
                   />
-                  <span className="text-[10px] text-muted-foreground truncate">
+                  <span className="text-[10px] text-muted-foreground truncate tabular-nums">
                     {appVersion ? `v${appVersion}` : 'v?'}
                   </span>
                 </div>
@@ -123,9 +109,9 @@ export default function Sidebar({
             <Button
               variant="ghost"
               size="icon"
-              className="w-7 h-7 text-muted-foreground hover:bg-bg-elevated/70 shrink-0"
+              className="w-7 h-7 text-muted-foreground hover:bg-bg-elevated shrink-0"
               onClick={() => setIsCollapsed(true)}
-              aria-label="Collapse"
+              aria-label={t('nav.collapseSidebar')}
             >
               <ChevronLeft size={16} />
             </Button>
@@ -137,31 +123,19 @@ export default function Sidebar({
             const isActive = activeTab === tab.id;
 
             const buttonContent = (
-              <div
-                role="button"
-                tabIndex={0}
+              <button
+                type="button"
                 aria-label={tab.label}
                 aria-current={isActive ? 'page' : undefined}
                 onClick={() => onTabChange(tab.id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onTabChange(tab.id);
-                  }
-                }}
                 className={cn(
-                  'w-full text-left h-10 transition-colors duration-150 flex items-center gap-3 rounded-md relative outline-none cursor-pointer [-webkit-tap-highlight-color:transparent] pl-[15px] pr-3',
+                  'w-full text-left h-10 flex items-center gap-3 rounded-md relative cursor-pointer pl-[15px] pr-3',
                   isActive
-                    ? 'bg-bg-elevated text-text-primary border border-border-strong shadow-subtle'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated/70 border border-transparent',
+                    ? 'bg-bg-elevated text-text-primary border border-border-strong'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated border border-transparent',
                 )}
               >
-                <div
-                  className={cn(
-                    'transition-opacity shrink-0',
-                    isActive ? 'opacity-100' : 'opacity-60',
-                  )}
-                >
+                <div className={cn('shrink-0', isActive ? 'text-primary' : 'opacity-70')}>
                   {tab.icon}
                 </div>
                 {!isCollapsed && (
@@ -174,12 +148,12 @@ export default function Sidebar({
                     {tab.label}
                   </span>
                 )}
-              </div>
+              </button>
             );
 
             return isCollapsed ? (
               <Tooltip key={tab.id}>
-                <TooltipTrigger>{buttonContent}</TooltipTrigger>
+                <TooltipTrigger render={buttonContent} />
                 <TooltipContent side="right" className="font-semibold text-xs py-1 px-2">
                   {tab.label}
                 </TooltipContent>

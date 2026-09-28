@@ -1595,7 +1595,7 @@ export default function AssetExplorer({
                                 className={cn(
                                   'flex items-center gap-2 w-full h-8 px-2 rounded-md text-xs font-medium text-left transition-colors',
                                   hasAnyReplacement
-                                    ? 'text-emerald-400 hover:bg-emerald-500/10'
+                                    ? 'text-signal-spoofed hover:bg-signal-spoofed/10'
                                     : 'text-text-muted/40 cursor-not-allowed',
                                 )}
                               >
@@ -2444,7 +2444,7 @@ function AssetInspectorPanel({
 
                         {replId && (
                           <div
-                            className="h-4 px-1 rounded text-[9px] font-mono flex items-center gap-0.5 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 shrink-0"
+                            className="h-4 px-1 rounded text-[9px] font-mono flex items-center gap-0.5 text-signal-spoofed bg-signal-spoofed/10 border border-signal-spoofed/20 shrink-0"
                             title={`Spoofed to: rbxassetid://${replId}`}
                           >
                             <Inbox size={9} />

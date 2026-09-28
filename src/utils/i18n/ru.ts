@@ -62,6 +62,8 @@ export const ru: TranslationTree = {
     accounts: 'Аккаунты',
     console: 'Консоль',
     experimental: 'Экспериментально',
+    collapseSidebar: 'Свернуть боковую панель',
+    expandSidebar: 'Развернуть боковую панель',
     supportMe: 'Поддержать меня',
   },
   home: {

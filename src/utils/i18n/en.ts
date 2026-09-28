@@ -66,6 +66,8 @@ export const en: TranslationTree = {
     activity: 'Activity',
     accounts: 'Accounts',
     console: 'Console',
+    collapseSidebar: 'Collapse sidebar',
+    expandSidebar: 'Expand sidebar',
   },
 
   spoof: {

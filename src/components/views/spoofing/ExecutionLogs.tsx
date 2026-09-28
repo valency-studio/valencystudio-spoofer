@@ -207,7 +207,7 @@ export default function ExecutionLogs({
                   : isWarn
                     ? 'text-yellow-500 bg-yellow-500/5'
                     : isSuccess
-                      ? 'text-green-500 bg-green-500/5'
+                      ? 'text-signal-live bg-signal-live/5'
                       : 'text-text-primary',
               );
 
