@@ -520,27 +520,30 @@ pub async fn get_place_id_from_creator(
         for filter_opt in [Some("2"), Some("1"), Some("4"), None] {
             cursor.clear();
             while root_places.len() < max_results as usize {
-                let mut url = if is_group {
-                    if let Some(filter) = filter_opt {
-                        format!("https://games.roblox.com/v2/groups/{creator_id}/games?accessFilter={filter}&sortOrder={sort_order}&limit={limit}")
-                    } else {
-                        format!("https://games.roblox.com/v2/groups/{creator_id}/games?sortOrder={sort_order}&limit={limit}")
-                    }
+                let base_url = if is_group {
+                    format!("https://games.roblox.com/v2/groups/{creator_id}/games")
                 } else {
-                    if let Some(filter) = filter_opt {
-                        format!("https://games.roblox.com/v2/users/{creator_id}/games?accessFilter={filter}&limit={limit}&sortOrder={sort_order}")
-                    } else {
-                        format!("https://games.roblox.com/v2/users/{creator_id}/games?limit={limit}&sortOrder={sort_order}")
-                    }
+                    format!("https://games.roblox.com/v2/users/{creator_id}/games")
                 };
-
-                if !cursor.is_empty() {
-                    url.push_str(&format!("&cursor={cursor}"));
+                let mut url = match reqwest::Url::parse(&base_url) {
+                    Ok(url) => url,
+                    Err(_) => break,
+                };
+                {
+                    let mut query = url.query_pairs_mut();
+                    if let Some(filter) = filter_opt {
+                        query.append_pair("accessFilter", filter);
+                    }
+                    query.append_pair("sortOrder", sort_order);
+                    query.append_pair("limit", &limit.to_string());
+                    if !cursor.is_empty() {
+                        query.append_pair("cursor", &cursor);
+                    }
                 }
 
                 wait_rate_limit(RateLimitBucket::PlaceLookup).await;
                 let Ok(resp) = client
-                    .get(&url)
+                    .get(url)
                     .header(reqwest::header::COOKIE, &cookie_header)
                     .header(reqwest::header::USER_AGENT, "RobloxStudio/WinInet")
                     .send()
