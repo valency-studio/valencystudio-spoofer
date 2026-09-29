@@ -531,10 +531,7 @@ pub async fn get_place_id_from_creator(
                 } else {
                     format!("https://games.roblox.com/v2/users/{creator_id}/games")
                 };
-                let mut url = match reqwest::Url::parse(&base_url) {
-                    Ok(url) => url,
-                    Err(_) => break,
-                };
+                let Ok(mut url) = reqwest::Url::parse(&base_url) else { break };
                 {
                     let mut query = url.query_pairs_mut();
                     if let Some(filter) = filter_opt {
