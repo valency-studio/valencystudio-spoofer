@@ -1,5 +1,6 @@
 import {
   CircleAlert,
+  CloudUpload,
   ExternalLink,
   FileAudio,
   Link2,
@@ -20,13 +21,16 @@ import {
   SelectValue,
 } from '../../../components/ui/select';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { cn } from '../../../lib/utils';
 import type { MusicTrack } from '../../../stores/musicStore';
-import { useMusicStore } from '../../../stores/musicStore';
-import type { BakedMedia } from '../../../utils/music';
+import { bindUploadProgress, useMusicStore } from '../../../stores/musicStore';
+import type { BakedMedia, UploadProgress } from '../../../utils/music';
 import {
   AUDIO_FORMATS,
   bakeMedia,
+  formatBytes,
   formatDuration,
+  formatUploadDate,
   mediaSrc,
   PITCH_RANGE,
   SAMPLE_RATES,
@@ -40,7 +44,15 @@ export default function MusicView() {
     tracks,
     error,
     notice,
+    quota,
+    history,
+    progress,
+    uploading,
     refreshTools,
+    refreshHistory,
+    refreshQuota,
+    uploadTrack,
+    deleteRecord,
     addFromUrl,
     addFromFile,
     remove,
@@ -54,7 +66,10 @@ export default function MusicView() {
 
   useEffect(() => {
     void refreshTools();
-  }, [refreshTools]);
+    void refreshHistory();
+    void refreshQuota();
+    return bindUploadProgress();
+  }, [refreshTools, refreshHistory, refreshQuota]);
 
   const handleImportUrl = async () => {
     if (!url.trim() || importing) return;
@@ -91,6 +106,28 @@ export default function MusicView() {
                 ))}
               </div>
             </div>
+          )}
+
+          {quota && quota.limit > 0 && (
+            <p className="text-xs text-text-muted">
+              {t('music.quotaLeft')
+                .replace('{remaining}', String(quota.remaining))
+                .replace('{limit}', String(quota.limit))}
+            </p>
+          )}
+
+          {uploading && progress && <UploadBar progress={progress} />}
+
+          {notice && (
+            <p className="text-sm text-signal-live" role="status">
+              {notice === 'split' ? t('music.uploadedSplit') : t('music.uploaded')}
+            </p>
+          )}
+
+          {error === 'no-uploader-account' && (
+            <p className="text-sm text-danger" role="alert">
+              {t('music.noUploaderAccount')}
+            </p>
           )}
 
           <section className="flex flex-col gap-3">
@@ -165,6 +202,8 @@ export default function MusicView() {
                     track={track}
                     onRemove={() => remove(track.id)}
                     onUpdate={(edit) => update(track.id, edit)}
+                    onUpload={() => void uploadTrack(track.id)}
+                    uploadDisabled={uploading}
                     onExported={(result) => {
                       update(track.id, {
                         exportedPath: result.files[0]?.path ?? null,
@@ -182,7 +221,113 @@ export default function MusicView() {
               </ul>
             )}
           </section>
+
+          <section className="flex flex-col gap-3">
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-sm font-semibold text-text-primary">{t('music.history')}</h2>
+              {history.length > 0 && (
+                <span className="text-xs text-text-muted tabular-nums">
+                  {t('music.historyCount').replace('{count}', String(history.length))}
+                </span>
+              )}
+            </div>
+
+            {history.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-border-subtle p-6 text-center text-sm text-text-muted">
+                {t('music.historyEmpty')}
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {history.map((record) => (
+                  <li
+                    key={record.id}
+                    className="rounded-lg border border-border-subtle bg-card px-3 py-2.5"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-text-primary">
+                          {record.title}
+                        </p>
+                        <p className="mt-0.5 text-xs text-text-muted">
+                          {formatUploadDate(record.uploadedAt)} · {formatBytes(record.totalBytes)}
+                          {record.wasSplit
+                            ? ` · ${t('music.parts').replace('{count}', String(record.assets.length))}`
+                            : ''}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => void deleteRecord(record.id)}
+                        aria-label={t('music.removeRecord')}
+                      >
+                        <Trash2 size={15} />
+                      </Button>
+                    </div>
+                    <ul className="mt-2 flex flex-col gap-1">
+                      {record.assets.map((asset) => (
+                        <li key={asset.assetId} className="flex items-center gap-2 text-xs">
+                          <span className="truncate text-text-secondary">{asset.name}</span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void navigator.clipboard.writeText(String(asset.assetId))
+                            }
+                            className="ml-auto shrink-0 rounded border border-border-subtle px-1.5 py-0.5 font-mono text-text-muted hover:text-text-primary"
+                            title={t('music.copyId')}
+                          >
+                            {asset.assetId}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** Live bar for the piece currently being sent or approved. */
+function UploadBar({ progress }: { progress: UploadProgress }) {
+  const { t } = useLanguage();
+
+  const percent =
+    progress.stage === 'uploading' && progress.bytes > 0
+      ? Math.min(100, Math.round((progress.sent / progress.bytes) * 100))
+      : null;
+
+  const label =
+    progress.total > 1
+      ? t('music.uploadingPiece')
+          .replace('{index}', String(progress.index + 1))
+          .replace('{total}', String(progress.total))
+      : t('music.uploading');
+
+  return (
+    <div className="flex flex-col gap-1.5 rounded-lg border border-border-subtle bg-card p-3">
+      <div className="flex items-baseline justify-between gap-3 text-xs">
+        <span className="truncate text-text-secondary">{label}</span>
+        <span className="shrink-0 text-text-muted tabular-nums">
+          {progress.stage === 'processing'
+            ? t('music.processing')
+            : percent !== null
+              ? `${percent}%`
+              : ''}
+        </span>
+      </div>
+      <div className="h-1 overflow-hidden rounded-full bg-bg-elevated">
+        <div
+          className={cn(
+            'h-full transition-all duration-200',
+            progress.stage === 'processing' ? 'w-1/3 animate-pulse bg-primary' : 'bg-primary',
+          )}
+          style={progress.stage === 'processing' ? undefined : { width: `${percent ?? 0}%` }}
+        />
       </div>
     </div>
   );
@@ -192,12 +337,16 @@ function TrackEditor({
   track,
   onRemove,
   onUpdate,
+  onUpload,
+  uploadDisabled,
   onExported,
   onError,
 }: {
   track: MusicTrack;
   onRemove: () => void;
   onUpdate: (edit: Partial<MusicTrack>) => void;
+  onUpload: () => void;
+  uploadDisabled: boolean;
   onExported: (result: BakedMedia) => void;
   onError: (message: string) => void;
 }) {
@@ -379,6 +528,12 @@ function TrackEditor({
           <Upload size={15} />
           {exporting ? t('music.exporting') : t('music.export')}
         </Button>
+        {track.exportedFiles.length > 0 && (
+          <Button onClick={onUpload} disabled={uploadDisabled} title={t('music.uploadHint')}>
+            <CloudUpload size={15} />
+            {t('music.upload')}
+          </Button>
+        )}
       </div>
 
       {track.exportedFiles.length > 1 && (

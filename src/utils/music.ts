@@ -121,3 +121,69 @@ export const formatDuration = (seconds: number | null | undefined) => {
   const secs = total % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
+
+export interface UploadedAsset {
+  name: string;
+  assetId: number;
+  path: string;
+  bytes: number;
+}
+
+export interface UploadSummary {
+  assets: UploadedAsset[];
+  wasSplit: boolean;
+}
+
+export interface UploadProgress {
+  file: string;
+  index: number;
+  total: number;
+  sent: number;
+  bytes: number;
+  stage: string;
+}
+
+export interface AudioQuota {
+  remaining: number;
+  limit: number;
+}
+
+export interface RecordedAsset {
+  name: string;
+  assetId: number;
+  path: string;
+  bytes: number;
+}
+
+export interface UploadRecord {
+  id: string;
+  title: string;
+  uploadedAt: string;
+  wasSplit: boolean;
+  totalBytes: number;
+  assets: RecordedAsset[];
+}
+
+export const uploadAudioParts = (paths: string[], creatorUserId: number) =>
+  invoke<UploadSummary>('upload_audio_parts', { paths, creatorUserId });
+
+export const fetchAudioQuota = (creatorUserId: number) =>
+  invoke<AudioQuota>('fetch_open_cloud_audio_quota', { creatorUserId });
+
+export const getUploadHistory = () => invoke<UploadRecord[]>('get_upload_history');
+
+export const deleteUploadRecord = (id: string) => invoke<boolean>('delete_upload_record', { id });
+
+export const clearUploadHistory = () => invoke<boolean>('clear_upload_history');
+
+export const formatBytes = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+};
+
+export const formatUploadDate = (iso: string) => {
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return iso;
+  return parsed.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+};

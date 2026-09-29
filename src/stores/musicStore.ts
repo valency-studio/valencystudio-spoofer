@@ -1,16 +1,31 @@
+import { listen } from '@tauri-apps/api/event';
 import { create } from 'zustand';
 
-import type { AudioFormat, BakedFile, MediaInfo, MediaTools, SplitPreview } from '../utils/music';
+import type {
+  AudioFormat,
+  AudioQuota,
+  BakedFile,
+  MediaInfo,
+  MediaTools,
+  SplitPreview,
+  UploadProgress,
+  UploadRecord,
+} from '../utils/music';
 import {
   checkMediaTools,
+  deleteUploadRecord,
   ensureMediaTools,
+  fetchAudioQuota,
+  getUploadHistory,
   importLocalMedia,
   importMediaFromUrl,
   pickLocalAudio,
   previewSplit,
   probeMedia,
   stripExtension,
+  uploadAudioParts,
 } from '../utils/music';
+import { useConfigStore } from './configStore';
 
 export interface MusicTrack {
   /** Stable client id; the file path can change after a bake. */
@@ -51,10 +66,18 @@ interface MusicState {
   error: string | null;
   notice: string | null;
   toolError: string | null;
+  quota: AudioQuota | null;
+  history: UploadRecord[];
+  progress: UploadProgress | null;
+  uploading: boolean;
 
   refreshTools: () => Promise<void>;
   refreshSplit: (id: string) => Promise<void>;
   installMissingTools: () => Promise<void>;
+  refreshHistory: () => Promise<void>;
+  refreshQuota: () => Promise<void>;
+  uploadTrack: (id: string) => Promise<void>;
+  deleteRecord: (id: string) => Promise<void>;
   addFromUrl: (url: string) => Promise<void>;
   addFromFile: () => Promise<void>;
   remove: (id: string) => void;
@@ -67,6 +90,14 @@ let counter = 0;
 const nextId = () => {
   counter += 1;
   return `track-${Date.now()}-${counter}`;
+};
+
+/** The Roblox user id uploads are created against; "none" means no account. */
+const uploaderUserId = (): number => {
+  const selected = useConfigStore.getState().config.spoofing?.selectedUser;
+  if (!selected || selected === 'none') return 0;
+  const parsed = Number(selected);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 };
 
 const toTrack = (
@@ -98,6 +129,66 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   error: null,
   notice: null,
   toolError: null,
+  quota: null,
+  history: [],
+  progress: null,
+  uploading: false,
+
+  refreshHistory: async () => {
+    try {
+      set({ history: await getUploadHistory() });
+    } catch {
+      set({ history: [] });
+    }
+  },
+
+  refreshQuota: async () => {
+    const userId = uploaderUserId();
+    if (!userId) {
+      set({ quota: null });
+      return;
+    }
+    try {
+      set({ quota: await fetchAudioQuota(userId) });
+    } catch {
+      set({ quota: null });
+    }
+  },
+
+  deleteRecord: async (id) => {
+    try {
+      await deleteUploadRecord(id);
+      await get().refreshHistory();
+    } catch (err) {
+      set({ error: String(err) });
+    }
+  },
+
+  uploadTrack: async (id) => {
+    const track = get().tracks.find((candidate) => candidate.id === id);
+    if (!track || track.exportedFiles.length === 0) return;
+
+    const userId = uploaderUserId();
+    if (!userId) {
+      set({ error: 'no-uploader-account' });
+      return;
+    }
+
+    set({ uploading: true, progress: null, error: null });
+    try {
+      const summary = await uploadAudioParts(
+        track.exportedFiles.map((file) => file.path),
+        userId,
+      );
+      set({ notice: summary.wasSplit ? 'split' : 'single' });
+      await get().refreshHistory();
+      await get().refreshQuota();
+    } catch (err) {
+      set({ error: String(err) });
+    } finally {
+      set({ uploading: false, progress: null });
+    }
+  },
 
   refreshTools: async () => {
     try {
@@ -208,3 +299,17 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   setError: (message) => set({ error: message }),
   setNotice: (message) => set({ notice: message }),
 }));
+
+/**
+ * Routes backend progress events into the store, so the Music view can render a
+ * live bar without every component subscribing to the event bus itself.
+ */
+export const bindUploadProgress = () => {
+  const unlisten = listen<UploadProgress>('music-upload-progress', (event) => {
+    useMusicStore.setState({ progress: event.payload });
+  });
+
+  return () => {
+    void unlisten.then((stop) => stop());
+  };
+};
