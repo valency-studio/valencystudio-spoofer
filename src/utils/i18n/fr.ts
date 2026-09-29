@@ -50,6 +50,37 @@ export const fr: TranslationTree = {
     noPlaceLoaded: 'Aucun lieu chargé',
   },
 
+  music: {
+    title: 'Musique',
+    subtitle:
+      'Importez des morceaux, réglez la vitesse et la hauteur, puis exportez-les pour les téléverser.',
+    addTrack: 'Ajouter un morceau',
+    urlPlaceholder: 'Collez un lien YouTube ou SoundCloud',
+    importUrl: 'Importer le lien',
+    importLocal: 'Choisir un fichier',
+    queue: 'Morceaux',
+    trackCount: '{count} morceau(x)',
+    empty: 'Aucun morceau pour le moment. Importez-en un pour commencer à éditer.',
+    speed: 'Vitesse de lecture',
+    pitch: 'Hauteur',
+    format: 'Format',
+    sampleRate: "Fréquence d'échantillonnage",
+    play: 'Lecture',
+    stop: 'Arrêter',
+    remove: 'Retirer le morceau',
+    export: 'Exporter',
+    exporting: 'Exportation...',
+    exported: 'Morceau exporté. Le fichier modifié est prêt à être téléversé.',
+    exportedLabel: 'copie modifiée',
+    editedNote:
+      "Les fichiers exportés conservent ces modifications. Votre fichier source n'est pas touché.",
+    untouchedNote: 'Aucune modification pour le moment. Lexportation conserve le fichier tel quel.',
+    openSource: 'Ouvrir la source',
+    missingFfmpeg:
+      "ffmpeg n'est pas dans votre PATH, l'export est donc indisponible. Installez ffmpeg puis rouvrez l'application.",
+    missingYtDlp:
+      "yt-dlp n'est pas dans votre PATH, l'import depuis un lien est donc indisponible. Installez yt-dlp puis rouvrez l'application.",
+  },
   nav: {
     home: 'Accueil',
     spoofing: 'Usurpation',
@@ -61,6 +92,7 @@ export const fr: TranslationTree = {
     activity: 'Activité',
     experimental: 'Expérimental',
     supportMe: 'Soutenez-moi',
+    music: 'Musique',
     collapseSidebar: 'Réduire la barre latérale',
     expandSidebar: 'Agrandir la barre latérale',
   },
