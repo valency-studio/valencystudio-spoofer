@@ -339,8 +339,13 @@ async fn grant_use_permission(
 
 /// Remaining uploads allowed this month, from Roblox's own quota endpoint.
 pub async fn audio_quota(client: &reqwest::Client, key: &str, user_id: u64) -> Result<(u64, u64)> {
+    if user_id == 0 {
+        return Err(AppError::from("invalid user_id"));
+    }
+
+    let validated_user_id = user_id;
     let response = client
-        .get(format!("{QUOTAS}/{user_id}/asset-quotas"))
+        .get(format!("{QUOTAS}/{validated_user_id}/asset-quotas"))
         .header("x-api-key", key)
         .send()
         .await?;
