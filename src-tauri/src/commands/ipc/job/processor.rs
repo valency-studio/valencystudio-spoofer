@@ -352,7 +352,6 @@ pub async fn process_spoofer_action(
             "spoofer-log",
             serde_json::json!({ "message": redacted_msg, "level": level }),
         );
-        main
         match level {
             "error" => log::error!("[Spoofer] {}", redacted_msg),
             "warn" => log::warn!("[Spoofer] {}", redacted_msg),
