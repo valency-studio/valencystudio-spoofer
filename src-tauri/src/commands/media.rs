@@ -47,18 +47,9 @@ struct ToolSpec {
     version_arg: &'static str,
 }
 
-const FFMPEG: ToolSpec = ToolSpec {
-    program: "ffmpeg",
-    version_arg: "-version",
-};
-const FFPROBE: ToolSpec = ToolSpec {
-    program: "ffprobe",
-    version_arg: "-version",
-};
-const YTDLP: ToolSpec = ToolSpec {
-    program: "yt-dlp",
-    version_arg: "--version",
-};
+const FFMPEG: ToolSpec = ToolSpec { program: "ffmpeg", version_arg: "-version" };
+const FFPROBE: ToolSpec = ToolSpec { program: "ffprobe", version_arg: "-version" };
+const YTDLP: ToolSpec = ToolSpec { program: "yt-dlp", version_arg: "--version" };
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -93,14 +84,9 @@ pub struct ImportedMedia {
 #[tauri::command]
 #[specta::specta]
 pub async fn check_media_tools() -> Result<MediaTools> {
-    let (ffmpeg, ffprobe, ytdlp) =
-        tokio::join!(resolve(FFMPEG), resolve(FFPROBE), resolve(YTDLP));
+    let (ffmpeg, ffprobe, ytdlp) = tokio::join!(resolve(FFMPEG), resolve(FFPROBE), resolve(YTDLP));
 
-    Ok(MediaTools {
-        ffmpeg: ffmpeg.is_some(),
-        ffprobe: ffprobe.is_some(),
-        ytdlp: ytdlp.is_some(),
-    })
+    Ok(MediaTools { ffmpeg: ffmpeg.is_some(), ffprobe: ffprobe.is_some(), ytdlp: ytdlp.is_some() })
 }
 
 /// Locates a tool by walking PATH and confirms it runs.
@@ -202,9 +188,7 @@ fn ytdlp_asset() -> &'static str {
 /// separate build for them.
 fn is_musl() -> bool {
     cfg!(target_os = "linux")
-        && std::env::var("LD_LIBRARY_PATH")
-            .map(|v| v.contains("musl"))
-            .unwrap_or(false)
+        && std::env::var("LD_LIBRARY_PATH").map(|v| v.contains("musl")).unwrap_or(false)
 }
 
 fn local_ytdlp_name() -> String {
@@ -342,11 +326,8 @@ pub async fn ensure_media_tools(app: AppHandle) -> Result<MediaToolStatus> {
         }
     };
 
-    let (ffmpeg, ffprobe, ytdlp) = tokio::join!(
-        resolve(FFMPEG),
-        resolve(FFPROBE),
-        resolve_ytdlp(&app),
-    );
+    let (ffmpeg, ffprobe, ytdlp) =
+        tokio::join!(resolve(FFMPEG), resolve(FFPROBE), resolve_ytdlp(&app),);
 
     Ok(MediaToolStatus {
         tools: MediaTools {
@@ -378,7 +359,8 @@ pub async fn probe_media(path: String) -> Result<MediaInfo> {
     if !path.is_file() {
         return Err("The media file could not be found.".into());
     }
-    let ffprobe = resolve(FFPROBE).await.ok_or_else(|| tool_error("ffprobe", "read audio details"))?;
+    let ffprobe =
+        resolve(FFPROBE).await.ok_or_else(|| tool_error("ffprobe", "read audio details"))?;
 
     let mut ffprobe_cmd = Command::new(&ffprobe);
     no_console(&mut ffprobe_cmd);
@@ -405,11 +387,8 @@ pub async fn probe_media(path: String) -> Result<MediaInfo> {
     let parsed: serde_json::Value =
         serde_json::from_slice(&output.stdout).map_err(|e| AppError::Custom(e.to_string()))?;
 
-    let stream = parsed
-        .get("streams")
-        .and_then(|s| s.get(0))
-        .cloned()
-        .unwrap_or(serde_json::Value::Null);
+    let stream =
+        parsed.get("streams").and_then(|s| s.get(0)).cloned().unwrap_or(serde_json::Value::Null);
     let format = parsed.get("format").cloned().unwrap_or(serde_json::Value::Null);
 
     let as_u64 = |value: Option<&serde_json::Value>| -> Option<u64> {
@@ -448,9 +427,12 @@ pub async fn import_media_from_url(app: AppHandle, url: String) -> Result<Import
     }
     let lower = url.to_ascii_lowercase();
     if !lower.starts_with("http://") && !lower.starts_with("https://") {
-        return Err("That does not look like a link. It should start with http:// or https://.".into());
+        return Err(
+            "That does not look like a link. It should start with http:// or https://.".into()
+        );
     }
-    let ytdlp = resolve(YTDLP).await.ok_or_else(|| tool_error("yt-dlp", "import a track from a link"))?;
+    let ytdlp =
+        resolve(YTDLP).await.ok_or_else(|| tool_error("yt-dlp", "import a track from a link"))?;
 
     let dir = media_dir(&app)?;
 
@@ -473,28 +455,13 @@ pub async fn import_media_from_url(app: AppHandle, url: String) -> Result<Import
 
     let meta: serde_json::Value =
         serde_json::from_slice(&probe.stdout).map_err(|e| AppError::Custom(e.to_string()))?;
-    let title = meta
-        .get("title")
-        .and_then(|v| v.as_str())
-        .unwrap_or("Imported track")
-        .to_string();
-    let uploader = meta
-        .get("uploader")
-        .and_then(|v| v.as_str())
-        .map(str::to_string);
+    let title = meta.get("title").and_then(|v| v.as_str()).unwrap_or("Imported track").to_string();
+    let uploader = meta.get("uploader").and_then(|v| v.as_str()).map(str::to_string);
 
     let mut ytdlp_download = Command::new(&ytdlp);
     no_console(&mut ytdlp_download);
     let download = ytdlp_download
-        .args([
-            "--no-playlist",
-            "-x",
-            "--audio-format",
-            "m4a",
-            "--audio-quality",
-            "0",
-            "-o",
-        ])
+        .args(["--no-playlist", "-x", "--audio-format", "m4a", "--audio-quality", "0", "-o"])
         .arg(dir.join("%(title).80s.%(ext)s"))
         .arg(&url)
         .output()
@@ -518,20 +485,14 @@ pub async fn import_media_from_url(app: AppHandle, url: String) -> Result<Import
         path: path.to_string_lossy().to_string(),
         title,
         uploader,
-        thumbnail_url: meta
-            .get("thumbnail")
-            .and_then(|v| v.as_str())
-            .map(str::to_string),
+        thumbnail_url: meta.get("thumbnail").and_then(|v| v.as_str()).map(str::to_string),
         source_url: url,
     })
 }
 
 fn summarize(stderr: &str) -> String {
-    let last = stderr
-        .lines()
-        .rev()
-        .find(|line| !line.trim().is_empty())
-        .unwrap_or("no details available");
+    let last =
+        stderr.lines().rev().find(|line| !line.trim().is_empty()).unwrap_or("no details available");
     last.trim().to_string()
 }
 
@@ -541,11 +502,8 @@ fn newest_audio_file(dir: &Path) -> Option<PathBuf> {
 
     for entry in entries.flatten() {
         let path = entry.path();
-        let extension = path
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("")
-            .to_ascii_lowercase();
+        let extension =
+            path.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
         if !matches!(extension.as_str(), "m4a" | "mp3" | "webm" | "opus" | "ogg" | "wav") {
             continue;
         }
@@ -622,16 +580,8 @@ pub async fn import_local_media(app: AppHandle, path: String) -> Result<Imported
     }
 
     let dir = media_dir(&app)?;
-    let stem = source
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("track")
-        .to_string();
-    let extension = source
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("mp3")
-        .to_string();
+    let stem = source.file_stem().and_then(|s| s.to_str()).unwrap_or("track").to_string();
+    let extension = source.extension().and_then(|e| e.to_str()).unwrap_or("mp3").to_string();
 
     let target = dir.join(format!("{stem}.{extension}"));
     if source != target {
@@ -658,7 +608,8 @@ const EDGE_FADE_SECS: f64 = 0.02;
 fn max_output_secs(format: AudioFormat, sample_rate: u32) -> f64 {
     // Uncompressed audio is limited by bytes long before it is limited by the
     // seven minute duration cap.
-    let by_bytes = ROBLOX_MAX_UPLOAD_BYTES as f64 * 8.0 / bits_per_second(format, sample_rate) as f64;
+    let by_bytes =
+        ROBLOX_MAX_UPLOAD_BYTES as f64 * 8.0 / bits_per_second(format, sample_rate) as f64;
     ROBLOX_MAX_DURATION_SECS.min(by_bytes)
 }
 
@@ -748,11 +699,7 @@ pub async fn bake_media(
         .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
         .take(80)
         .collect();
-    let safe_name = if safe_name.trim().is_empty() {
-        "track".to_string()
-    } else {
-        safe_name
-    };
+    let safe_name = if safe_name.trim().is_empty() { "track".to_string() } else { safe_name };
 
     let extension = match format {
         AudioFormat::Mp3 => "mp3",
@@ -761,21 +708,18 @@ pub async fn bake_media(
     };
 
     // Without a probed duration we cannot reason about limits, so render whole.
-    let plan = source_duration.filter(|d| d.is_finite() && *d > 0.0).map(|duration| {
-        plan_split(duration, speed, &safe_name, max_output_secs(format, rate))
-    });
+    let plan = source_duration
+        .filter(|d| d.is_finite() && *d > 0.0)
+        .map(|duration| plan_split(duration, speed, &safe_name, max_output_secs(format, rate)));
 
-    let parts: Vec<SplitPlan> = plan
-        .as_ref()
-        .map(|p| p.parts.clone())
-        .unwrap_or_else(|| {
-            vec![SplitPlan {
-                source_start: 0.0,
-                source_end: f64::MAX,
-                output_duration: 0.0,
-                name: safe_name.clone(),
-            }]
-        });
+    let parts: Vec<SplitPlan> = plan.as_ref().map(|p| p.parts.clone()).unwrap_or_else(|| {
+        vec![SplitPlan {
+            source_start: 0.0,
+            source_end: f64::MAX,
+            output_duration: 0.0,
+            name: safe_name.clone(),
+        }]
+    });
 
     let mut files = Vec::with_capacity(parts.len());
     for part in &parts {
@@ -817,11 +761,7 @@ pub async fn bake_media(
 
     let total = files.iter().map(|f| f.output_duration).sum();
     let was_split = files.len() > 1;
-    Ok(BakedMedia {
-        files,
-        total_duration: total,
-        was_split,
-    })
+    Ok(BakedMedia { files, total_duration: total, was_split })
 }
 
 /// Previews how a track will be split without rendering anything, so the Music
@@ -836,12 +776,7 @@ pub fn preview_split(
     sample_rate: u32,
 ) -> Result<SplitPreview> {
     let rate = sample_rate.clamp(8000, 192000);
-    let mut plan = plan_split(
-        source_duration,
-        speed,
-        &title,
-        max_output_secs(format, rate),
-    );
+    let mut plan = plan_split(source_duration, speed, &title, max_output_secs(format, rate));
     // Titles are user supplied; keep them usable as file names.
     for part in &mut plan.parts {
         part.name = sanitize_stem(&part.name);
@@ -957,11 +892,7 @@ pub fn plan_split(
         });
     }
 
-    SplitPreview {
-        needs_split: count > 1,
-        parts,
-        output_duration,
-    }
+    SplitPreview { needs_split: count > 1, parts, output_duration }
 }
 
 /// Estimates whether one piece will fit a single upload, given the encoded
@@ -983,11 +914,7 @@ pub const fn bits_per_second(format: AudioFormat, sample_rate: u32) -> u32 {
 }
 
 /// True when any planned piece would exceed the per-request byte limit.
-pub fn any_part_too_large(
-    plan: &SplitPreview,
-    format: AudioFormat,
-    sample_rate: u32,
-) -> bool {
+pub fn any_part_too_large(plan: &SplitPreview, format: AudioFormat, sample_rate: u32) -> bool {
     let bps = bits_per_second(format, sample_rate);
     plan.parts
         .iter()
@@ -1082,10 +1009,7 @@ mod tests {
         // its own piece length rather than the seven minute audio limit.
         let bps = bits_per_second(AudioFormat::Wav, 44_100);
         let max_secs = ROBLOX_MAX_UPLOAD_BYTES as f64 * 8.0 / bps as f64;
-        assert!(
-            (max_secs - 119.0).abs() < 2.0,
-            "unexpected wav ceiling of {max_secs}s"
-        );
+        assert!((max_secs - 119.0).abs() < 2.0, "unexpected wav ceiling of {max_secs}s");
 
         // A plan built for that ceiling produces pieces that do fit.
         let plan = plan_split(400.0, 1.0, "clip", max_secs);
@@ -1100,7 +1024,8 @@ mod tests {
     #[test]
     fn short_pieces_are_never_emitted() {
         // A track just over the limit should not produce a sliver second part.
-        let plan = plan_split(ROBLOX_MAX_DURATION_SECS + 0.5, 1.0, "clip", ROBLOX_MAX_DURATION_SECS);
+        let plan =
+            plan_split(ROBLOX_MAX_DURATION_SECS + 0.5, 1.0, "clip", ROBLOX_MAX_DURATION_SECS);
         assert_eq!(plan.parts.len(), 2);
         let Some(last) = plan.parts.last() else {
             panic!("expected at least one part");
@@ -1113,22 +1038,16 @@ mod tests {
         // 16 bit stereo at 44.1k is about 74 MB for seven minutes, far past the
         // 20 MB per-request limit, so WAV always needs shorter pieces.
         let seven_min = ROBLOX_MAX_DURATION_SECS;
-        assert!(estimate_part_bytes(seven_min, bits_per_second(AudioFormat::Wav, 44_100))
-            > ROBLOX_MAX_UPLOAD_BYTES);
+        assert!(
+            estimate_part_bytes(seven_min, bits_per_second(AudioFormat::Wav, 44_100))
+                > ROBLOX_MAX_UPLOAD_BYTES
+        );
 
         let plan = plan_split(seven_min, 1.0, "clip", ROBLOX_MAX_DURATION_SECS);
-        assert!(any_part_too_large(
-            &plan,
-            AudioFormat::Wav,
-            44_100
-        ));
+        assert!(any_part_too_large(&plan, AudioFormat::Wav, 44_100));
 
         // The same length in mp3 fits comfortably.
-        assert!(!any_part_too_large(
-            &plan,
-            AudioFormat::Mp3,
-            44_100
-        ));
+        assert!(!any_part_too_large(&plan, AudioFormat::Mp3, 44_100));
     }
 
     #[test]
@@ -1141,7 +1060,8 @@ mod tests {
 
     #[test]
     fn compressed_formats_stay_well_inside_the_byte_limit() {
-        let plan = plan_split(ROBLOX_MAX_DURATION_SECS * 4.0, 1.0, "song", ROBLOX_MAX_DURATION_SECS);
+        let plan =
+            plan_split(ROBLOX_MAX_DURATION_SECS * 4.0, 1.0, "song", ROBLOX_MAX_DURATION_SECS);
         assert!(plan.parts.len() >= 4);
         assert!(!any_part_too_large(&plan, AudioFormat::Mp3, 44_100));
         assert!(!any_part_too_large(&plan, AudioFormat::Ogg, 44_100));
@@ -1434,13 +1354,12 @@ mod tests {
     fn sums_file_is_parsed_the_way_yt_dlp_publishes_it() {
         let sums = "abc123  yt-dlp_linux\ndef456  *yt-dlp_macos\n";
         let parse = |want: &str| {
-            sums.lines()
-                .find_map(|line| {
-                    let mut parts = line.split_whitespace();
-                    let digest = parts.next()?;
-                    let name = parts.next()?.trim_start_matches('*');
-                    (name == want).then(|| digest.to_string())
-                })
+            sums.lines().find_map(|line| {
+                let mut parts = line.split_whitespace();
+                let digest = parts.next()?;
+                let name = parts.next()?.trim_start_matches('*');
+                (name == want).then(|| digest.to_string())
+            })
         };
         assert_eq!(parse("yt-dlp_linux").as_deref(), Some("abc123"));
         // The asterisk form marks binary mode and must still match.

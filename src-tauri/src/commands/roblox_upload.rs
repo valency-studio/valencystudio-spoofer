@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::io::AsyncReadExt;
 
 use crate::error::AppError;
@@ -58,6 +58,170 @@ pub struct AudioQuota {
     pub limit: u64,
 }
 
+// ------------------------------------------------------------------- history
+
+/// One track's upload, kept so the ids can be found again later.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct UploadRecord {
+    pub id: String,
+    pub title: String,
+    pub uploaded_at: String,
+    pub was_split: bool,
+    pub total_bytes: u64,
+    pub assets: Vec<RecordedAsset>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RecordedAsset {
+    pub name: String,
+    pub asset_id: u64,
+    pub path: String,
+    pub bytes: u64,
+}
+
+/// Records default to this many entries, oldest dropped first.
+const HISTORY_LIMIT: usize = 200;
+
+static HISTORY_MUTEX: std::sync::OnceLock<tokio::sync::Mutex<()>> = std::sync::OnceLock::new();
+
+fn history_mutex() -> &'static tokio::sync::Mutex<()> {
+    HISTORY_MUTEX.get_or_init(|| tokio::sync::Mutex::new(()))
+}
+
+fn history_path(app: &AppHandle) -> Result<PathBuf> {
+    Ok(app.path().app_data_dir()?.join("upload-history.json"))
+}
+
+/// A stable id for one upload, derived from the first asset so re-importing the
+/// same track does not silently duplicate rows.
+fn record_id(summary: &UploadSummary) -> String {
+    summary
+        .assets
+        .first()
+        .map(|asset| format!("{}:{}", asset.asset_id, summary.assets.len()))
+        .unwrap_or_else(|| "empty".to_string())
+}
+
+/// Adds a finished upload to the history, replacing any earlier entry with the
+/// same id and trimming the oldest when the list grows too long.
+pub async fn record_upload(app: &AppHandle, summary: &UploadSummary) -> Result<()> {
+    let _guard = history_mutex().lock().await;
+    let path = history_path(app)?;
+
+    let mut stored: Vec<UploadRecord> = crate::commands::ipc::read_json_file(&path)
+        .await
+        .ok()
+        .and_then(|value| serde_json::from_value(value).ok())
+        .unwrap_or_default();
+
+    let record = UploadRecord {
+        id: record_id(summary),
+        title: summary.assets.first().map(|a| a.name.clone()).unwrap_or_default(),
+        uploaded_at: chrono_like_now(),
+        was_split: summary.was_split,
+        total_bytes: summary.assets.iter().map(|a| a.bytes).sum(),
+        assets: summary
+            .assets
+            .iter()
+            .map(|a| RecordedAsset {
+                name: a.name.clone(),
+                asset_id: a.asset_id,
+                path: a.path.clone(),
+                bytes: a.bytes,
+            })
+            .collect(),
+    };
+
+    stored.retain(|existing| existing.id != record.id);
+    stored.insert(0, record);
+    stored.truncate(HISTORY_LIMIT);
+
+    crate::commands::ipc::write_json_file(&path, &serde_json::to_value(stored)?).await?;
+    Ok(())
+}
+
+/// RFC 3339 without pulling in a date library, in UTC.
+fn chrono_like_now() -> String {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    let days = now / 86_400;
+    let seconds = now % 86_400;
+    let (year, month, day) = civil_from_days(days as i64);
+
+    format!(
+        "{year:04}-{month:02}-{day:02}T{:02}:{:02}:{:02}Z",
+        seconds / 3600,
+        (seconds % 3600) / 60,
+        seconds % 60
+    )
+}
+
+/// Howard Hinnant's days-from-epoch to civil date algorithm.
+const fn civil_from_days(days: i64) -> (i64, u32, u32) {
+    let z = days + 719_468;
+    let era = z.div_euclid(146_097);
+    let day_of_era = z.rem_euclid(146_097);
+    let year_of_era =
+        (day_of_era - day_of_era / 1460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let year = year_of_era + era * 400;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let mp = (5 * day_of_year + 2) / 153;
+    let day = (day_of_year - (153 * mp + 2) / 5 + 1) as u32;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 } as u32;
+    (if month <= 2 { year + 1 } else { year }, month, day)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_upload_history(app: AppHandle) -> Result<Vec<UploadRecord>> {
+    let _guard = history_mutex().lock().await;
+    let path = history_path(&app)?;
+
+    let stored: Vec<UploadRecord> = crate::commands::ipc::read_json_file(&path)
+        .await
+        .ok()
+        .and_then(|value| serde_json::from_value(value).ok())
+        .unwrap_or_default();
+
+    Ok(stored)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn delete_upload_record(app: AppHandle, id: String) -> Result<bool> {
+    let _guard = history_mutex().lock().await;
+    let path = history_path(&app)?;
+
+    let mut stored: Vec<UploadRecord> = crate::commands::ipc::read_json_file(&path)
+        .await
+        .ok()
+        .and_then(|value| serde_json::from_value(value).ok())
+        .unwrap_or_default();
+
+    let before = stored.len();
+    stored.retain(|record| record.id != id);
+    if stored.len() == before {
+        return Ok(false);
+    }
+
+    crate::commands::ipc::write_json_file(&path, &serde_json::to_value(stored)?).await?;
+    Ok(true)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn clear_upload_history(app: AppHandle) -> Result<bool> {
+    let _guard = history_mutex().lock().await;
+    let path = history_path(&app)?;
+    crate::commands::ipc::write_json_file(&path, &serde_json::json!([])).await?;
+    Ok(true)
+}
+
 /// Reads the Open Cloud key the app already stores.
 fn api_key() -> Result<String> {
     let entry = crate::commands::ipc::secrets::get_opencloud_api_key_entry()?;
@@ -72,11 +236,7 @@ fn api_key() -> Result<String> {
 
 /// Maps our output formats onto the content types Roblox accepts for audio.
 pub fn content_type_for(path: &Path) -> Result<&'static str> {
-    let extension = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("")
-        .to_ascii_lowercase();
+    let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
     match extension.as_str() {
         "mp3" => Ok("audio/mpeg"),
         "ogg" => Ok("audio/ogg"),
@@ -102,9 +262,7 @@ pub async fn upload_pieces(
         return Err("There is nothing to upload.".into());
     }
     if creator_user_id == 0 {
-        return Err(
-            "Add a Roblox account and an Open Cloud API key before uploading.".into(),
-        );
+        return Err("Add a Roblox account and an Open Cloud API key before uploading.".into());
     }
 
     let key = api_key()?;
@@ -113,17 +271,8 @@ pub async fn upload_pieces(
 
     let mut assets = Vec::with_capacity(total);
     for (index, (name, path)) in files.iter().enumerate() {
-        let asset_id = upload_one(
-            &client,
-            &key,
-            name,
-            path,
-            index,
-            total,
-            app,
-            creator_user_id,
-        )
-        .await?;
+        let asset_id =
+            upload_one(&client, &key, name, path, index, total, app, creator_user_id).await?;
 
         assets.push(UploadedAsset {
             name: name.clone(),
@@ -139,10 +288,13 @@ pub async fn upload_pieces(
         grant_use_permission(&client, &key, asset.asset_id).await?;
     }
 
-    Ok(UploadSummary {
-        assets,
-        was_split: total > 1,
-    })
+    let summary = UploadSummary { assets, was_split: total > 1 };
+
+    // History is written only after every asset and permission succeeded, so it
+    // never lists an upload that Roblox rejected.
+    record_upload(app, &summary).await?;
+
+    Ok(summary)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -182,13 +334,8 @@ async fn upload_one(
         .await
         .map_err(|e| AppError::Custom(format!("Could not open {}: {e}", name)))?;
 
-    let emitter = ProgressEmitter {
-        app: app.clone(),
-        file: name.to_string(),
-        index,
-        total,
-        bytes: size,
-    };
+    let emitter =
+        ProgressEmitter { app: app.clone(), file: name.to_string(), index, total, bytes: size };
 
     let body = reqwest::Body::wrap_stream(file_stream(file, emitter));
     let part = reqwest::multipart::Part::stream(body)
@@ -203,12 +350,8 @@ async fn upload_one(
         )
         .part("fileContent", part);
 
-    let response = client
-        .post(CREATE_ASSET)
-        .header("x-api-key", key)
-        .multipart(form)
-        .send()
-        .await?;
+    let response =
+        client.post(CREATE_ASSET).header("x-api-key", key).multipart(form).send().await?;
 
     let status = response.status();
     let body = response.text().await.unwrap_or_default();
@@ -240,7 +383,8 @@ async fn wait_for_operation(
     total: usize,
     app: &AppHandle,
 ) -> Result<u64> {
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(OPERATION_TIMEOUT_SECS);
+    let deadline =
+        std::time::Instant::now() + std::time::Duration::from_secs(OPERATION_TIMEOUT_SECS);
 
     loop {
         if std::time::Instant::now() > deadline {
@@ -274,11 +418,8 @@ async fn wait_for_operation(
         }
 
         let parsed: serde_json::Value = response.json().await?;
-        let state = parsed
-            .get("state")
-            .and_then(|v| v.as_str())
-            .unwrap_or_default()
-            .to_ascii_lowercase();
+        let state =
+            parsed.get("state").and_then(|v| v.as_str()).unwrap_or_default().to_ascii_lowercase();
 
         match state.as_str() {
             "succeeded" | "completed" => {
@@ -293,13 +434,9 @@ async fn wait_for_operation(
                     });
             }
             "failed" | "error" => {
-                let message = parsed
-                    .get("error")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("no reason given");
-                return Err(AppError::Custom(format!(
-                    "Roblox rejected \"{name}\": {message}"
-                )));
+                let message =
+                    parsed.get("error").and_then(|v| v.as_str()).unwrap_or("no reason given");
+                return Err(AppError::Custom(format!("Roblox rejected \"{name}\": {message}")));
             }
             _ => {}
         }
@@ -311,15 +448,9 @@ async fn wait_for_operation(
 /// Audio cannot be updated in place on Roblox, so a new asset is created
 /// without a universe attached. Without this the asset stays owned-but-unusable
 /// and a place cannot load it.
-async fn grant_use_permission(
-    client: &reqwest::Client,
-    key: &str,
-    asset_id: u64,
-) -> Result<()> {
+async fn grant_use_permission(client: &reqwest::Client, key: &str, asset_id: u64) -> Result<()> {
     let response = client
-        .patch(format!(
-            "{ASSETS_BASE}/asset-permissions-api/v1/assets/permissions"
-        ))
+        .patch(format!("{ASSETS_BASE}/asset-permissions-api/v1/assets/permissions"))
         .header("x-api-key", key)
         .json(&serde_json::json!({
             "assetId": asset_id,
@@ -361,10 +492,7 @@ pub async fn audio_quota(client: &reqwest::Client, key: &str, user_id: u64) -> R
         .cloned()
         .unwrap_or(serde_json::Value::Null);
 
-    let remaining = entry
-        .get("remaining")
-        .and_then(serde_json::Value::as_u64)
-        .unwrap_or(0);
+    let remaining = entry.get("remaining").and_then(serde_json::Value::as_u64).unwrap_or(0);
     let limit = entry
         .get("limit")
         .or_else(|| entry.get("capacity"))
@@ -388,7 +516,8 @@ pub async fn upload_audio_piece(
         return Err("The exported file could not be found. Export it again.".into());
     }
 
-    let summary = upload_pieces(&app, &[(name.clone(), file_path.clone())], creator_user_id).await?;
+    let summary =
+        upload_pieces(&app, &[(name.clone(), file_path.clone())], creator_user_id).await?;
 
     summary
         .assets
@@ -410,16 +539,13 @@ pub async fn upload_audio_parts(
     for path in paths {
         let file_path = PathBuf::from(path.trim());
         if !file_path.is_file() {
-            return Err(
-                format!("\"{}\" could not be found. Export the track again.", file_path.display())
-                    .into(),
-            );
+            return Err(format!(
+                "\"{}\" could not be found. Export the track again.",
+                file_path.display()
+            )
+            .into());
         }
-        let name = file_path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("track")
-            .to_string();
+        let name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("track").to_string();
         files.push((name, file_path));
     }
 
@@ -442,7 +568,8 @@ pub async fn fetch_open_cloud_audio_quota(creator_user_id: u64) -> Result<AudioQ
 }
 
 /// Turns a Roblox error body into something a user can act on.
-fn describe(body: &str, status: u16) -> AppError {    let parsed: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
+fn describe(body: &str, status: u16) -> AppError {
+    let parsed: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
 
     let message = parsed
         .get("message")
@@ -493,10 +620,8 @@ mod tests {
 
     #[test]
     fn roblox_error_bodies_become_readable_messages() {
-        let error = describe(
-            r#"{"message":"Asset type not supported","errors":[{"message":"bad"}]}"#,
-            400,
-        );
+        let error =
+            describe(r#"{"message":"Asset type not supported","errors":[{"message":"bad"}]}"#, 400);
         let text = match error {
             AppError::Custom(text) => text,
             other => panic!("unexpected error: {other:?}"),
@@ -539,6 +664,55 @@ mod tests {
     fn the_byte_limit_is_twenty_megabytes() {
         assert_eq!(MAX_UPLOAD_BYTES, 20 * 1024 * 1024);
     }
+
+    #[test]
+    fn civil_dates_match_known_days() {
+        // Spot checks against dates whose epoch offsets are easy to confirm.
+        assert_eq!(super::civil_from_days(0), (1970, 1, 1));
+        assert_eq!(super::civil_from_days(19_000), (2022, 1, 8));
+        // 2024 is a leap year, so the 29th of February must exist.
+        assert_eq!(super::civil_from_days(19_782), (2024, 2, 29));
+        // 2026-01-01 is 56 years on: 20440 days plus 14 leap days.
+        assert_eq!(super::civil_from_days(20_454), (2026, 1, 1));
+        assert_eq!(super::civil_from_days(20_453), (2025, 12, 31));
+    }
+
+    #[test]
+    fn the_recorded_timestamp_is_a_parsable_utc_string() {
+        let stamp = super::chrono_like_now();
+        assert_eq!(stamp.len(), 20, "unexpected shape: {stamp}");
+        assert!(stamp.ends_with('Z'), "must be UTC: {stamp}");
+        assert_eq!(&stamp[4..5], "-");
+        assert_eq!(&stamp[7..8], "-");
+        assert_eq!(&stamp[10..11], "T");
+        assert_eq!(&stamp[13..14], ":");
+        assert_eq!(&stamp[16..17], ":");
+        // The year is always four digits and starts with 20 for any real date.
+        assert!(stamp.starts_with("20"), "unexpected year in {stamp}");
+    }
+
+    #[test]
+    fn records_are_keyed_so_reuploading_replaces_rather_than_duplicates() {
+        let summary = super::UploadSummary {
+            was_split: false,
+            assets: vec![
+                super::UploadedAsset {
+                    name: "song.mp3".to_string(),
+                    asset_id: 12345,
+                    path: "/tmp/song.mp3".to_string(),
+                    bytes: 100,
+                },
+                super::UploadedAsset {
+                    name: "song (part 2).mp3".to_string(),
+                    asset_id: 12346,
+                    path: "/tmp/song2.mp3".to_string(),
+                    bytes: 90,
+                },
+            ],
+        };
+        // Two pieces of the same upload share a key even though ids differ.
+        assert_eq!(super::record_id(&summary), "12345:2");
+    }
 }
 
 #[derive(Clone)]
@@ -574,22 +748,25 @@ fn file_stream(
     file: tokio::fs::File,
     emitter: ProgressEmitter,
 ) -> impl futures::Stream<Item = std::io::Result<bytes::Bytes>> {
-    use std::sync::Arc;
     use std::sync::atomic::{AtomicU64, Ordering};
+    use std::sync::Arc;
 
     let sent = Arc::new(AtomicU64::new(0));
-    futures::stream::unfold((Box::new(file), emitter, sent), |(mut file, emitter, sent)| async move {
-        let mut buffer = vec![0_u8; 64 * 1024];
-        match file.read(&mut buffer).await {
-            // 0 means end of file, and an error ends the stream so the request
-            // fails loudly instead of uploading a truncated file.
-            Ok(0) | Err(_) => None,
-            Ok(read) => {
-                buffer.truncate(read);
-                let total = sent.fetch_add(read as u64, Ordering::Relaxed) + read as u64;
-                emitter.report(total);
-                Some((Ok(Bytes::from(buffer)), (file, emitter, sent)))
+    futures::stream::unfold(
+        (Box::new(file), emitter, sent),
+        |(mut file, emitter, sent)| async move {
+            let mut buffer = vec![0_u8; 64 * 1024];
+            match file.read(&mut buffer).await {
+                // 0 means end of file, and an error ends the stream so the request
+                // fails loudly instead of uploading a truncated file.
+                Ok(0) | Err(_) => None,
+                Ok(read) => {
+                    buffer.truncate(read);
+                    let total = sent.fetch_add(read as u64, Ordering::Relaxed) + read as u64;
+                    emitter.report(total);
+                    Some((Ok(Bytes::from(buffer)), (file, emitter, sent)))
+                }
             }
-        }
-    })
+        },
+    )
 }

@@ -11,16 +11,19 @@ macro_rules! specta_commands {
     () => {
         tauri_specta::collect_commands![
             crate::commands::anim_parser::parse_animation_data,
-crate::commands::media::check_media_tools,
-crate::commands::media::ensure_media_tools,
-crate::commands::media::ensure_ytdlp,
+            crate::commands::media::check_media_tools,
+            crate::commands::media::ensure_media_tools,
+            crate::commands::media::ensure_ytdlp,
             crate::commands::roblox_upload::upload_audio_piece,
             crate::commands::roblox_upload::upload_audio_parts,
             crate::commands::roblox_upload::fetch_open_cloud_audio_quota,
+            crate::commands::roblox_upload::get_upload_history,
+            crate::commands::roblox_upload::delete_upload_record,
+            crate::commands::roblox_upload::clear_upload_history,
             crate::commands::media::import_media_from_url,
             crate::commands::media::import_local_media,
             crate::commands::media::bake_media,
-crate::commands::media::preview_split,
+            crate::commands::media::preview_split,
             crate::commands::assets::fetch_assets,
             crate::commands::assets::fetch_roblox_thumbnail,
             crate::commands::assets::fetch_animation_xml,
@@ -125,8 +128,10 @@ pub fn run() {
     }
 
     std::panic::set_hook(Box::new(|info| {
-        let msg =
-            format!("ValencyStudio - Spoofer encountered a fatal error. Please check the logs.\n\n{}", info);
+        let msg = format!(
+            "ValencyStudio - Spoofer encountered a fatal error. Please check the logs.\n\n{}",
+            info
+        );
         log::error!("FATAL PANIC: {}", msg);
         let _ = rfd::MessageDialog::new()
             .set_title("Fatal Error")

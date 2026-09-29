@@ -100,7 +100,8 @@ pub async fn fetch_assets(
 
         let mut headers = HeaderMap::new();
         headers.insert(COOKIE, HeaderValue::from_str(&cookie_header)?);
-        headers.insert(USER_AGENT, HeaderValue::from_static("ValencyStudio - Spoofer/AssetExplorer"));
+        headers
+            .insert(USER_AGENT, HeaderValue::from_static("ValencyStudio - Spoofer/AssetExplorer"));
 
         let resp = match client.get(&url).headers(headers).send().await {
             Ok(r) => r,
@@ -265,7 +266,8 @@ pub async fn fetch_roblox_thumbnail(asset_id: String) -> crate::error::Result<Op
         "https://thumbnails.roblox.com/v1/assets?assetIds={asset_id}&size=420x420&format=Png&isCircular=false"
     );
 
-    let resp = client.get(&url).header(USER_AGENT, "ValencyStudio - Spoofer/AssetExplorer").send().await?;
+    let resp =
+        client.get(&url).header(USER_AGENT, "ValencyStudio - Spoofer/AssetExplorer").send().await?;
 
     if !resp.status().is_success() {
         return Ok(None);

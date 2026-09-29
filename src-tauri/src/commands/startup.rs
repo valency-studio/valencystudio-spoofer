@@ -87,9 +87,7 @@ fn is_plugin_file_name_for(file_name: &str, stem: &str) -> bool {
 
 fn is_owned_plugin_file_name(file_name: &str) -> bool {
     is_plugin_file_name_for(file_name, PLUGIN_FILE_STEM)
-        || LEGACY_PLUGIN_FILE_STEMS
-            .iter()
-            .any(|stem| is_plugin_file_name_for(file_name, stem))
+        || LEGACY_PLUGIN_FILE_STEMS.iter().any(|stem| is_plugin_file_name_for(file_name, stem))
 }
 
 #[tauri::command]
@@ -104,10 +102,10 @@ pub async fn sync_roblox_plugin(app: AppHandle) -> crate::error::Result<bool> {
     let resource_path: Option<PathBuf> = {
         let mut candidates: Vec<PathBuf> = Vec::new();
 
-        if let Ok(p) = app
-            .path()
-            .resolve("_up_/dist-plugin/ValencyStudioSpoofer.rbxmx", tauri::path::BaseDirectory::Resource)
-        {
+        if let Ok(p) = app.path().resolve(
+            "_up_/dist-plugin/ValencyStudioSpoofer.rbxmx",
+            tauri::path::BaseDirectory::Resource,
+        ) {
             candidates.push(p);
         }
         if let Ok(p) = app

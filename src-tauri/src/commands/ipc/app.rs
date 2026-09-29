@@ -22,7 +22,7 @@ pub fn open_frontend_devtools(app: AppHandle) {
         #[cfg(not(debug_assertions))]
         {
             let _ = win.eval(
-                "console.warn('[ValencyStudio] DevTools are not available in this release build.')"
+                "console.warn('[ValencyStudio] DevTools are not available in this release build.')",
             );
         }
     }

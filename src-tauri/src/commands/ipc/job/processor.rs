@@ -348,10 +348,8 @@ pub async fn process_spoofer_action(
                 let _ = writeln!(file, "{formatted}");
             }
         }
-        let _ = app.emit(
-            "spoofer-log",
-            serde_json::json!({ "message": redacted_msg, "level": level }),
-        );
+        let _ =
+            app.emit("spoofer-log", serde_json::json!({ "message": redacted_msg, "level": level }));
         match level {
             "error" => log::error!("[Spoofer] {}", redacted_msg),
             "warn" => log::warn!("[Spoofer] {}", redacted_msg),
