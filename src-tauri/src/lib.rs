@@ -11,8 +11,10 @@ macro_rules! specta_commands {
     () => {
         tauri_specta::collect_commands![
             crate::commands::anim_parser::parse_animation_data,
-            crate::commands::media::check_media_tools,
-            crate::commands::media::probe_media,
+crate::commands::media::check_media_tools,
+crate::commands::media::ensure_media_tools,
+crate::commands::media::ensure_ytdlp,
+crate::commands::media::probe_media,
             crate::commands::media::import_media_from_url,
             crate::commands::media::import_local_media,
             crate::commands::media::bake_media,

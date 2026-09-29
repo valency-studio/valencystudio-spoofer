@@ -63,6 +63,8 @@ export default function MusicView() {
     setImporting(false);
   };
 
+  // Only ffmpeg is warned about. yt-dlp installs itself on first run, so a
+  // missing one means the install failed and is worth surfacing with a retry.
   const missing = tools
     ? [
         !tools.ffmpeg ? t('music.missingFfmpeg') : null,
@@ -129,9 +131,14 @@ export default function MusicView() {
               </Button>
             </div>
 
-            {error && error !== 'yt-dlp-not-installed' && (
+            {error && error !== 'yt-dlp-unavailable' && (
               <p className="text-sm text-danger" role="alert">
                 {error}
+              </p>
+            )}
+            {error === 'yt-dlp-unavailable' && (
+              <p className="text-sm text-danger" role="alert">
+                {t('music.ytdlpUnavailable')}
               </p>
             )}
             {notice && <p className="text-sm text-signal-live">{notice}</p>}

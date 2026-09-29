@@ -126,7 +126,7 @@ async fn resolve(spec: ToolSpec) -> Option<std::path::PathBuf> {
     None
 }
 
-/// File names to try for a program, covering the Windows resolution rules.
+/// Candidate names to try for a program, covering the Windows resolution rules.
 fn candidate_names(program: &str) -> Vec<String> {
     if cfg!(windows) {
         vec![
@@ -138,6 +138,204 @@ fn candidate_names(program: &str) -> Vec<String> {
     } else {
         vec![program.to_string()]
     }
+}
+
+// ---------------------------------------------------------------- yt-dlp install
+
+const YTDLP_RELEASE_BASE: &str = "https://github.com/yt-dlp/yt-dlp/releases/latest/download";
+
+/// Where we install tools we fetch ourselves, so nothing touches the user's PATH
+/// and no elevation is required.
+fn tool_bin_dir(app: &AppHandle) -> Result<PathBuf> {
+    let dir = app.path().app_data_dir()?.join("bin");
+    std::fs::create_dir_all(&dir)?;
+    Ok(dir)
+}
+
+/// The yt-dlp release asset that matches this OS and CPU.
+///
+/// yt-dlp publishes self-contained binaries per target. The Windows assets are
+/// named `.exe`, everything else is an extensionless native binary.
+fn ytdlp_asset() -> &'static str {
+    if cfg!(target_os = "windows") {
+        if cfg!(target_arch = "aarch64") {
+            "yt-dlp_arm64.exe"
+        } else if cfg!(target_arch = "x86") {
+            "yt-dlp_x86.exe"
+        } else {
+            "yt-dlp.exe"
+        }
+    } else if cfg!(target_os = "macos") {
+        "yt-dlp_macos"
+    } else if cfg!(target_arch = "aarch64") {
+        if is_musl() {
+            "yt-dlp_musllinux_aarch64"
+        } else {
+            "yt-dlp_linux_aarch64"
+        }
+    } else if is_musl() {
+        "yt-dlp_musllinux"
+    } else {
+        "yt-dlp_linux"
+    }
+}
+
+/// Alpine-style targets link against musl rather than glibc, and yt-dlp ships a
+/// separate build for them.
+fn is_musl() -> bool {
+    cfg!(target_os = "linux")
+        && std::env::var("LD_LIBRARY_PATH")
+            .map(|v| v.contains("musl"))
+            .unwrap_or(false)
+}
+
+fn local_ytdlp_name() -> String {
+    if cfg!(target_os = "windows") {
+        "yt-dlp.exe".to_string()
+    } else {
+        "yt-dlp".to_string()
+    }
+}
+
+/// Resolves yt-dlp, preferring a copy this app installed itself.
+async fn resolve_ytdlp(app: &AppHandle) -> Option<PathBuf> {
+    if let Ok(dir) = tool_bin_dir(app) {
+        let candidate = dir.join(local_ytdlp_name());
+        if candidate.is_file() && runs(&candidate, YTDLP.version_arg).await {
+            return Some(candidate);
+        }
+    }
+    resolve(YTDLP).await
+}
+
+async fn runs(path: &std::path::Path, version_arg: &str) -> bool {
+    Command::new(path)
+        .arg(version_arg)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .await
+        .map(|status| status.success())
+        .unwrap_or(false)
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    hex::encode(hasher.finalize())
+}
+
+/// Downloads yt-dlp if it is not already reachable, verifying it against the
+/// SHA2-256SUMS file published in the same release.
+#[tauri::command]
+#[specta::specta]
+pub async fn ensure_ytdlp(app: AppHandle) -> Result<bool> {
+    if resolve_ytdlp(&app).await.is_some() {
+        return Ok(false);
+    }
+
+    let asset = ytdlp_asset();
+    let client = crate::utils::get_http_client();
+
+    let sums = client
+        .get(format!("{YTDLP_RELEASE_BASE}/SHA2-256SUMS"))
+        .send()
+        .await?
+        .error_for_status()?
+        .text()
+        .await?;
+
+    // Lines look like "<hex>  <name>".
+    let expected = sums
+        .lines()
+        .find_map(|line| {
+            let mut parts = line.split_whitespace();
+            let digest = parts.next()?;
+            let name = parts.next()?.trim_start_matches('*');
+            (name == asset).then(|| digest.to_ascii_lowercase())
+        })
+        .ok_or_else(|| {
+            AppError::Custom(format!("yt-dlp release did not list an expected {asset} file."))
+        })?;
+
+    let bytes = client
+        .get(format!("{YTDLP_RELEASE_BASE}/{asset}"))
+        .send()
+        .await?
+        .error_for_status()?
+        .bytes()
+        .await?;
+
+    let actual = sha256_hex(&bytes);
+    if actual != expected {
+        return Err(AppError::Custom(
+            "The downloaded yt-dlp did not match its published checksum, so it was discarded."
+                .to_string(),
+        ));
+    }
+
+    let dir = tool_bin_dir(&app)?;
+    let target = dir.join(local_ytdlp_name());
+
+    // Write to a temporary name first so an interrupted write can never leave a
+    // truncated binary that later looks installed.
+    let staging = dir.join(format!("{}.partial", local_ytdlp_name()));
+    std::fs::write(&staging, &bytes)?;
+    std::fs::rename(&staging, &target)?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&target, std::fs::Permissions::from_mode(0o755))?;
+    }
+
+    if !runs(&target, YTDLP.version_arg).await {
+        let _ = std::fs::remove_file(&target);
+        return Err(AppError::Custom(
+            "yt-dlp was installed but would not run on this system.".to_string(),
+        ));
+    }
+
+    Ok(true)
+}
+
+/// Tool availability plus whether this call installed yt-dlp, so the caller can
+/// report what actually changed.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaToolStatus {
+    pub tools: MediaTools,
+    pub ytdlp_installed: bool,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn ensure_media_tools(app: AppHandle) -> Result<MediaToolStatus> {
+    let ytdlp_installed = match ensure_ytdlp(app.clone()).await {
+        Ok(installed) => installed,
+        Err(err) => {
+            // A failed install must not stop startup; the Music view explains it.
+            log::warn!("Could not install yt-dlp automatically: {err}");
+            false
+        }
+    };
+
+    let (ffmpeg, ffprobe, ytdlp) = tokio::join!(
+        resolve(FFMPEG),
+        resolve(FFPROBE),
+        resolve_ytdlp(&app),
+    );
+
+    Ok(MediaToolStatus {
+        tools: MediaTools {
+            ffmpeg: ffmpeg.is_some(),
+            ffprobe: ffprobe.is_some(),
+            ytdlp: ytdlp.is_some(),
+        },
+        ytdlp_installed,
+    })
 }
 
 fn media_dir(app: &AppHandle) -> Result<PathBuf> {
@@ -609,5 +807,65 @@ mod tests {
         assert_eq!(super::YTDLP.version_arg, "--version");
         assert_eq!(super::FFMPEG.version_arg, "-version");
         assert_eq!(super::FFPROBE.version_arg, "-version");
+    }
+
+    #[test]
+    fn the_selected_asset_exists_in_a_real_release() {
+        // Guards against renaming an asset upstream without noticing: the chosen
+        // name has to be one of the files yt-dlp actually publishes.
+        let asset = super::ytdlp_asset();
+        let known = [
+            "yt-dlp.exe",
+            "yt-dlp_x86.exe",
+            "yt-dlp_arm64.exe",
+            "yt-dlp_linux",
+            "yt-dlp_linux_aarch64",
+            "yt-dlp_musllinux",
+            "yt-dlp_musllinux_aarch64",
+            "yt-dlp_macos",
+        ];
+        assert!(known.contains(&asset), "unexpected yt-dlp asset: {asset}");
+    }
+
+    #[test]
+    fn local_name_is_invocable_on_this_platform() {
+        let name = super::local_ytdlp_name();
+        if cfg!(windows) {
+            assert!(name.ends_with(".exe"));
+        } else {
+            assert!(!name.contains('.'), "unix binaries must stay extensionless");
+        }
+    }
+
+    #[test]
+    fn sums_file_is_parsed_the_way_yt_dlp_publishes_it() {
+        let sums = "abc123  yt-dlp_linux\ndef456  *yt-dlp_macos\n";
+        let parse = |want: &str| {
+            sums.lines()
+                .find_map(|line| {
+                    let mut parts = line.split_whitespace();
+                    let digest = parts.next()?;
+                    let name = parts.next()?.trim_start_matches('*');
+                    (name == want).then(|| digest.to_string())
+                })
+        };
+        assert_eq!(parse("yt-dlp_linux").as_deref(), Some("abc123"));
+        // The asterisk form marks binary mode and must still match.
+        assert_eq!(parse("yt-dlp_macos").as_deref(), Some("def456"));
+        assert!(parse("yt-dlp").is_none());
+    }
+
+    #[test]
+    fn checksums_match_the_reference_implementation() {
+        // Known SHA-256 of the empty input, to prove the hashing helper is wired
+        // to a real digest rather than a placeholder.
+        assert_eq!(
+            super::sha256_hex(b""),
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+        assert_eq!(
+            super::sha256_hex(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
     }
 }

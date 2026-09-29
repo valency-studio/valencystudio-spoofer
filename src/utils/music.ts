@@ -20,6 +20,13 @@ const AUDIO_EXTENSIONS = ['mp3', 'ogg', 'wav', 'm4a', 'aac', 'flac', 'webm', 'op
 
 export const checkMediaTools = () => invoke<MediaTools>('check_media_tools');
 
+/**
+ * Installs yt-dlp if it is missing and reports the final tool state.
+ * Called from the splash screen so the Music view is ready on first paint.
+ */
+export const ensureMediaTools = () =>
+  invoke<{ tools: MediaTools; ytdlpInstalled: boolean }>('ensure_media_tools');
+
 export const probeMedia = (path: string) => invoke<MediaInfo>('probe_media', { path });
 
 export const importMediaFromUrl = (url: string) =>

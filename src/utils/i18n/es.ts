@@ -74,6 +74,9 @@ export const es: TranslationTree = {
     editedNote: 'Los archivos exportados conservan estos cambios. Tu archivo original no se toca.',
     untouchedNote: 'Aún no hay cambios. Exportar mantiene el archivo tal cual.',
     openSource: 'Abrir origen',
+    ytdlpUnavailable:
+      'No se pudo instalar yt-dlp automáticamente, así que importar desde un enlace no está disponible.',
+    retryInstall: 'Intentar instalar de nuevo',
     missingFfmpeg:
       'ffmpeg no está en tu PATH, así que la exportación no está disponible. Instala ffmpeg y vuelve a abrir la aplicación.',
     missingYtDlp:

@@ -97,6 +97,26 @@ async function runSplashFlow() {
     console.error('Failed to sync Roblox plugin:', err);
   }
 
+  // Installs yt-dlp when it is missing so the Music view is ready on first
+  // paint. Failure is non-fatal: the Music view reports what is unavailable.
+  if (statusText) {
+    statusText.innerText = 'Preparing media tools...';
+  }
+
+  try {
+    const result = await invoke<{ tools: { ytdlp: boolean }; ytdlpInstalled: boolean }>(
+      'ensure_media_tools',
+    );
+    if (result.ytdlpInstalled) {
+      console.log('Installed yt-dlp for the Music editor.');
+    }
+    if (!result.tools.ytdlp) {
+      console.warn('yt-dlp is unavailable; importing from a link will be disabled.');
+    }
+  } catch (err) {
+    console.error('Failed to prepare media tools:', err);
+  }
+
   if (statusText) {
     statusText.innerText = 'Starting...';
   }

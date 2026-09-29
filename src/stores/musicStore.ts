@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import type { AudioFormat, MediaInfo, MediaTools } from '../utils/music';
 import {
   checkMediaTools,
+  ensureMediaTools,
   importLocalMedia,
   importMediaFromUrl,
   pickLocalAudio,
@@ -41,8 +42,10 @@ interface MusicState {
   tracks: MusicTrack[];
   error: string | null;
   notice: string | null;
+  toolError: string | null;
 
   refreshTools: () => Promise<void>;
+  installMissingTools: () => Promise<void>;
   addFromUrl: (url: string) => Promise<void>;
   addFromFile: () => Promise<void>;
   remove: (id: string) => void;
@@ -83,6 +86,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   tracks: [],
   error: null,
   notice: null,
+  toolError: null,
 
   refreshTools: async () => {
     try {
@@ -92,12 +96,31 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     }
   },
 
+  /**
+   * Re-checks, installing yt-dlp on the spot when it is missing. The splash
+   * screen normally does this first; this is the manual retry.
+   */
+  installMissingTools: async () => {
+    set({ toolError: null });
+    try {
+      const { tools } = await ensureMediaTools();
+      set({ tools });
+    } catch (err) {
+      set({ toolError: String(err) });
+    }
+  },
+
   addFromUrl: async (url) => {
     set({ error: null });
     const tools = get().tools;
     if (tools && !tools.ytdlp) {
-      set({ error: 'yt-dlp-not-installed' });
-      return;
+      // One retry that installs it, rather than leaving the user with a
+      // permanently disabled button after a failed splash-time attempt.
+      await get().installMissingTools();
+      if (get().tools && !get().tools?.ytdlp) {
+        set({ error: 'yt-dlp-unavailable' });
+        return;
+      }
     }
 
     try {

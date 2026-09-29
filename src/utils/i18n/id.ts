@@ -81,6 +81,9 @@ export const id: TranslationTree = {
     editedNote: 'File hasil ekspor memakai edit ini. File sumber Anda tidak diubah.',
     untouchedNote: 'Belum ada edit. Mengekspor akan mempertahankan file apa adanya.',
     openSource: 'Buka sumber',
+    ytdlpUnavailable:
+      'yt-dlp tidak dapat dipasang otomatis, jadi impor dari tautan tidak tersedia.',
+    retryInstall: 'Coba pasang lagi',
     missingFfmpeg:
       'ffmpeg tidak ada di PATH Anda, jadi ekspor tidak tersedia. Pasang ffmpeg lalu buka ulang aplikasi.',
     missingYtDlp:
