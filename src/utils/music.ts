@@ -1,30 +1,10 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { open as openFilePicker } from '@tauri-apps/plugin-dialog';
 
-export type AudioFormat = 'mp3' | 'ogg' | 'wav';
+// The command types come from the generated bindings so the two can never drift.
+import type { AudioFormat, ImportedMedia, MediaInfo, MediaTools } from '../types/bindings';
 
-export interface MediaTools {
-  ffmpeg: boolean;
-  ffprobe: boolean;
-  ytdlp: boolean;
-}
-
-export interface MediaInfo {
-  duration: number | null;
-  sampleRate: number | null;
-  channels: number | null;
-  bitRate: number | null;
-  formatName: string;
-}
-
-export interface ImportedMedia {
-  path: string;
-  title: string;
-  uploader: string | null;
-  thumbnailUrl: string | null;
-  sourceUrl: string;
-}
-
+export type { AudioFormat, ImportedMedia, MediaInfo, MediaTools };
 export const AUDIO_FORMATS: { value: AudioFormat; label: string }[] = [
   { value: 'mp3', label: 'MP3' },
   { value: 'ogg', label: 'OGG' },

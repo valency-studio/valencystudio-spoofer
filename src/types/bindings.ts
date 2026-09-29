@@ -14,6 +14,44 @@ export const commands = {
       } | null,
       string
     >(__TAURI_INVOKE('parse_animation_data', { xml })),
+  /**
+   *  Reports which external tools are on PATH so the UI can tell the user exactly
+   *  what is missing instead of failing later with an opaque error.
+   */
+  checkMediaTools: () => typedError<MediaTools, AppError>(__TAURI_INVOKE('check_media_tools')),
+  /**  Reads stream metadata with ffprobe. */
+  probeMedia: (path: string) =>
+    typedError<MediaInfo, AppError>(__TAURI_INVOKE('probe_media', { path })),
+  /**
+   *  Fetches a track from a URL using a user-installed yt-dlp.
+   *
+   *  The downloader is deliberately not bundled: no ripping code ships with the
+   *  app, and the user controls which version runs. Only the audio stream is
+   *  pulled, re-encoded to m4a so the editor can work on a predictable input.
+   */
+  importMediaFromUrl: (url: string) =>
+    typedError<ImportedMedia, AppError>(__TAURI_INVOKE('import_media_from_url', { url })),
+  /**
+   *  Copies a user-picked file into the app's media directory.
+   *
+   *  The picker can return a path anywhere on disk, which the asset protocol may
+   *  not be allowed to read and which the user could later move or delete. Copying
+   *  keeps the editor working from a stable, readable location.
+   */
+  importLocalMedia: (path: string) =>
+    typedError<ImportedMedia, AppError>(__TAURI_INVOKE('import_local_media', { path })),
+  /**  Renders the edited track to a new file. The input is never modified. */
+  bakeMedia: (
+    inputPath: string,
+    outputName: string,
+    speed: number | null,
+    semitones: number | null,
+    format: AudioFormat,
+    sampleRate: number,
+  ) =>
+    typedError<ImportedMedia, AppError>(
+      __TAURI_INVOKE('bake_media', { inputPath, outputName, speed, semitones, format, sampleRate }),
+    ),
   fetchAssets: (query: FetchAssetsRequest) =>
     typedError<FetchAssetsResponse, AppError>(__TAURI_INVOKE('fetch_assets', { query })),
   fetchRobloxThumbnail: (assetId: string) =>
@@ -226,6 +264,9 @@ export type AssetExplorerItem = {
   isModerated: boolean;
 };
 
+/**  Output container/codec combinations offered by the Music editor. */
+export type AudioFormat = 'mp3' | 'ogg' | 'wav';
+
 export type BatchGrantPermissionsRequest = {
   asset_ids: (number | null)[];
   subject_type: string;
@@ -268,6 +309,28 @@ export type GlobalPlacesResponse = {
   previousPageCursor: string | null;
   nextPageCursor: string | null;
   games: GlobalPlace[];
+};
+
+export type ImportedMedia = {
+  path: string;
+  title: string;
+  uploader: string | null;
+  thumbnailUrl: string | null;
+  sourceUrl: string;
+};
+
+export type MediaInfo = {
+  duration: number | null;
+  sampleRate: number | null;
+  channels: number | null;
+  bitRate: number | null;
+  formatName: string;
+};
+
+export type MediaTools = {
+  ffmpeg: boolean;
+  ffprobe: boolean;
+  ytdlp: boolean;
 };
 
 export type MemoryInjectionResult = {
