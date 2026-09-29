@@ -23,7 +23,8 @@ pub(super) fn get_secrets_keyring_entry() -> crate::error::Result<Entry> {
     })
 }
 
-pub(super) fn get_opencloud_api_key_entry() -> crate::error::Result<Entry> {
+/// Exposed so the media uploader can reuse the same key entry.
+pub(crate) fn get_opencloud_api_key_entry() -> crate::error::Result<Entry> {
     Entry::new("ValencyStudioSpoofer.OpenCloudApiKey", "default").map_err(|e| {
         crate::error::AppError::Custom(format!("Failed to open API key credential store: {e}"))
     })

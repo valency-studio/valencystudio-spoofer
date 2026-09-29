@@ -7,6 +7,7 @@ pub mod jobs;
 pub mod media;
 pub mod place_parser;
 pub mod resolver;
+pub mod roblox_upload;
 pub mod roblox_status;
 pub mod spoofer;
 pub mod startup;

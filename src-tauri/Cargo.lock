@@ -126,6 +126,7 @@ dependencies = [
  "aho-corasick",
  "axum",
  "base64 0.22.1",
+ "bytes",
  "chrono",
  "crc32fast",
  "dashmap",
