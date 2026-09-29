@@ -164,9 +164,15 @@ async fn fetch_user_high_rank_groups(
     let mut groups: Vec<(String, u32)> = Vec::new();
     let mut cursor = String::new();
 
+    if !is_valid_numeric_id(user_id) {
+        return Vec::new();
+    }
+    let safe_user_id = user_id.trim_start_matches('0');
+    let safe_user_id = if safe_user_id.is_empty() { "0" } else { safe_user_id };
+
     for _ in 0..5 {
         let mut url = format!(
-            "https://groups.roblox.com/v2/users/{user_id}/groups/roles?sortOrder=Asc&limit=50"
+            "https://groups.roblox.com/v2/users/{safe_user_id}/groups/roles?sortOrder=Asc&limit=50"
         );
         if !cursor.is_empty() {
             url.push_str(&format!("&cursor={cursor}"));
