@@ -243,6 +243,13 @@ export const en: TranslationTree = {
   },
   explorer: {
     title: 'Explorer',
+    emptyTitle: 'Connect a place to begin',
+    emptyBody:
+      'Scan a running Roblox Studio session to list its animations, sounds, images and meshes, or open a place file from disk.',
+    studioNotConnected:
+      'Open Roblox Studio with the ValencyStudio - Spoofer plugin loaded, then scan.',
+    studioNotConnectedAction: 'No plugin connected. Connect Roblox Studio, then scan.',
+    connectWithoutScanning: 'Browse the tree without scanning',
     resolvingScriptRefs: 'Resolving Script References',
     clearExplorer: 'Clear Explorer',
     search: 'Search assets...',

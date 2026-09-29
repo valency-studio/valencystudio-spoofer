@@ -87,7 +87,7 @@ export default function Sidebar({
             </div>
             {!isCollapsed && (
               <div className="flex flex-col leading-tight min-w-0">
-                <span className="text-[12px] font-semibold tracking-tight text-foreground truncate">
+                <span className="text-xs font-semibold tracking-tight text-foreground truncate">
                   ValencyStudio - Spoofer
                 </span>
                 <div className="flex items-center gap-1.5">
@@ -98,7 +98,7 @@ export default function Sidebar({
                       studioConnected ? 'bg-signal-live' : 'bg-danger',
                     )}
                   />
-                  <span className="text-[10px] text-muted-foreground truncate tabular-nums">
+                  <span className="text-2xs text-muted-foreground truncate tabular-nums">
                     {appVersion ? `v${appVersion}` : 'v?'}
                   </span>
                 </div>
@@ -141,7 +141,7 @@ export default function Sidebar({
                 {!isCollapsed && (
                   <span
                     className={cn(
-                      'text-[13px] tracking-wide whitespace-nowrap overflow-hidden',
+                      'text-sm tracking-wide whitespace-nowrap overflow-hidden',
                       isActive ? 'font-semibold' : 'font-medium',
                     )}
                   >

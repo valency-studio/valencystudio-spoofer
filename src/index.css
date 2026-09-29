@@ -94,6 +94,14 @@ input[type='number'] {
 }
 
 @theme inline {
+  /* One type scale for the whole app. The four sizes below are absolute, so the
+     0.85 root size does not shrink them; pick from these rather than reaching
+     for an arbitrary pixel value. */
+  --text-2xs: 0.6875rem; /* 11px — badges, meta, table cells */
+  --text-xs: 0.75rem; /* 12px — secondary labels, helper text */
+  --text-sm: 0.8125rem; /* 13px — control labels, nav, body */
+  --text-base: 0.875rem; /* 14px — section headings */
+
   --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;
 

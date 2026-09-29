@@ -190,7 +190,7 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
       <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle bg-bg-surface/50 shrink-0">
         <div className="flex items-center gap-3">
           {!fill && (
-            <div className="flex items-center gap-2 text-muted-foreground text-[11px] font-bold uppercase tracking-widest">
+            <div className="flex items-center gap-2 text-muted-foreground text-2xs font-bold uppercase tracking-widest">
               <Terminal size={14} className="text-primary" />
               {t('debug.title')}
             </div>
@@ -203,7 +203,7 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
                 type="button"
                 onClick={() => setFilterSource(src.value)}
                 className={cn(
-                  'px-2 h-6 rounded text-[10px] font-bold uppercase tracking-wider transition-all',
+                  'px-2 h-6 rounded text-2xs font-bold uppercase tracking-wider transition-all',
                   filterSource === src.value
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-text-primary',
@@ -226,7 +226,7 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
                         type="button"
                         onClick={() => toggleLevel(lvl.value)}
                         className={cn(
-                          'flex items-center gap-1.5 px-2 h-6 rounded text-[10px] font-semibold transition-all',
+                          'flex items-center gap-1.5 px-2 h-6 rounded text-2xs font-semibold transition-all',
                           active
                             ? `${config.color} bg-bg-base/80 border border-border-subtle`
                             : 'text-muted-foreground/40 hover:text-muted-foreground border border-transparent',
@@ -250,7 +250,7 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
         </div>
 
         <div className="flex items-center gap-1">
-          <span className="text-[10px] text-text-muted font-mono mr-2">
+          <span className="text-2xs text-text-muted font-mono mr-2">
             {filteredLogs.length} {filteredLogs.length === 1 ? 'entry' : 'entries'}
           </span>
 
@@ -312,7 +312,7 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
       {showGoToBottom && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-4 right-6 bg-bg-surface text-foreground border border-border-subtle px-2.5 py-1.5 rounded-full text-[10px] font-semibold flex items-center gap-1.5 shadow-lg hover:bg-bg-elevated hover:text-primary transition-colors z-50"
+          className="absolute bottom-4 right-6 bg-bg-surface text-foreground border border-border-subtle px-2.5 py-1.5 rounded-full text-2xs font-semibold flex items-center gap-1.5 shadow-lg hover:bg-bg-elevated hover:text-primary transition-colors z-50"
         >
           <ArrowDown size={12} /> {t('debug.goToBottom')}
         </button>
@@ -321,7 +321,7 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-2 py-2 font-mono text-[11px] flex flex-col gap-0.5 selection:bg-primary/30"
+        className="flex-1 overflow-y-auto px-2 py-2 font-mono text-2xs flex flex-col gap-0.5 selection:bg-primary/30"
         style={{ overflowAnchor: 'none' }}
       >
         {groupedLogs.length === 0 ? (
@@ -369,12 +369,12 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
                     [{sourceCfg.label}]
                   </span>
                   {log.count > 1 && (
-                    <span className="shrink-0 bg-border/40 text-foreground px-1 rounded font-bold text-[9px] select-none">
+                    <span className="shrink-0 bg-border/40 text-foreground px-1 rounded font-bold text-2xs select-none">
                       ×{log.count}
                     </span>
                   )}
                   <span className="text-text-primary/90 truncate flex-1 min-w-0">{firstLine}</span>
-                  <span className="text-muted-foreground/40 shrink-0 select-none tabular-nums text-[9px]">
+                  <span className="text-muted-foreground/40 shrink-0 select-none tabular-nums text-2xs">
                     {log.timestamp}
                   </span>
                 </div>

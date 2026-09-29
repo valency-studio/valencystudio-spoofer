@@ -291,7 +291,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
         <div className="flex-1 flex items-center gap-1.5 min-w-0 mr-2">
           <span className="text-xs text-foreground/90 truncate">{getAssetTitle(asset)}</span>
           {(instanceCount ?? 1) > 1 && (
-            <span className="text-[9px] text-muted-foreground bg-bg-surface px-1 rounded border border-border-subtle shrink-0">
+            <span className="text-2xs text-muted-foreground bg-bg-surface px-1 rounded border border-border-subtle shrink-0">
               {instanceCount}x
             </span>
           )}
@@ -358,7 +358,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
                 render={
                   <div
                     className={cn(
-                      'flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap mr-1',
+                      'flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded text-2xs font-semibold whitespace-nowrap mr-1',
                       cfg.color,
                     )}
                   >
@@ -419,7 +419,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
           <Tooltip>
             <TooltipTrigger
               render={
-                <div className="flex items-center gap-1 justify-center h-5 px-1.5 rounded border border-purple-500/30 bg-purple-500/10 text-purple-400 shrink-0 text-[10px] font-bold ml-1">
+                <div className="flex items-center gap-1 justify-center h-5 px-1.5 rounded border border-purple-500/30 bg-purple-500/10 text-purple-400 shrink-0 text-2xs font-bold ml-1">
                   <Ghost size={11} />
                   <span>Ghost ID</span>
                 </div>
@@ -515,7 +515,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
           {node.name}
         </span>
         {node.assets.length > 1 && isLeafInstance && (
-          <span className="text-[9px] text-muted-foreground bg-bg-surface px-1.5 py-0.5 rounded border border-border-subtle shrink-0 ml-1">
+          <span className="text-2xs text-muted-foreground bg-bg-surface px-1.5 py-0.5 rounded border border-border-subtle shrink-0 ml-1">
             {node.assets.length} assets
           </span>
         )}
@@ -595,7 +595,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
                         render={
                           <div
                             className={cn(
-                              'flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap',
+                              'flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded text-2xs font-semibold whitespace-nowrap',
                               cfg.color,
                             )}
                           >
@@ -663,7 +663,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
               ))}
               {hiddenAssetCount > 0 && (
                 <div
-                  className="text-[10px] text-muted-foreground py-2 flex items-center gap-2"
+                  className="text-2xs text-muted-foreground py-2 flex items-center gap-2"
                   style={{ marginLeft: `${(level + 1) * 16 + 18}px` }}
                 >
                   <span>
@@ -672,7 +672,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 px-2 text-[10px]"
+                    className="h-6 px-2 text-2xs"
                     onClick={() => setRenderLimit((prev) => prev + ASSET_RENDER_CHUNK)}
                   >
                     Show {Math.min(ASSET_RENDER_CHUNK, hiddenAssetCount)} more
@@ -681,7 +681,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-2 text-[10px]"
+                      className="h-6 px-2 text-2xs"
                       onClick={() => setRenderLimit(filteredAssets.length)}
                     >
                       Show all

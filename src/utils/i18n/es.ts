@@ -240,6 +240,13 @@ export const es: TranslationTree = {
     goToBottom: 'Ir al fondo',
   },
   explorer: {
+    emptyTitle: 'Conecta un lugar para empezar',
+    emptyBody:
+      'Escanea una sesión de Roblox Studio en marcha para listar sus animaciones, sonidos, imágenes y mallas, o abre un archivo de lugar desde el disco.',
+    studioNotConnected:
+      'Abre Roblox Studio con el plugin de ValencyStudio - Spoofer cargado y luego escanea.',
+    studioNotConnectedAction: 'Ningún plugin conectado. Conecta Roblox Studio y luego escanea.',
+    connectWithoutScanning: 'Explorar el árbol sin escanear',
     title: 'Explorador',
     resolvingScriptRefs: 'Resolviendo Referencias de Scripts',
     clearExplorer: 'Limpiar Explorador',

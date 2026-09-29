@@ -246,6 +246,13 @@ export const ru: TranslationTree = {
     goToBottom: 'Вниз',
   },
   explorer: {
+    emptyTitle: 'Подключите место, чтобы начать',
+    emptyBody:
+      'Просканируйте запущенный сеанс Roblox Studio, чтобы получить список анимаций, звуков, изображений и мешей, или откройте файл места с диска.',
+    studioNotConnected:
+      'Откройте Roblox Studio с загруженным плагином ValencyStudio - Spoofer, затем просканируйте.',
+    studioNotConnectedAction: 'Плагин не подключён. Подключите Roblox Studio, затем просканируйте.',
+    connectWithoutScanning: 'Открыть дерево без сканирования',
     title: 'Проводник Ресурсов',
     search: 'Поиск ресурсов...',
     allAssetTypes: 'Все типы активов',

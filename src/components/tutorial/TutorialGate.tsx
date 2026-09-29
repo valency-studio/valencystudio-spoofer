@@ -47,7 +47,7 @@ export const TutorialGate = () => {
       {
         id: 'welcome',
         title: 'Welcome to ValencyStudio - Spoofer',
-        body: "Lets set you up in 5 quick steps. You'll add a Roblox account, paste an Open Cloud API key, scan Studio, then select assets and run the spoofer.",
+        body: "Let's set you up in 6 quick steps. You'll add a Roblox account, paste an Open Cloud API key, scan Studio, then select assets and run the spoofer.",
       },
       {
         id: 'accounts',
@@ -90,7 +90,7 @@ export const TutorialGate = () => {
       {
         id: 'run',
         title: 'Run the spoofer',
-        body: 'Press Run Spoofer. Watch the progress bar overlay and the toast when its done. You can re-run this tutorial from Settings.',
+        body: "Press Run Spoofer. Watch the progress bar and the toast when it's done. You can re-run this tutorial from Settings.",
       },
     ],
     [

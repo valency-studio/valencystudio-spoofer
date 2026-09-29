@@ -105,7 +105,7 @@ export default function ActivityView() {
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground space-y-3">
               <Clock size={48} className="opacity-20" />
               <p>{t('misc.noJobHistory')}</p>
-              <p className="text-[13px] opacity-70">{t('misc.jobsWillAppear')}</p>
+              <p className="text-sm opacity-70">{t('misc.jobsWillAppear')}</p>
             </div>
           ) : (
             <Accordion className="space-y-4 pb-8 w-full">
@@ -159,7 +159,7 @@ export default function ActivityView() {
                                     job.account?.name || t('common.unknown'),
                                   )}
                             </span>
-                            <span className="text-[11px] text-text-muted flex items-center gap-2">
+                            <span className="text-2xs text-text-muted flex items-center gap-2">
                               {dateStr}
                               <span className="w-1 h-1 rounded-full bg-border" />
                               <span className="font-medium">
@@ -222,7 +222,7 @@ export default function ActivityView() {
                           {job.assetResults?.map((res, i) => (
                             <div
                               key={i}
-                              className="flex items-center justify-between p-1.5 rounded-md hover:bg-bg-elevated/40 text-[11px] transition-colors"
+                              className="flex items-center justify-between p-1.5 rounded-md hover:bg-bg-elevated/40 text-2xs transition-colors"
                             >
                               <div className="flex items-center gap-3 overflow-hidden">
                                 {res.success ? (

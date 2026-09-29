@@ -52,12 +52,12 @@ export function AccountSwitcher({ accounts }: { accounts: AppConfig['accounts'] 
                 <EmptyAvatar size={14} />
               )}
             </div>
-            <span className="truncate text-[13px] font-medium">{label}</span>
+            <span className="truncate text-sm font-medium">{label}</span>
           </div>
         </SelectTrigger>
         <SelectContent>
           {accounts.map((acc) => (
-            <SelectItem key={acc.id} value={acc.id} className="text-[13px]">
+            <SelectItem key={acc.id} value={acc.id} className="text-sm">
               <div className="flex items-center gap-3 w-full">
                 <div className="w-6 h-6 shrink-0">
                   {acc.avatarUrl ? (
@@ -183,7 +183,7 @@ export function AvatarDropdown({
         </div>
         <div key={`${selected?.id || 'none'}-info`} className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold text-text-primary leading-4">{label}</div>
-          <div className="truncate text-[10px] leading-3 font-medium text-text-muted mt-0.5">
+          <div className="truncate text-2xs leading-3 font-medium text-text-muted mt-0.5">
             {audioQuotaLabel}
           </div>
         </div>
@@ -227,14 +227,14 @@ export function GroupDropdown({
                 <EmptyAvatar group />
               )}
             </div>
-            <div className="min-w-0 flex-1 text-left truncate text-[13px] font-medium">
+            <div className="min-w-0 flex-1 text-left truncate text-sm font-medium">
               {selected?.name || t('common.none')}
             </div>
           </div>
         </SelectTrigger>
 
         <SelectContent>
-          <SelectItem value="none" className="text-[13px]">
+          <SelectItem value="none" className="text-sm">
             <div className="flex items-center gap-3 w-full">
               <div className="w-6 h-6 shrink-0">
                 <EmptyAvatar group size={14} />
@@ -245,7 +245,7 @@ export function GroupDropdown({
             </div>
           </SelectItem>
           {groups.map((group) => (
-            <SelectItem key={group.id} value={String(group.id)} className="text-[13px]">
+            <SelectItem key={group.id} value={String(group.id)} className="text-sm">
               <div className="flex items-center gap-3 w-full">
                 <div className="w-6 h-6 shrink-0">
                   {group.iconUrl ? (
@@ -272,7 +272,7 @@ export function GroupDropdown({
             </SelectItem>
           ))}
           {groups.length === 0 && !loading && (
-            <div className="px-3 py-4 text-center text-[12px] text-text-muted">
+            <div className="px-3 py-4 text-center text-xs text-text-muted">
               {t('spoof.noGroupsFound')}
             </div>
           )}

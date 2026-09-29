@@ -42,7 +42,7 @@ export function SettingCard({
             <span>{title}</span>
           </CardTitle>
           {description && (
-            <p className="text-[11px] text-text-secondary leading-snug">{description}</p>
+            <p className="text-2xs text-text-secondary leading-snug">{description}</p>
           )}
         </div>
         {badge}
@@ -71,9 +71,7 @@ export function SettingSwitchRow({
         <Label className="text-xs font-semibold text-text-primary block cursor-pointer">
           {label}
         </Label>
-        {description && (
-          <p className="text-[11px] text-text-secondary leading-snug">{description}</p>
-        )}
+        {description && <p className="text-2xs text-text-secondary leading-snug">{description}</p>}
       </div>
       <Switch
         checked={checked}
@@ -106,9 +104,7 @@ export function SettingFieldRow({
     <div className="px-3.5 py-2.5 flex flex-col gap-1.5 hover:bg-bg-elevated/20 transition-colors">
       <div className="space-y-0.5">
         <Label className="text-xs font-semibold text-text-primary block">{label}</Label>
-        {description && (
-          <p className="text-[11px] text-text-secondary leading-snug">{description}</p>
-        )}
+        {description && <p className="text-2xs text-text-secondary leading-snug">{description}</p>}
       </div>
       <Input
         type={type}
@@ -151,10 +147,10 @@ export function SettingSliderItem({
         <div className="space-y-0.5">
           <Label className="text-xs font-semibold text-text-primary block">{label}</Label>
           {description && (
-            <p className="text-[11px] text-text-secondary leading-snug">{description}</p>
+            <p className="text-2xs text-text-secondary leading-snug">{description}</p>
           )}
         </div>
-        <span className="text-[11px] font-mono font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md shrink-0">
+        <span className="text-2xs font-mono font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md shrink-0">
           {value}
         </span>
       </div>
@@ -184,7 +180,7 @@ export function SettingSliderItem({
       </div>
 
       {ticks && (
-        <div className="relative w-full h-3 text-[9px] text-text-muted font-mono mt-0.5 select-none">
+        <div className="relative w-full h-3 text-2xs text-text-muted font-mono mt-0.5 select-none">
           {ticks.map((t, i) => {
             const numVal = typeof t === 'number' ? t : parseFloat(String(t));
             const tickPct = isNaN(numVal)
