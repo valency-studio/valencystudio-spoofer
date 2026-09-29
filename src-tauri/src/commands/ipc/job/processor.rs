@@ -339,20 +339,23 @@ pub async fn process_spoofer_action(
     let proxy_url = data.proxy_url.clone();
     let temp_log_file = Mutex::new(log_file);
     let temp_log = |msg: &str, level: &str| {
-        let _ = append_log_entry(&app, level, "spoofer", msg);
+        let redacted_msg = redact_log_message(msg);
+        let _ = append_log_entry(&app, level, "spoofer", &redacted_msg);
         let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
-        let formatted =
-            format!("[{}] [{}] {}", timestamp, level.to_uppercase(), redact_log_message(msg));
+        let formatted = format!("[{}] [{}] {}", timestamp, level.to_uppercase(), redacted_msg);
         if let Ok(mut lock) = temp_log_file.lock() {
             if let Some(file) = lock.as_mut() {
                 let _ = writeln!(file, "{formatted}");
             }
         }
-        let _ = app.emit("spoofer-log", serde_json::json!({ "message": msg, "level": level }));
+        let _ = app.emit(
+            "spoofer-log",
+            serde_json::json!({ "message": redacted_msg, "level": level }),
+        );
         match level {
-            "error" => log::error!("[Spoofer] {}", redact_log_message(msg)),
-            "warn" => log::warn!("[Spoofer] {}", redact_log_message(msg)),
-            _ => log::info!("[Spoofer] {}", redact_log_message(msg)),
+            "error" => log::error!("[Spoofer] {}", redacted_msg),
+            "warn" => log::warn!("[Spoofer] {}", redacted_msg),
+            _ => log::info!("[Spoofer] {}", redacted_msg),
         }
     };
 
