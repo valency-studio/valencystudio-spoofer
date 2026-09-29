@@ -50,6 +50,39 @@ export const ru: TranslationTree = {
     noPlaceLoaded: 'Плейс не загружен',
   },
 
+  music: {
+    title: 'Музыка',
+    subtitle:
+      'Импортируйте треки, настройте скорость и высоту тона, затем экспортируйте их для загрузки.',
+    addTrack: 'Добавить трек',
+    urlPlaceholder: 'Вставьте ссылку YouTube или SoundCloud',
+    importUrl: 'Импортировать ссылку',
+    importLocal: 'Выбрать файл',
+    queue: 'Треки',
+    trackCount: 'Треков: {count}',
+    empty: 'Треков пока нет. Импортируйте один, чтобы начать редактирование.',
+    speed: 'Скорость воспроизведения',
+    pitch: 'Высота тона',
+    format: 'Формат',
+    sampleRate: 'Частота дискретизации',
+    play: 'Воспроизвести',
+    stop: 'Стоп',
+    remove: 'Удалить трек',
+    export: 'Экспорт',
+    exporting: 'Экспортирование...',
+    exported: 'Трек экспортирован. Изменённый файл готов к загрузке.',
+    exportedLabel: 'изменённая копия',
+    editedNote: 'Экспортированные файлы сохраняют эти изменения. Исходный файл не затрагивается.',
+    untouchedNote: 'Изменений пока нет. Экспорт сохранит файл без изменений.',
+    openSource: 'Открыть источник',
+    ytdlpUnavailable:
+      'Не удалось установить yt-dlp автоматически, поэтому импорт по ссылке недоступен.',
+    retryInstall: 'Попробовать установить снова',
+    missingFfmpeg:
+      'ffmpeg не найден в PATH, поэтому экспорт недоступен. Установите ffmpeg и снова откройте приложение.',
+    missingYtDlp:
+      'yt-dlp не найден в PATH, поэтому импорт по ссылке недоступен. Установите yt-dlp и снова откройте приложение.',
+  },
   nav: {
     home: 'Главная',
     spoofing: 'Подмена',
@@ -62,6 +95,9 @@ export const ru: TranslationTree = {
     accounts: 'Аккаунты',
     console: 'Консоль',
     experimental: 'Экспериментально',
+    music: 'Музыка',
+    collapseSidebar: 'Свернуть боковую панель',
+    expandSidebar: 'Развернуть боковую панель',
     supportMe: 'Поддержать меня',
   },
   home: {
@@ -244,6 +280,14 @@ export const ru: TranslationTree = {
     goToBottom: 'Вниз',
   },
   explorer: {
+    emptyTitle: 'Подключите место, чтобы начать',
+    emptyBody:
+      'Просканируйте запущенный сеанс Roblox Studio, чтобы получить список анимаций, звуков, изображений и мешей, или откройте файл места с диска.',
+    studioNotConnected:
+      'Откройте Roblox Studio с загруженным плагином ValencyStudio - Spoofer, затем просканируйте.',
+    studioNotConnectedAction: 'Плагин не подключён. Подключите Roblox Studio, затем просканируйте.',
+    openFile: 'Открыть файл',
+    connectWithoutScanning: 'Открыть дерево без сканирования',
     title: 'Проводник Ресурсов',
     search: 'Поиск ресурсов...',
     allAssetTypes: 'Все типы активов',

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { getTranslation } from '../utils/i18n';
+import { DEFAULT_LANG, getTranslation, SUPPORTED_LANGS } from '../utils/i18n';
 
 interface LanguageState {
   lang: string;
@@ -8,21 +8,22 @@ interface LanguageState {
   t: (keyPath: string) => string;
 }
 
+const SUPPORTED_CODES = SUPPORTED_LANGS.map((entry) => entry.code);
+
 const getInitialLang = () => {
   const hasStorage =
     typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function';
   const savedLang = hasStorage ? localStorage.getItem('language') : null;
-  if (savedLang) return savedLang;
-
-  const systemLang = navigator.language ? navigator.language.split('-')[0] : 'en';
-  const supported = ['en', 'es', 'ru', 'fr'];
-  if (supported.includes(systemLang)) {
-    if (hasStorage && typeof localStorage.setItem === 'function') {
-      localStorage.setItem('language', systemLang);
-    }
-    return systemLang;
+  if (savedLang && SUPPORTED_CODES.includes(savedLang as (typeof SUPPORTED_CODES)[number])) {
+    return savedLang;
   }
-  return 'en';
+
+  // Indonesian is the product default. The system locale is deliberately not
+  // consulted: an English-locale machine must still open in Indonesian.
+  if (hasStorage && typeof localStorage.setItem === 'function') {
+    localStorage.setItem('language', DEFAULT_LANG);
+  }
+  return DEFAULT_LANG;
 };
 
 export const useLanguage = create<LanguageState>((set, get) => ({

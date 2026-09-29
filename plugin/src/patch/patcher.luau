@@ -386,7 +386,11 @@ local function applyPatch(patch: Patch): (boolean, string?)
 				objFullName = obj:GetFullName()
 			end)
 			logToPlugin(
-				string.format("[ValencyStudio - Spoofer] Replaced %d tag(s) on %s", #decoded, objFullName)
+				string.format(
+					"[ValencyStudio - Spoofer] Replaced %d tag(s) on %s",
+					#decoded,
+					objFullName
+				)
 			)
 		end
 		return ok, err
@@ -575,7 +579,9 @@ local function applyPatches(patches: any)
 					then rawPatch.token or rawPatch.id or rawPatch.fullName or "unknown"
 					else "unknown"
 				table.insert(failedPatchesList, failedId)
-				logToPlugin("[Warning] [ValencyStudio - Spoofer] Invalid patch: " .. tostring(validationErr))
+				logToPlugin(
+					"[Warning] [ValencyStudio - Spoofer] Invalid patch: " .. tostring(validationErr)
+				)
 			else
 				local maxAttempts = 5
 				local attempt = 0
@@ -661,7 +667,9 @@ local function applyPatches(patches: any)
 
 	if not batchOk then
 		failed += 1
-		logToPlugin("[Warning] " .. "[ValencyStudio - Spoofer] Patch batch failed: " .. tostring(batchErr))
+		logToPlugin(
+			"[Warning] " .. "[ValencyStudio - Spoofer] Patch batch failed: " .. tostring(batchErr)
+		)
 	end
 
 	finishPatch()

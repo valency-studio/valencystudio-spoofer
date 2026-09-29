@@ -183,7 +183,10 @@ jobs:
 
           - platform: macos-latest
             os: macos
-            bundles: dmg
+            # "app" is required for the macOS updater artifact (.app.tar.gz).
+            # Without it the bundler skips updater bundling and only warns,
+            # so latest.json ships with no darwin-* entries.
+            bundles: app,dmg
             args: '--target universal-apple-darwin'
 
           - platform: ubuntu-22.04
@@ -345,6 +348,11 @@ jobs:
             --jq '.assets[].name' \
             > updater-check/assets.txt
 
+          gh api \
+            "repos/$GITHUB_REPOSITORY/releases/tags/$TAG_NAME" \
+            --jq '.assets' \
+            > updater-check/assets.json
+
           grep -Eq '\.app\.tar\.gz$' updater-check/assets.txt
           grep -Eq '\.app\.tar\.gz\.sig$' updater-check/assets.txt
 
@@ -353,6 +361,13 @@ jobs:
 
           const latest = JSON.parse(
             fs.readFileSync('updater-check/latest.json', 'utf8')
+          );
+          const assets = JSON.parse(
+            fs.readFileSync('updater-check/assets.json', 'utf8')
+          );
+
+          const assetNamesById = new Map(
+            assets.map((asset) => [String(asset.id), asset.name])
           );
 
           const platforms = latest.platforms || {};
@@ -365,9 +380,21 @@ jobs:
             if (typeof value.signature !== 'string' || value.signature.trim() === '') {
               throw new Error(`latest.json macOS entry ${key} has no updater signature`);
             }
-            if (typeof value.url !== 'string' || !value.url.includes('.app.tar.gz')) {
+            if (typeof value.url !== 'string' || value.url.trim() === '') {
+              throw new Error(`latest.json macOS entry ${key} has no download url`);
+            }
+
+            // tauri-action publishes GitHub API asset urls, which carry the asset
+            // id instead of the filename, so resolve the id back to a name.
+            // Any other host (S3, R2, ...) exposes the filename in the url itself.
+            const id = value.url.match(/\/releases\/assets\/(\d+)/)?.[1];
+            const name =
+              (id && assetNamesById.get(id)) ||
+              decodeURIComponent(value.url.split('/').pop() || '');
+
+            if (!name.endsWith('.app.tar.gz')) {
               throw new Error(
-                `latest.json macOS entry ${key} does not target an .app.tar.gz updater bundle`
+                `latest.json macOS entry ${key} points at ${name || value.url}, not an .app.tar.gz updater bundle`
               );
             }
           }
@@ -405,7 +432,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.prepare-release.outputs.RELEASE_TAG }}
-          files: dist-plugin/ISpooferMotion.rbxmx
+          files: dist-plugin/ValencyStudioSpoofer.rbxmx
           fail_on_unmatched_files: true
 
   announce-release:
@@ -432,7 +459,8 @@ jobs:
           RELEASE_URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.prepare-release.outputs.RELEASE_TAG }}
           RELEASE_PRERELEASE: false
           RELEASE_EVENT_ACTION: published
-          DISCORD_RELEASE_ROLE_ID: '1457029900291670210'
+          DISCORD_RELEASE_ROLE_ID: ${{ secrets.DISCORD_RELEASE_ROLE_ID }}
+          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
 
         run: |
           python3 <<'PY'
@@ -450,13 +478,23 @@ jobs:
           event_action = os.environ.get("RELEASE_EVENT_ACTION", "").strip()
           is_release_edit = event_action == "edited"
           role_id = os.environ.get("DISCORD_RELEASE_ROLE_ID", "").strip()
-          channel_id = "1400781818780717056"
+          channel_id = os.environ.get("DISCORD_CHANNEL_ID", "").strip()
 
           release_record_cache = None
 
           if not bot_token:
               raise RuntimeError(
                   "Missing GitHub Actions secret DISCORD_BOT_TOKEN."
+              )
+
+          if not channel_id:
+              raise RuntimeError(
+                  "Missing GitHub Actions secret DISCORD_CHANNEL_ID."
+              )
+
+          if not role_id:
+              raise RuntimeError(
+                  "Missing GitHub Actions secret DISCORD_RELEASE_ROLE_ID."
               )
 
           if not release_tag:

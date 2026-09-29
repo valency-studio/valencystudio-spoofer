@@ -4,7 +4,8 @@ export const es: TranslationTree = {
   misc: {
     toggleRigType: 'Toggle Rig Type',
     maintenanceBreak: 'Pausa de Mantenimiento',
-    maintenanceDesc: 'ValencyStudio - Spoofer se encuentra actualmente en mantenimiento. ¡Vuelve más tarde!',
+    maintenanceDesc:
+      'ValencyStudio - Spoofer se encuentra actualmente en mantenimiento. ¡Vuelve más tarde!',
     fetchingAnimation: 'Obteniendo animación…',
     assetIdMappings: 'Mapeos de ID de Activos',
     originalId: 'ID Original',
@@ -49,6 +50,38 @@ export const es: TranslationTree = {
     noPlaceLoaded: 'Ningún lugar cargado',
   },
 
+  music: {
+    title: 'Música',
+    subtitle: 'Importa pistas, ajusta la velocidad y el tono, y luego expórtalas para subirlas.',
+    addTrack: 'Añadir una pista',
+    urlPlaceholder: 'Pega un enlace de YouTube o SoundCloud',
+    importUrl: 'Importar enlace',
+    importLocal: 'Elegir archivo',
+    queue: 'Pistas',
+    trackCount: '{count} pista(s)',
+    empty: 'Aún no hay pistas. Importa una para empezar a editar.',
+    speed: 'Velocidad de reproducción',
+    pitch: 'Tono',
+    format: 'Formato',
+    sampleRate: 'Frecuencia de muestreo',
+    play: 'Reproducir',
+    stop: 'Detener',
+    remove: 'Quitar pista',
+    export: 'Exportar',
+    exporting: 'Exportando...',
+    exported: 'Pista exportada. El archivo editado está listo para subirse.',
+    exportedLabel: 'copia editada',
+    editedNote: 'Los archivos exportados conservan estos cambios. Tu archivo original no se toca.',
+    untouchedNote: 'Aún no hay cambios. Exportar mantiene el archivo tal cual.',
+    openSource: 'Abrir origen',
+    ytdlpUnavailable:
+      'No se pudo instalar yt-dlp automáticamente, así que importar desde un enlace no está disponible.',
+    retryInstall: 'Intentar instalar de nuevo',
+    missingFfmpeg:
+      'ffmpeg no está en tu PATH, así que la exportación no está disponible. Instala ffmpeg y vuelve a abrir la aplicación.',
+    missingYtDlp:
+      'yt-dlp no está en tu PATH, así que importar desde un enlace no está disponible. Instala yt-dlp y vuelve a abrir la aplicación.',
+  },
   nav: {
     home: 'Inicio',
     spoofing: 'Suplantación',
@@ -60,6 +93,9 @@ export const es: TranslationTree = {
     activity: 'Actividad',
     experimental: 'Experimental',
     supportMe: 'Apóyame',
+    music: 'Música',
+    collapseSidebar: 'Contraer barra lateral',
+    expandSidebar: 'Expandir barra lateral',
   },
   home: {
     title: 'Bienvenido a ValencyStudio - Spoofer',
@@ -237,6 +273,14 @@ export const es: TranslationTree = {
     goToBottom: 'Ir al fondo',
   },
   explorer: {
+    emptyTitle: 'Conecta un lugar para empezar',
+    emptyBody:
+      'Escanea una sesión de Roblox Studio en marcha para listar sus animaciones, sonidos, imágenes y mallas, o abre un archivo de lugar desde el disco.',
+    studioNotConnected:
+      'Abre Roblox Studio con el plugin de ValencyStudio - Spoofer cargado y luego escanea.',
+    studioNotConnectedAction: 'Ningún plugin conectado. Conecta Roblox Studio y luego escanea.',
+    openFile: 'Abrir archivo',
+    connectWithoutScanning: 'Explorar el árbol sin escanear',
     title: 'Explorador',
     resolvingScriptRefs: 'Resolviendo Referencias de Scripts',
     clearExplorer: 'Limpiar Explorador',

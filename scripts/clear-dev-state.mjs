@@ -20,7 +20,7 @@ if (process.platform === 'win32') {
     "$env:APPDATA\$appId",
     "$env:LOCALAPPDATA\$appId",
     "$env:LOCALAPPDATA\ispoofermotion-updater",
-    "$env:LOCALAPPDATA\Temp\ISpooferMotion-Audio"
+    "$env:LOCALAPPDATA\Temp\ValencyStudioSpoofer-Audio"
   )
 
   Get-CimInstance Win32_Process |

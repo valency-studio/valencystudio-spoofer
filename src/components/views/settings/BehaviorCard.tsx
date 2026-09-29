@@ -76,7 +76,7 @@ export default function BehaviorCard() {
           <span className="text-xs font-semibold text-text-primary block">
             Interactive Onboarding Tutorial
           </span>
-          <p className="text-[11px] text-text-secondary leading-relaxed">
+          <p className="text-2xs text-text-secondary leading-relaxed">
             Walk through adding an account, setting up API keys, loading places, and running your
             first spoof.
           </p>

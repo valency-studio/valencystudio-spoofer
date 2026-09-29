@@ -581,9 +581,9 @@ export default function AnimationPreview({
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border-subtle bg-bg-elevated shrink-0">
           <Clapperboard size={15} className="text-primary shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-text-primary truncate">
+            <p className="text-sm font-semibold text-text-primary truncate">
               {assetName || t('misc.animation')}
-              <span className="ml-2 text-[11px] font-mono text-text-muted">#{assetId}</span>
+              <span className="ml-2 text-2xs font-mono text-text-muted">#{assetId}</span>
             </p>
             {status === 'ready' && (
               <div className="flex items-center gap-2 mt-0.5">
@@ -594,12 +594,12 @@ export default function AnimationPreview({
                       return r === 'R15' ? 'R6' : 'R15';
                     })
                   }
-                  className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase border border-border-subtle hover:border-primary hover:text-primary transition-colors text-text-muted"
+                  className="px-1.5 py-0.5 rounded text-2xs font-bold tracking-wider uppercase border border-border-subtle hover:border-primary hover:text-primary transition-colors text-text-muted"
                   title={t('misc.toggleRigType')}
                 >
                   {rigType}
                 </button>
-                <p className="text-[10px] text-text-muted">
+                <p className="text-2xs text-text-muted">
                   {t('misc.keyframesCount').replace('{count}', kfCount.toString())}
                 </p>
               </div>
@@ -627,9 +627,7 @@ export default function AnimationPreview({
               className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-bg-base"
             >
               <Loader2 className="animate-spin text-primary" size={32} />
-              <p className="text-[13px] text-text-muted font-medium">
-                {t('misc.fetchingAnimation')}
-              </p>
+              <p className="text-sm text-text-muted font-medium">{t('misc.fetchingAnimation')}</p>
             </div>
           )}
 
@@ -638,7 +636,7 @@ export default function AnimationPreview({
               key="error"
               className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 bg-bg-base"
             >
-              <p className="text-[12px] text-text-muted text-center max-w-[320px] leading-relaxed">
+              <p className="text-xs text-text-muted text-center max-w-[320px] leading-relaxed">
                 {errorMsg}
               </p>
             </div>
@@ -647,7 +645,7 @@ export default function AnimationPreview({
 
         {status === 'ready' && (
           <>
-            <p className="absolute bottom-3 right-3 text-[10px] text-text-muted opacity-40 select-none pointer-events-none">
+            <p className="absolute bottom-3 right-3 text-2xs text-text-muted opacity-40 select-none pointer-events-none">
               {t('misc.dragToOrbit')}
             </p>
           </>
@@ -725,7 +723,7 @@ export default function AnimationPreview({
             </Button>
 
             {}
-            <span ref={timeDisplayRef} className="text-[11px] font-mono text-text-muted ml-1">
+            <span ref={timeDisplayRef} className="text-2xs font-mono text-text-muted ml-1">
               0.00s / {duration.toFixed(2)}s
             </span>
 
@@ -737,7 +735,7 @@ export default function AnimationPreview({
                     className="ml-auto flex items-center gap-1 h-7 px-2 bg-bg-base/80 hover:bg-bg-elevated border border-border-subtle rounded-md text-xs font-semibold text-text-primary transition-colors select-none shrink-0"
                     title="Playback speed"
                   >
-                    <span className="text-[10px] text-text-muted font-bold uppercase mr-0.5">
+                    <span className="text-2xs text-text-muted font-bold uppercase mr-0.5">
                       {t('misc.speed') || 'Speed'}
                     </span>
                     <span>{speed}×</span>

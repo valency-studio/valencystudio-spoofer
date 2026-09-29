@@ -20,7 +20,7 @@ export default function DangerCard() {
       <div className="px-4 py-3 flex items-center justify-between gap-4 hover:bg-red-500/10 transition-colors">
         <div className="space-y-0.5 min-w-0 flex-1">
           <span className="text-xs font-semibold text-text-primary block">Reset All Settings</span>
-          <p className="text-[11px] text-text-secondary leading-relaxed">
+          <p className="text-2xs text-text-secondary leading-relaxed">
             Reset all settings and preferences to default values. This cannot be undone.
           </p>
         </div>

@@ -12,6 +12,7 @@ import { useAppInitialization } from './hooks/useAppInitialization';
 const ActivityView = lazy(() => import('./components/views/ActivityView'));
 const AssetExplorer = lazy(() => import('./components/views/AssetExplorer'));
 const ConsoleView = lazy(() => import('./components/views/ConsoleView'));
+const MusicView = lazy(() => import('./components/views/music/MusicView'));
 const DebugConsole = lazy(() => import('./components/views/DebugConsole'));
 
 const SettingsView = lazy(() => import('./components/views/SettingsView'));
@@ -56,8 +57,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden text-foreground relative font-sans selection:bg-primary/30 antialiased bg-background">
-      {}
+    <div className="flex h-screen w-screen overflow-hidden text-foreground relative font-sans selection:bg-signal-active/25 antialiased bg-background">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="flex flex-col flex-1 min-w-0 h-full relative z-10">
@@ -76,13 +76,13 @@ export default function App() {
                     setIsOpen={setIsExplorerOpen}
                     mode="main"
                   />
-                  {}
                   <div className="hidden" aria-hidden>
                     <SpoofingView />
                   </div>
                 </div>
               )}
               {activeTab === 'activity' && <ActivityView key="activity" />}
+              {activeTab === 'music' && <MusicView key="music" />}
               {activeTab === 'accounts' && <AccountsView key="accounts" />}
               {activeTab === 'settings' && <SettingsView key="settings" />}
               {activeTab === 'console' && <ConsoleView key="console" />}
@@ -96,13 +96,6 @@ export default function App() {
             />
           </Suspense>
         </div>
-
-        <div
-          className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none z-60 opacity-[0.03] mix-blend-screen"
-          style={{
-            background: 'linear-gradient(to top, var(--primary), transparent)',
-          }}
-        />
       </div>
 
       <TutorialGate />

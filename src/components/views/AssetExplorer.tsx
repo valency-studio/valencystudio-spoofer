@@ -5,6 +5,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  CircleAlert,
   ClipboardPaste,
   Copy,
   Download,
@@ -789,22 +790,29 @@ export default function AssetExplorer({
         className="flex-1 overflow-y-auto scrollbar-hide w-full flex flex-col"
       >
         {displayedInstances.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 overflow-y-auto">
-            <img
-              src="/favicon.png"
-              alt="ValencyStudio - Spoofer"
-              className="w-28 h-28 object-contain select-none drop-shadow-md"
-              draggable={false}
-            />
-
+          <div className="flex-1 flex flex-col items-center justify-center gap-5 overflow-y-auto px-8 py-10">
+            <div className="w-full max-w-md">
+              <h2 className="text-lg font-semibold leading-snug text-text-primary">
+                {t('explorer.emptyTitle')}
+              </h2>
+              <p className="text-sm leading-relaxed text-text-secondary mt-1.5">
+                {t('explorer.emptyBody')}
+              </p>
+            </div>
             {(studioConnected && scanStatus?.scanning) || isScanningStudio ? (
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-start gap-2 w-full max-w-md">
                 <Loader2 size={20} className="animate-spin text-primary" />
                 <span className="text-xs font-bold text-primary">{t('misc.scanningStudio')}</span>
               </div>
             ) : (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center rounded-lg overflow-hidden border border-border-strong shadow-sm bg-bg-surface">
+              <div className="flex flex-col items-start gap-3 w-full max-w-md">
+                {!studioConnected && (
+                  <p className="flex items-start gap-2 text-sm text-text-secondary">
+                    <CircleAlert size={15} className="text-signal-warn shrink-0 mt-0.5" />
+                    <span>{t('explorer.studioNotConnected')}</span>
+                  </p>
+                )}
+                <div className="flex items-center rounded-lg overflow-hidden border border-border-strong bg-bg-surface">
                   <button
                     type="button"
                     data-tutorial-target="explorer-open-file"
@@ -861,7 +869,7 @@ export default function AssetExplorer({
                     className="flex items-center justify-center gap-2 px-5 h-11 text-text-primary font-bold text-sm hover:bg-bg-elevated disabled:opacity-50 transition-colors cursor-pointer"
                   >
                     <FolderOpen size={18} />
-                    Open File
+                    {t('explorer.openFile')}
                   </button>
 
                   <Popover>
@@ -884,7 +892,7 @@ export default function AssetExplorer({
                     >
                       <div className="flex flex-col gap-3">
                         <div>
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2 block">
+                          <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-2 block">
                             Asset Types
                           </span>
                           <div className="flex flex-wrap gap-1.5">
@@ -900,7 +908,7 @@ export default function AssetExplorer({
                                 type="button"
                                 onClick={() => toggleScanType(type.key)}
                                 className={cn(
-                                  'px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors cursor-pointer',
+                                  'px-2.5 py-1 rounded-full text-2xs font-semibold border transition-colors cursor-pointer',
                                   scanTypes.has(type.key)
                                     ? 'bg-primary/15 border-primary/40 text-primary'
                                     : 'bg-bg-base border-border-subtle text-text-muted hover:text-text-primary hover:border-border',
@@ -924,10 +932,7 @@ export default function AssetExplorer({
                     type="button"
                     onClick={() => {
                       if (!studioConnected) {
-                        showToast(
-                          'error',
-                          'No Roblox Studio plugin connected. Please connect Studio first.',
-                        );
+                        showToast('error', t('explorer.studioNotConnectedAction'));
                         return;
                       }
                       const types = ['sounds', 'animations', 'images', 'meshes', 'scripts'].filter(
@@ -945,9 +950,7 @@ export default function AssetExplorer({
                       'flex items-center justify-center gap-2 px-6 h-11 bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors',
                       !studioConnected && 'opacity-70',
                     )}
-                    title={
-                      !studioConnected ? 'Requires Roblox Studio plugin to be connected' : undefined
-                    }
+                    title={!studioConnected ? t('explorer.studioNotConnected') : undefined}
                   >
                     <ScanSearch size={18} />
                     {t('spoof.scanStudio')}
@@ -972,7 +975,7 @@ export default function AssetExplorer({
                     >
                       <div className="flex flex-col gap-3">
                         <div>
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2 block">
+                          <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-2 block">
                             Asset Types
                           </span>
                           <div className="flex flex-wrap gap-1.5">
@@ -988,7 +991,7 @@ export default function AssetExplorer({
                                 type="button"
                                 onClick={() => toggleScanType(type.key)}
                                 className={cn(
-                                  'px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors',
+                                  'px-2.5 py-1 rounded-full text-2xs font-semibold border transition-colors',
                                   scanTypes.has(type.key)
                                     ? 'bg-primary/15 border-primary/40 text-primary'
                                     : 'bg-bg-base border-border-subtle text-text-muted hover:text-text-primary hover:border-border',
@@ -1036,14 +1039,12 @@ export default function AssetExplorer({
                   setLoadedFileName(studioDisplayName);
                 }}
                 className={cn(
-                  'text-xs text-text-muted hover:text-primary underline font-medium transition-colors cursor-pointer mt-1',
+                  'text-sm text-text-muted hover:text-primary underline font-medium transition-colors cursor-pointer',
                   !studioConnected && 'opacity-60 cursor-not-allowed hover:text-text-muted',
                 )}
-                title={
-                  !studioConnected ? 'Requires Roblox Studio plugin to be connected' : undefined
-                }
+                title={!studioConnected ? t('explorer.studioNotConnected') : undefined}
               >
-                Connect to explorer without scanning
+                {t('explorer.connectWithoutScanning')}
               </button>
             )}
           </div>
@@ -1080,7 +1081,7 @@ export default function AssetExplorer({
                     }}
                   />
                 </div>
-                <div className="absolute top-1.5 right-3 px-2.5 py-0.5 rounded bg-bg-surface/90 border border-border-subtle text-[10px] text-text-primary font-mono shadow-sm pointer-events-auto flex items-center gap-1.5">
+                <div className="absolute top-1.5 right-3 px-2.5 py-0.5 rounded bg-bg-surface/90 border border-border-subtle text-2xs text-text-primary font-mono shadow-sm pointer-events-auto flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   <span>
                     {isSpoofing
@@ -1114,7 +1115,7 @@ export default function AssetExplorer({
                             ? 'Scanning Studio...'
                             : 'No Assets Scanned Yet'}
                         </h4>
-                        <p className="text-[11px] text-text-secondary leading-relaxed">
+                        <p className="text-2xs text-text-secondary leading-relaxed">
                           {isScanningStudio || (studioConnected && scanStatus?.scanning)
                             ? 'Crawling Roblox Studio for spoofable assets...'
                             : 'You connected without a full scan. You can scan Studio, run a targeted model scan, or add manual IDs.'}
@@ -1166,7 +1167,7 @@ export default function AssetExplorer({
                               >
                                 <div className="flex flex-col gap-3">
                                   <div>
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2 block">
+                                    <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-2 block">
                                       Asset Types
                                     </span>
                                     <div className="flex flex-wrap gap-1.5">
@@ -1182,7 +1183,7 @@ export default function AssetExplorer({
                                           type="button"
                                           onClick={() => toggleScanType(type.key)}
                                           className={cn(
-                                            'px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors cursor-pointer',
+                                            'px-2 py-0.5 rounded-full text-2xs font-semibold border transition-colors cursor-pointer',
                                             scanTypes.has(type.key)
                                               ? 'bg-primary/15 border-primary/40 text-primary'
                                               : 'bg-bg-base border-border-subtle text-text-muted hover:text-text-primary hover:border-border',
@@ -1221,10 +1222,10 @@ export default function AssetExplorer({
                               className="w-76 p-3 bg-bg-surface border border-border shadow-xl rounded-lg z-[250]"
                             >
                               <div className="flex flex-col gap-2.5">
-                                <div className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                                <div className="text-2xs font-bold uppercase tracking-wider text-text-muted">
                                   Targeted Path Scan
                                 </div>
-                                <p className="text-[11px] text-text-secondary leading-snug">
+                                <p className="text-2xs text-text-secondary leading-snug">
                                   Scan only a specific instance or container instead of the whole
                                   game:
                                 </p>
@@ -1237,7 +1238,7 @@ export default function AssetExplorer({
                                 />
 
                                 <div>
-                                  <span className="text-[9px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">
+                                  <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-1.5 block">
                                     Asset Types
                                   </span>
                                   <div className="flex flex-wrap gap-1">
@@ -1253,7 +1254,7 @@ export default function AssetExplorer({
                                         type="button"
                                         onClick={() => toggleScanType(type.key)}
                                         className={cn(
-                                          'px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors cursor-pointer',
+                                          'px-2 py-0.5 rounded-full text-2xs font-semibold border transition-colors cursor-pointer',
                                           scanTypes.has(type.key)
                                             ? 'bg-primary/15 border-primary/40 text-primary'
                                             : 'bg-bg-base border-border-subtle text-text-muted hover:text-text-primary hover:border-border',
@@ -1373,7 +1374,7 @@ export default function AssetExplorer({
                     className="w-56 p-3 bg-bg-surface border border-border rounded-lg shadow-lg"
                   >
                     <div className="flex flex-col gap-2.5">
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
+                      <div className="text-2xs font-bold uppercase tracking-widest text-text-muted">
                         {t('explorer.clearExplorer')}
                       </div>
                       <div className="text-xs text-text-secondary leading-normal">
@@ -1415,7 +1416,7 @@ export default function AssetExplorer({
                     </div>
                   </PopoverContent>
                 </Popover>
-                <div className="flex items-center gap-1.5 text-[11px] text-text-muted">
+                <div className="flex items-center gap-1.5 text-2xs text-text-muted">
                   <span>{stats.total} assets found</span>
                   {lastScanTime && (
                     <>
@@ -1447,7 +1448,7 @@ export default function AssetExplorer({
                               className={pinnedCount > 0 ? 'text-primary' : 'text-muted-foreground'}
                             />
                             {pinnedCount > 0 && (
-                              <span className="min-w-[12px] h-[12px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+                              <span className="min-w-[12px] h-[12px] px-1 rounded-full bg-primary text-primary-foreground text-2xs font-bold flex items-center justify-center">
                                 {pinnedCount}
                               </span>
                             )}
@@ -1461,7 +1462,7 @@ export default function AssetExplorer({
                         className="w-64 p-3 bg-bg-surface border border-border shadow-xl rounded-lg"
                       >
                         <div className="flex flex-col gap-2">
-                          <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+                          <div className="text-2xs font-semibold uppercase tracking-widest text-text-muted">
                             {t('settings.forcePlaceIds')} · {selectedCount} selected
                           </div>
                           <Input
@@ -1475,7 +1476,7 @@ export default function AssetExplorer({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 text-[11px] text-destructive"
+                              className="h-7 text-2xs text-destructive"
                               disabled={pinnedCount === 0}
                               onClick={() => setConfirmClearPins(true)}
                             >
@@ -1484,7 +1485,7 @@ export default function AssetExplorer({
                             </Button>
                             <Button
                               size="sm"
-                              className="h-7 text-[11px]"
+                              className="h-7 text-2xs"
                               onClick={applyPin}
                               disabled={!placeIdInput.trim()}
                             >
@@ -1595,7 +1596,7 @@ export default function AssetExplorer({
                                 className={cn(
                                   'flex items-center gap-2 w-full h-8 px-2 rounded-md text-xs font-medium text-left transition-colors',
                                   hasAnyReplacement
-                                    ? 'text-emerald-400 hover:bg-emerald-500/10'
+                                    ? 'text-signal-spoofed hover:bg-signal-spoofed/10'
                                     : 'text-text-muted/40 cursor-not-allowed',
                                 )}
                               >
@@ -1678,7 +1679,7 @@ export default function AssetExplorer({
                         >
                           <div className="flex flex-col gap-3">
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                              <span className="text-2xs font-bold uppercase tracking-wider text-text-muted">
                                 Discovery Timeout
                               </span>
                               <span className="text-xs font-mono font-bold text-primary">
@@ -1694,7 +1695,7 @@ export default function AssetExplorer({
                               onChange={(e) => setDiscoveryTimeoutSecs(Number(e.target.value))}
                               className="w-full accent-primary h-1.5 bg-bg-base rounded-lg cursor-pointer"
                             />
-                            <div className="flex justify-between text-[9px] text-text-muted font-mono">
+                            <div className="flex justify-between text-2xs text-text-muted font-mono">
                               <span>30s (fast)</span>
                               <span>120s</span>
                               <span>300s (deep)</span>
@@ -1867,7 +1868,7 @@ export default function AssetExplorer({
                       <RotateCcw size={12} className="text-primary" />
                       <span className="flex-1 font-medium">Re-apply Replacements</span>
                       {storedReplacementsCount > 0 && (
-                        <span className="text-[10px] text-muted-foreground font-mono bg-bg-base px-1 rounded border border-border-subtle">
+                        <span className="text-2xs text-muted-foreground font-mono bg-bg-base px-1 rounded border border-border-subtle">
                           {storedReplacementsCount}
                         </span>
                       )}
@@ -2105,7 +2106,7 @@ function AssetInspectorPanel({
       <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-xs text-center p-6 gap-2 select-none h-full bg-bg-surface/5">
         <FolderOpen size={36} className="opacity-30 text-primary mb-2" />
         <span className="text-sm font-semibold text-text-secondary">No Instance Selected</span>
-        <span className="max-w-[240px] text-[11px] leading-relaxed">
+        <span className="max-w-[240px] text-2xs leading-relaxed">
           Select an instance in the Explorer tree to inspect its Roblox properties.
         </span>
       </div>
@@ -2222,7 +2223,7 @@ function AssetInspectorPanel({
                   render={
                     <button
                       type="button"
-                      className="h-5 px-1.5 flex items-center gap-0.5 text-[10px] font-mono font-semibold text-text-secondary hover:text-foreground rounded cursor-pointer"
+                      className="h-5 px-1.5 flex items-center gap-0.5 text-2xs font-mono font-semibold text-text-secondary hover:text-foreground rounded cursor-pointer"
                     >
                       <span>{Math.round(imageZoom * 100)}%</span>
                       <ChevronDown size={9} />
@@ -2245,7 +2246,7 @@ function AssetInspectorPanel({
                           setPan({ x: 0, y: 0 });
                         }}
                         className={cn(
-                          'flex items-center justify-between px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors text-left',
+                          'flex items-center justify-between px-1.5 py-0.5 rounded text-2xs font-mono transition-colors text-left',
                           imageZoom === z
                             ? 'bg-primary text-primary-foreground font-bold'
                             : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated',
@@ -2271,7 +2272,7 @@ function AssetInspectorPanel({
                   setImageZoom(1);
                   setPan({ x: 0, y: 0 });
                 }}
-                className="h-5 px-1 flex items-center justify-center text-muted-foreground hover:text-foreground text-[9px] font-medium border-l border-border-subtle/50 ml-0.5 cursor-pointer"
+                className="h-5 px-1 flex items-center justify-center text-muted-foreground hover:text-foreground text-2xs font-medium border-l border-border-subtle/50 ml-0.5 cursor-pointer"
                 title="Reset Zoom"
               >
                 Reset
@@ -2311,7 +2312,7 @@ function AssetInspectorPanel({
     <div className="flex-1 flex flex-col h-full bg-bg-surface/10 select-none relative overflow-hidden font-sans">
       <div className="h-8 px-2.5 bg-bg-surface/60 border-b border-border flex items-center justify-between shrink-0">
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <span className="text-[11px] font-semibold text-text-muted">
+          <span className="text-2xs font-semibold text-text-muted">
             {showProperties ? 'Properties -' : 'Preview -'}
           </span>
           <span className="text-xs font-bold text-foreground truncate">
@@ -2356,7 +2357,7 @@ function AssetInspectorPanel({
             <button
               type="button"
               onClick={() => setAppearanceOpen(!appearanceOpen)}
-              className="w-full h-6 px-2 bg-bg-elevated/40 hover:bg-bg-elevated/70 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-text-muted select-none transition-colors text-left"
+              className="w-full h-6 px-2 bg-bg-elevated/40 hover:bg-bg-elevated/70 flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wider text-text-muted select-none transition-colors text-left"
             >
               <ChevronRight
                 size={11}
@@ -2386,12 +2387,12 @@ function AssetInspectorPanel({
                         isCurrentActive ? 'bg-primary/10' : 'hover:bg-accent/40',
                       )}
                     >
-                      <div className="w-[38%] text-[11px] font-medium text-text-secondary truncate flex items-center gap-1">
+                      <div className="w-[38%] text-2xs font-medium text-text-secondary truncate flex items-center gap-1">
                         <span className="truncate">{p.propertyName || 'Asset'}</span>
                       </div>
 
                       <div className="flex-1 flex items-center gap-1 min-w-0">
-                        <span className="text-[11px] font-mono text-foreground truncate flex-1 select-all">
+                        <span className="text-2xs font-mono text-foreground truncate flex-1 select-all">
                           {p.rawValue || `rbxassetid://${propAssetId}`}
                         </span>
 
@@ -2430,7 +2431,7 @@ function AssetInspectorPanel({
 
                         {pinnedPid && (
                           <div
-                            className="h-4 px-1 rounded text-[9px] font-mono flex items-center gap-0.5 shrink-0"
+                            className="h-4 px-1 rounded text-2xs font-mono flex items-center gap-0.5 shrink-0"
                             style={{
                               color: getBrightPlaceIdColor(pinnedPid),
                               backgroundColor: `${getBrightPlaceIdColor(pinnedPid)}18`,
@@ -2444,7 +2445,7 @@ function AssetInspectorPanel({
 
                         {replId && (
                           <div
-                            className="h-4 px-1 rounded text-[9px] font-mono flex items-center gap-0.5 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 shrink-0"
+                            className="h-4 px-1 rounded text-2xs font-mono flex items-center gap-0.5 text-signal-spoofed bg-signal-spoofed/10 border border-signal-spoofed/20 shrink-0"
                             title={`Spoofed to: rbxassetid://${replId}`}
                           >
                             <Inbox size={9} />
@@ -2462,7 +2463,7 @@ function AssetInspectorPanel({
             <button
               type="button"
               onClick={() => setDataOpen(!dataOpen)}
-              className="w-full h-6 px-2 bg-bg-elevated/40 hover:bg-bg-elevated/70 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-text-muted select-none transition-colors text-left"
+              className="w-full h-6 px-2 bg-bg-elevated/40 hover:bg-bg-elevated/70 flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wider text-text-muted select-none transition-colors text-left"
             >
               <ChevronRight
                 size={11}
@@ -2474,27 +2475,25 @@ function AssetInspectorPanel({
             {dataOpen && (
               <div className="flex flex-col divide-y divide-border-subtle/20">
                 <div className="flex items-center min-h-[26px] px-2 py-1 gap-2">
-                  <span className="w-[38%] text-[11px] text-text-muted">Class Name</span>
-                  <span className="flex-1 text-[11px] text-text-primary font-medium truncate">
+                  <span className="w-[38%] text-2xs text-text-muted">Class Name</span>
+                  <span className="flex-1 text-2xs text-text-primary font-medium truncate">
                     {asset.className || 'Unknown'}
                   </span>
                 </div>
                 <div className="flex items-center min-h-[26px] px-2 py-1 gap-2">
-                  <span className="w-[38%] text-[11px] text-text-muted">Name</span>
-                  <span className="flex-1 text-[11px] text-text-primary font-medium truncate">
+                  <span className="w-[38%] text-2xs text-text-muted">Name</span>
+                  <span className="flex-1 text-2xs text-text-primary font-medium truncate">
                     {asset.instanceName || 'Unknown'}
                   </span>
                 </div>
                 <div className="flex items-center min-h-[26px] px-2 py-1 gap-2">
-                  <span className="w-[38%] text-[11px] text-text-muted">Parent</span>
-                  <span className="flex-1 text-[11px] text-text-secondary truncate">
-                    {parentName}
-                  </span>
+                  <span className="w-[38%] text-2xs text-text-muted">Parent</span>
+                  <span className="flex-1 text-2xs text-text-secondary truncate">{parentName}</span>
                 </div>
                 <div className="flex items-center min-h-[28px] px-2 py-1 gap-2 group">
-                  <span className="w-[38%] text-[11px] text-text-muted">DataModel Path</span>
+                  <span className="w-[38%] text-2xs text-text-muted">DataModel Path</span>
                   <div className="flex-1 flex items-center gap-1 min-w-0">
-                    <span className="text-[10px] font-mono text-text-secondary truncate flex-1 select-all">
+                    <span className="text-2xs font-mono text-text-secondary truncate flex-1 select-all">
                       {asset.path || 'Unknown'}
                     </span>
                     <button

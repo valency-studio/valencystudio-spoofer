@@ -139,12 +139,12 @@ export default function ProfilePopup({ collapsed = false }: { collapsed?: boolea
             )}
             {!collapsed && (
               <span className="flex-1 text-left min-w-0">
-                <span className="block text-[12px] text-text-primary font-medium truncate leading-tight">
+                <span className="block text-xs text-text-primary font-medium truncate leading-tight">
                   {activeAccount?.name ||
                     fallbackUser?.displayName ||
                     t('accounts.anonymousDownloader')}
                 </span>
-                <span className="block text-[10px] text-text-muted truncate leading-tight">
+                <span className="block text-2xs text-text-muted truncate leading-tight">
                   {t('nav.accounts')}
                 </span>
               </span>
@@ -154,7 +154,7 @@ export default function ProfilePopup({ collapsed = false }: { collapsed?: boolea
       />
       <PopoverContent align="start" sideOffset={8} className="w-72 p-2">
         <div className="flex flex-col gap-1">
-          <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-text-muted">
+          <div className="px-2 py-1 text-2xs font-bold uppercase tracking-widest text-text-muted">
             {t('spoof.targetContext')}
           </div>
 
@@ -224,7 +224,7 @@ export default function ProfilePopup({ collapsed = false }: { collapsed?: boolea
           <div className="h-px bg-border my-1.5" />
 
           <div className="flex flex-col gap-1 px-1">
-            <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+            <div className="flex items-center justify-between text-2xs font-semibold uppercase tracking-widest text-text-muted">
               <span>{t('spoof.selectedGroup')}</span>
               {loadingGroups && <Loader2 size={11} className="animate-spin text-text-muted" />}
             </div>

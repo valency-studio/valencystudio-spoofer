@@ -135,7 +135,7 @@ export default function SettingsView() {
 
         <div
           id="settings-scroll-container"
-          className="flex-1 overflow-y-auto pl-6 flex flex-col gap-6 pb-32 scroll-smooth"
+          className="flex-1 overflow-y-auto pl-6 flex flex-col gap-6 pb-72 scroll-smooth"
         >
           <div id="section-credentials" className="scroll-mt-4">
             <CredentialsCard />

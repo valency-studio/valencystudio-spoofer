@@ -129,7 +129,7 @@ export default function ExecutionLogs({
               {eta ? ` - ${eta}` : ''})
             </span>
           )}
-          <div className="ml-2 flex items-center gap-2 text-[11px] text-text-secondary bg-bg-muted px-2 py-0.5 rounded border border-border-subtle">
+          <div className="ml-2 flex items-center gap-2 text-2xs text-text-secondary bg-bg-muted px-2 py-0.5 rounded border border-border-subtle">
             <span title={t('accounts.downloader')}>↓ {downloaderName}</span>
             <span className="opacity-40">|</span>
             <span title={t('accounts.uploader')}>↑ {uploaderName}</span>
@@ -190,7 +190,7 @@ export default function ExecutionLogs({
       </div>
       <div
         ref={outputRef}
-        className="w-full flex-1 min-h-30 p-2 rounded-md font-mono text-[13px] font-medium text-text-primary overflow-y-auto whitespace-pre-wrap wrap-break-word"
+        className="w-full flex-1 min-h-30 p-2 rounded-md font-mono text-sm font-medium text-text-primary overflow-y-auto whitespace-pre-wrap wrap-break-word"
       >
         {logs && logs.length > 0 ? (
           <div className="flex flex-col gap-1">
@@ -207,7 +207,7 @@ export default function ExecutionLogs({
                   : isWarn
                     ? 'text-yellow-500 bg-yellow-500/5'
                     : isSuccess
-                      ? 'text-green-500 bg-green-500/5'
+                      ? 'text-signal-live bg-signal-live/5'
                       : 'text-text-primary',
               );
 

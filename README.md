@@ -83,13 +83,13 @@ ValencyStudio - Spoofer keeps the desktop application and Studio plugin synchron
 
 Download the latest release for your platform from the [releases page](https://github.com/valency-studio/valencystudio-spoofer/releases/latest).
 
-| Platform | Package                               |
-| -------- | ------------------------------------- |
+| Platform | Package                                        |
+| -------- | ---------------------------------------------- |
 | Windows  | `ValencyStudio - Spoofer_x.x.x_x64-setup.exe`  |
 | macOS    | `ValencyStudio - Spoofer_x.x.x_x64.dmg`        |
 | Linux    | `ValencyStudio - Spoofer_x.x.x_amd64.AppImage` |
 
-The Roblox Studio plugin, `ISpooferMotion.rbxmx`, is included with every release. The desktop app automatically synchronizes its bundled plugin into supported local Roblox Studio plugin directories when the app starts.
+The Roblox Studio plugin, `ValencyStudioSpoofer.rbxmx`, is included with every release. The desktop app automatically synchronizes its bundled plugin into supported local Roblox Studio plugin directories when the app starts.
 
 > [!NOTE]
 > Windows Defender and other antivirus software may flag unsigned builds. ValencyStudio - Spoofer is not currently code signed. Builds can be independently verified by compiling the project from source.

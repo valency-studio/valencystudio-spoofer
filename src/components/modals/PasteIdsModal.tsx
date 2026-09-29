@@ -199,11 +199,11 @@ export default function PasteIdsModal({
           ) : (
             <p className="text-xs text-text-secondary leading-relaxed">
               Paste a list of ID pairs, one per line. Any of these separators work:{' '}
-              <code className="text-[11px] bg-bg-muted px-1 rounded">-{'>'}</code>{' '}
-              <code className="text-[11px] bg-bg-muted px-1 rounded">=</code>{' '}
-              <code className="text-[11px] bg-bg-muted px-1 rounded">,</code> or spaces. Lines
-              starting with <code className="text-[11px] bg-bg-muted px-1 rounded">#</code> or{' '}
-              <code className="text-[11px] bg-bg-muted px-1 rounded">//</code> are ignored.
+              <code className="text-2xs bg-bg-muted px-1 rounded">-{'>'}</code>{' '}
+              <code className="text-2xs bg-bg-muted px-1 rounded">=</code>{' '}
+              <code className="text-2xs bg-bg-muted px-1 rounded">,</code> or spaces. Lines starting
+              with <code className="text-2xs bg-bg-muted px-1 rounded">#</code> or{' '}
+              <code className="text-2xs bg-bg-muted px-1 rounded">//</code> are ignored.
             </p>
           )}
 
@@ -215,7 +215,7 @@ export default function PasteIdsModal({
                 ? '123456789\n987654321\n1122334455'
                 : '12345 67890\n11111 -> 22222\n33333, 44444'
             }
-            className="w-full h-48 p-2.5 rounded-md font-mono text-[12px] bg-bg-surface border border-border-strong text-text-primary focus:border-primary focus:outline-none resize-none"
+            className="w-full h-48 p-2.5 rounded-md font-mono text-xs bg-bg-surface border border-border-strong text-text-primary focus:border-primary focus:outline-none resize-none"
             spellCheck={false}
           />
 

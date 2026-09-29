@@ -23,7 +23,7 @@ export const Toast = () => {
   const Icon = level === 'success' ? CheckCircle2 : level === 'error' ? XCircle : Info;
   const colour =
     level === 'success'
-      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-100'
+      ? 'border-signal-live/40 bg-signal-live/10 text-signal-live'
       : level === 'error'
         ? 'border-red-500/40 bg-red-500/10 text-red-100'
         : 'border-blue-500/40 bg-blue-500/10 text-blue-100';

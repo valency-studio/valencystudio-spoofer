@@ -1217,7 +1217,7 @@ export default function SpoofingView() {
               <div className="flex flex-col gap-2 p-3 bg-bg-surface border border-border-subtle rounded-lg shadow-sm">
                 <div className="flex items-center gap-2 mb-0.5">
                   <Wand2 size={14} className="text-primary" />
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-text-muted">
+                  <span className="text-2xs font-bold uppercase tracking-widest text-text-muted">
                     {t('spoof.options')}
                   </span>
                 </div>
@@ -1229,7 +1229,7 @@ export default function SpoofingView() {
                     {config.advanced.forcePlaceIds && (
                       <button
                         onClick={() => updateConfig('advanced', 'forcePlaceIds', '')}
-                        className="text-[11px] text-text-muted hover:text-primary transition-colors underline"
+                        className="text-2xs text-text-muted hover:text-primary transition-colors underline"
                       >
                         Clear
                       </button>
@@ -1240,7 +1240,7 @@ export default function SpoofingView() {
                     value={config.advanced.forcePlaceIds}
                     onChange={(e) => updateConfig('advanced', 'forcePlaceIds', e.target.value)}
                     placeholder={t('settings.forcePlaceIdsPlaceholder')}
-                    className="w-full h-9 bg-bg-elevated text-text-primary text-[13px] rounded-md border border-border-strong px-3 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-text-muted"
+                    className="w-full h-9 bg-bg-elevated text-text-primary text-sm rounded-md border border-border-strong px-3 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-text-muted"
                   />
                 </div>
 

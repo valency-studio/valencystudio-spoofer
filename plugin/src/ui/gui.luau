@@ -135,7 +135,7 @@ local function createPluginGui()
 	icon.Position = UDim2.new(0, 16, 0.5, 0)
 	icon.AnchorPoint = Vector2.new(0, 0.5)
 	icon.BackgroundTransparency = 1
-	icon.Image = "rbxassetid://137844667859456"
+	icon.Image = "rbxassetid://92060078238517"
 	icon.Parent = header
 
 	local title = Instance.new("TextLabel")
@@ -675,7 +675,7 @@ local function createPluginGui()
 			return
 		end
 		-- selene: allow(global_usage)
-		local _G_plugin = _G.ValencyStudio - SpooferPlugin
+		local _G_plugin = _G.ValencyStudioSpooferPlugin
 		if _G_plugin and _G_plugin.runManualReplacements then
 			manualRunning = true
 			runManualBtn.Text = "Starting..."

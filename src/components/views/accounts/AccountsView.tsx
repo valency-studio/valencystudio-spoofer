@@ -283,7 +283,7 @@ export default function AccountsView() {
                           <Label className="text-xs font-semibold">
                             {t('accounts.useForDownloading')}
                           </Label>
-                          <p className="text-[11px] text-text-secondary leading-snug">
+                          <p className="text-2xs text-text-secondary leading-snug">
                             {t('accounts.useForDownloadingDesc')}
                           </p>
                         </div>
@@ -294,7 +294,7 @@ export default function AccountsView() {
                           <Label className="text-xs font-semibold">
                             {t('accounts.useForUploading')}
                           </Label>
-                          <p className="text-[11px] text-text-secondary leading-snug">
+                          <p className="text-2xs text-text-secondary leading-snug">
                             {t('accounts.useForUploadingDesc')}
                           </p>
                         </div>
@@ -327,7 +327,7 @@ export default function AccountsView() {
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted px-1">
+              <p className="text-2xs font-bold uppercase tracking-widest text-text-muted px-1">
                 Discovered Accounts
               </p>
               {discoveredUsers.map((user) => (
@@ -354,7 +354,7 @@ export default function AccountsView() {
                       ID: {user.id} · Auto-detected
                     </span>
                   </div>
-                  <span className="text-[10px] text-primary bg-primary/10 px-2 py-1 rounded-full font-semibold shrink-0">
+                  <span className="text-2xs text-primary bg-primary/10 px-2 py-1 rounded-full font-semibold shrink-0">
                     Discovered
                   </span>
                 </div>
@@ -406,7 +406,7 @@ export default function AccountsView() {
                       <Label className="text-xs font-semibold">
                         {t('accounts.useForDownloading')}
                       </Label>
-                      <p className="text-[11px] text-text-secondary leading-snug">
+                      <p className="text-2xs text-text-secondary leading-snug">
                         {t('accounts.useForDownloadingDesc')}
                       </p>
                     </div>
@@ -418,7 +418,7 @@ export default function AccountsView() {
                       <Label className="text-xs font-semibold">
                         {t('accounts.useForUploading')}
                       </Label>
-                      <p className="text-[11px] text-text-secondary leading-snug">
+                      <p className="text-2xs text-text-secondary leading-snug">
                         {t('accounts.useForUploadingDesc')}
                       </p>
                     </div>
@@ -565,7 +565,7 @@ export default function AccountsView() {
                           {acc.name}
                           {(acc.cookieValidated === true || acc.apiKeyValidated === true) && (
                             <span title={t('accounts.validated') || 'Validated Account'}>
-                              <CheckCircle2 size={14} className="text-green-500" />
+                              <CheckCircle2 size={14} className="text-signal-live" />
                             </span>
                           )}
                         </h3>
@@ -593,12 +593,12 @@ export default function AccountsView() {
 
                     <div className="flex flex-wrap gap-2">
                       {acc.isDownloader && (
-                        <div className="flex items-center gap-1.5 text-sm px-2 py-1 rounded-md w-fit bg-green-500/10">
-                          <Cookie size={13} className="text-green-500" />
-                          <span className="text-green-500">{t('accounts.downloader')}</span>
+                        <div className="flex items-center gap-1.5 text-sm px-2 py-1 rounded-md w-fit bg-signal-live/10">
+                          <Cookie size={13} className="text-signal-live" />
+                          <span className="text-signal-live">{t('accounts.downloader')}</span>
                           {secrets?.cookie && acc.cookieValidated === true && (
                             <span title={t('accounts.cookieValid')}>
-                              <CheckCircle2 size={13} className="text-green-400" />
+                              <CheckCircle2 size={13} className="text-signal-live" />
                             </span>
                           )}
                         </div>

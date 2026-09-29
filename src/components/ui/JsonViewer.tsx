@@ -42,7 +42,7 @@ export function JsonViewer({ data, name, defaultExpanded = false, level = 0 }: J
     return (
       <div
         className={cn(
-          'flex items-start gap-1.5 font-mono text-[11px] leading-relaxed',
+          'flex items-start gap-1.5 font-mono text-2xs leading-relaxed',
           level === 0 && 'py-1',
         )}
       >
@@ -60,7 +60,7 @@ export function JsonViewer({ data, name, defaultExpanded = false, level = 0 }: J
   const brackets = isArray ? ['[', ']'] : ['{', '}'];
 
   return (
-    <div className={cn('font-mono text-[11px] leading-relaxed', level === 0 && 'py-1')}>
+    <div className={cn('font-mono text-2xs leading-relaxed', level === 0 && 'py-1')}>
       <div
         className="flex items-center gap-1.5 cursor-pointer hover:bg-bg-elevated/40 rounded px-1 -mx-1 group select-none"
         onClick={() => setIsExpanded(!isExpanded)}
@@ -71,7 +71,7 @@ export function JsonViewer({ data, name, defaultExpanded = false, level = 0 }: J
         {name && <span className="text-text-primary/90 font-medium">{name}:</span>}
         <span className="text-text-muted/80">{brackets[0]}</span>
         {!isExpanded && (
-          <span className="text-text-muted/60 italic text-[10px]">
+          <span className="text-text-muted/60 italic text-2xs">
             {isArray ? `${keys.length} items` : `${keys.length} keys`}
           </span>
         )}

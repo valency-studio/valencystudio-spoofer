@@ -39,7 +39,7 @@ export default function PermissionsCard() {
           <Label className="text-xs font-semibold text-text-primary block">
             Target Subject Type
           </Label>
-          <p className="text-[11px] text-text-secondary leading-snug">
+          <p className="text-2xs text-text-secondary leading-snug">
             Choose whether permissions are granted to a Place/Experience, a Group, or a User.
           </p>
         </div>
@@ -84,9 +84,9 @@ export default function PermissionsCard() {
 
       <div className="px-3.5 py-2.5 bg-primary/5 border-t border-primary/10 flex items-start gap-2.5">
         <Info size={14} className="text-primary shrink-0 mt-0.5" />
-        <p className="text-[11px] text-text-secondary leading-relaxed">
+        <p className="text-2xs text-text-secondary leading-relaxed">
           <strong className="text-text-primary font-medium">Access Action:</strong> Grants in-game{' '}
-          <code className="px-1 py-0.5 rounded bg-bg-base border border-border-subtle text-primary font-mono text-[10px]">
+          <code className="px-1 py-0.5 rounded bg-bg-base border border-border-subtle text-primary font-mono text-2xs">
             Use
           </code>{' '}
           permission, allowing the specified experiences, groups, or users to use and play the

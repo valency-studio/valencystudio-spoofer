@@ -172,7 +172,7 @@ function PreviewApp() {
             type="button"
             onClick={togglePin}
             className={cn(
-              'h-6 px-2 rounded flex items-center gap-1 text-[10px] font-bold transition-colors cursor-pointer',
+              'h-6 px-2 rounded flex items-center gap-1 text-2xs font-bold transition-colors cursor-pointer',
               isPinned
                 ? 'bg-primary text-primary-foreground shadow-xs'
                 : 'text-muted-foreground hover:text-foreground hover:bg-bg-surface',
@@ -285,7 +285,7 @@ function PreviewApp() {
                     render={
                       <button
                         type="button"
-                        className="h-5 px-1.5 flex items-center gap-0.5 text-[10px] font-mono font-semibold text-text-secondary hover:text-foreground rounded cursor-pointer"
+                        className="h-5 px-1.5 flex items-center gap-0.5 text-2xs font-mono font-semibold text-text-secondary hover:text-foreground rounded cursor-pointer"
                       >
                         <span>{Math.round(imageZoom * 100)}%</span>
                         <ChevronDown size={9} />
@@ -308,7 +308,7 @@ function PreviewApp() {
                             setPan({ x: 0, y: 0 });
                           }}
                           className={cn(
-                            'flex items-center justify-between px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors text-left',
+                            'flex items-center justify-between px-1.5 py-0.5 rounded text-2xs font-mono transition-colors text-left',
                             imageZoom === z
                               ? 'bg-primary text-primary-foreground font-bold'
                               : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated',
@@ -334,7 +334,7 @@ function PreviewApp() {
                     setImageZoom(1);
                     setPan({ x: 0, y: 0 });
                   }}
-                  className="h-5 px-1 flex items-center justify-center text-muted-foreground hover:text-foreground text-[9px] font-medium border-l border-border-subtle/50 ml-0.5 cursor-pointer"
+                  className="h-5 px-1 flex items-center justify-center text-muted-foreground hover:text-foreground text-2xs font-medium border-l border-border-subtle/50 ml-0.5 cursor-pointer"
                   title="Reset Zoom"
                 >
                   Reset

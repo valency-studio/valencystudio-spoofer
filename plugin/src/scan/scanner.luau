@@ -157,7 +157,9 @@ local function scanScriptSourceRecord(records: { Record }, obj: Instance)
 		pcall(function()
 			fullName = obj:GetFullName()
 		end)
-		logToPlugin("[Warning] [ValencyStudio - Spoofer] Skipping oversized script source: " .. fullName)
+		logToPlugin(
+			"[Warning] [ValencyStudio - Spoofer] Skipping oversized script source: " .. fullName
+		)
 		return
 	end
 	addRecord(records, obj, "Source", source)

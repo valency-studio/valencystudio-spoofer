@@ -75,7 +75,7 @@ export const Tutorial = ({ steps, onComplete, onSkip, beforeStep }: TutorialProp
       <div
         key="tutorial-card"
         className={cn(
-          'fixed z-[200] w-[280px] max-w-[calc(100vw-32px)] bg-bg-surface border border-border-subtle rounded-xl shadow-2xl p-3 flex flex-col gap-2.5',
+          'fixed z-[200] w-[280px] max-w-[calc(100vw-32px)] max-h-[min(340px,calc(100vh-32px))] overflow-y-auto bg-bg-surface border border-border-subtle rounded-xl shadow-lg p-3 flex flex-col gap-2.5',
           isRunStep ? 'bottom-4 left-4' : 'bottom-4 right-4',
         )}
         role="dialog"
@@ -85,7 +85,7 @@ export const Tutorial = ({ steps, onComplete, onSkip, beforeStep }: TutorialProp
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="text-sm font-bold text-text-primary leading-tight">{step.title}</h3>
-            <p className="text-[11px] text-text-muted mt-0.5">
+            <p className="text-2xs text-text-muted mt-0.5">
               Step {stepIndex + 1} of {steps.length}
             </p>
           </div>
@@ -98,14 +98,12 @@ export const Tutorial = ({ steps, onComplete, onSkip, beforeStep }: TutorialProp
           </button>
         </div>
 
-        <p className="text-[12.5px] text-text-secondary leading-relaxed">{step.body}</p>
+        <p className="text-xs text-text-secondary leading-relaxed">{step.body}</p>
 
         {!isStepComplete && step.waitingHint && (
           <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-primary/10 border border-primary/20">
             <Circle size={12} className="text-primary shrink-0 mt-0.5" />
-            <p className="text-[11.5px] text-primary font-medium leading-snug">
-              {step.waitingHint}
-            </p>
+            <p className="text-xs text-primary font-medium leading-snug">{step.waitingHint}</p>
           </div>
         )}
 
@@ -130,7 +128,7 @@ export const Tutorial = ({ steps, onComplete, onSkip, beforeStep }: TutorialProp
         <div className="flex items-center justify-end gap-2">
           <button
             onClick={onSkip}
-            className="px-3 h-8 rounded-md text-[11px] font-medium text-text-muted hover:text-text-primary transition-colors"
+            className="px-3 h-8 rounded-md text-2xs font-medium text-text-muted hover:text-text-primary transition-colors"
           >
             Skip tutorial
           </button>
@@ -138,7 +136,7 @@ export const Tutorial = ({ steps, onComplete, onSkip, beforeStep }: TutorialProp
             onClick={advance}
             disabled={!isStepComplete}
             className={cn(
-              'flex items-center gap-1.5 px-3.5 h-8 rounded-md text-[11px] font-semibold transition-colors',
+              'flex items-center gap-1.5 px-3.5 h-8 rounded-md text-2xs font-semibold transition-colors',
               isStepComplete
                 ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                 : 'bg-bg-elevated text-text-muted cursor-not-allowed border border-border-subtle',

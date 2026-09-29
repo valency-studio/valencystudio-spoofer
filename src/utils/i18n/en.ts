@@ -57,6 +57,38 @@ export const en: TranslationTree = {
     reloadApplication: 'Reload Application',
   },
 
+  music: {
+    title: 'Music',
+    subtitle: 'Import tracks, adjust speed and pitch, then export them for upload.',
+    addTrack: 'Add a track',
+    urlPlaceholder: 'Paste a YouTube or SoundCloud link',
+    importUrl: 'Import link',
+    importLocal: 'Choose a file',
+    queue: 'Tracks',
+    trackCount: '{count} track(s)',
+    empty: 'No tracks yet. Import one to start editing.',
+    speed: 'Playback speed',
+    pitch: 'Pitch',
+    format: 'Format',
+    sampleRate: 'Sample rate',
+    play: 'Play',
+    stop: 'Stop',
+    remove: 'Remove track',
+    export: 'Export',
+    exporting: 'Exporting...',
+    exported: 'Track exported. The edited file is ready to upload.',
+    exportedLabel: 'edited copy',
+    editedNote: 'Exported files keep these edits. Your source file is untouched.',
+    untouchedNote: 'No edits yet. Exporting keeps the file as it is.',
+    openSource: 'Open source',
+    ytdlpUnavailable:
+      'yt-dlp could not be installed automatically, so importing from a link is unavailable.',
+    retryInstall: 'Try installing again',
+    missingFfmpeg:
+      'ffmpeg is not on your PATH, so exporting is unavailable. Install ffmpeg and reopen the app.',
+    missingYtDlp:
+      'yt-dlp is not on your PATH, so importing from a link is unavailable. Install yt-dlp and reopen the app.',
+  },
   nav: {
     spoofing: 'Spoofer',
     settings: 'Settings',
@@ -66,6 +98,9 @@ export const en: TranslationTree = {
     activity: 'Activity',
     accounts: 'Accounts',
     console: 'Console',
+    music: 'Music',
+    collapseSidebar: 'Collapse sidebar',
+    expandSidebar: 'Expand sidebar',
   },
 
   spoof: {
@@ -241,6 +276,14 @@ export const en: TranslationTree = {
   },
   explorer: {
     title: 'Explorer',
+    emptyTitle: 'Connect a place to begin',
+    emptyBody:
+      'Scan a running Roblox Studio session to list its animations, sounds, images and meshes, or open a place file from disk.',
+    studioNotConnected:
+      'Open Roblox Studio with the ValencyStudio - Spoofer plugin loaded, then scan.',
+    studioNotConnectedAction: 'No plugin connected. Connect Roblox Studio, then scan.',
+    openFile: 'Open File',
+    connectWithoutScanning: 'Browse the tree without scanning',
     resolvingScriptRefs: 'Resolving Script References',
     clearExplorer: 'Clear Explorer',
     search: 'Search assets...',

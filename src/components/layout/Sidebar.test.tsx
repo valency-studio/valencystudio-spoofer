@@ -57,10 +57,12 @@ describe('Sidebar', () => {
   it('applies active styling to the active tab', () => {
     render(<Sidebar activeTab="activity" onTabChange={() => {}} />);
 
-    const activityBtn = screen.getByText('Activity').closest('[role="button"]');
-    const spoofingBtn = screen.getByText('Spoofing').closest('[role="button"]');
+    const activityBtn = screen.getByRole('button', { name: 'Activity' });
+    const spoofingBtn = screen.getByRole('button', { name: 'Spoofing' });
 
     expect(activityBtn).toHaveClass('bg-bg-elevated');
+    expect(activityBtn).toHaveAttribute('aria-current', 'page');
     expect(spoofingBtn).not.toHaveClass('bg-bg-elevated');
+    expect(spoofingBtn).not.toHaveAttribute('aria-current');
   });
 });

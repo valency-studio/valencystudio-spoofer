@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useThemeAccent } from '../../../contexts/ThemeContext';
 import { cn } from '../../../lib/utils';
+import { SUPPORTED_LANGS } from '../../../utils/i18n';
 import { Label } from '../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { SettingCard } from './SettingComponents';
@@ -18,12 +19,7 @@ export default function AppearanceCard() {
   const [pickerCoords, setPickerCoords] = useState({ top: 0, left: 0 });
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const langOptions = {
-    en: '🇬🇧 English',
-    es: '🇪🇸 Español',
-    ru: '🇷🇺 Русский',
-    fr: '🇫🇷 Français',
-  };
+  const langOptions = Object.fromEntries(SUPPORTED_LANGS.map((entry) => [entry.code, entry.label]));
 
   useEffect(() => {
     setLocalAccent(accentColor);
@@ -72,7 +68,7 @@ export default function AppearanceCard() {
           <Label className="text-xs font-semibold text-text-primary block">
             {t('settings.theme')}
           </Label>
-          <p className="text-[11px] text-text-secondary leading-relaxed">
+          <p className="text-2xs text-text-secondary leading-relaxed">
             Switch between light and dark UI themes.
           </p>
         </div>
@@ -101,7 +97,7 @@ export default function AppearanceCard() {
           <Label className="text-xs font-semibold text-text-primary block">
             {t('settings.accentColor')}
           </Label>
-          <p className="text-[11px] text-text-secondary leading-relaxed">
+          <p className="text-2xs text-text-secondary leading-relaxed">
             Choose the primary brand accent color across UI and buttons.
           </p>
         </div>
@@ -168,7 +164,7 @@ export default function AppearanceCard() {
           <Label className="text-xs font-semibold text-text-primary block">
             {t('settings.language')}
           </Label>
-          <p className="text-[11px] text-text-secondary leading-relaxed">
+          <p className="text-2xs text-text-secondary leading-relaxed">
             Select your preferred display language for UI labels.
           </p>
         </div>

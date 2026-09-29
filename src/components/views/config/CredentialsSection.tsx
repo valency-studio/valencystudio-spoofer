@@ -306,7 +306,7 @@ export default function CredentialsSection() {
                   size={15}
                   className={
                     userApiKeyStatus === 'success'
-                      ? 'text-green-500'
+                      ? 'text-signal-live'
                       : userApiKeyStatus === 'error'
                         ? 'text-red-500'
                         : undefined
@@ -364,7 +364,7 @@ export default function CredentialsSection() {
                   size={15}
                   className={
                     groupApiKeyStatus === 'success'
-                      ? 'text-green-500'
+                      ? 'text-signal-live'
                       : groupApiKeyStatus === 'error'
                         ? 'text-red-500'
                         : undefined

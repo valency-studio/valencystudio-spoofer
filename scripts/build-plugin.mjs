@@ -71,18 +71,18 @@ async function buildPlugin() {
     const pluginBuildDir = join(pluginRoot, '.generated');
     mkdirSync(pluginBuildDir, { recursive: true });
 
-    const generatedSourcePath = join(pluginBuildDir, 'ISpooferMotion.generated.luau');
+    const generatedSourcePath = join(pluginBuildDir, 'ValencyStudioSpoofer.generated.luau');
     writeFileSync(generatedSourcePath, rawLuaSource, 'utf8');
 
-    const outPath = join(outDir, 'ISpooferMotion.rbxmx');
+    const outPath = join(outDir, 'ValencyStudioSpoofer.rbxmx');
     writeFileSync(outPath, rbxmx, 'utf8');
 
     const kb = (rawLuaSource.length / 1024).toFixed(1);
 
     console.log(`    Plugin built successfully`);
     console.log(`    Source      : plugin/plugin.luau + includes  (${kb} KB)`);
-    console.log(`    Lint source : plugin/.generated/ISpooferMotion.generated.luau`);
-    console.log(`    Output      : dist-plugin/ISpooferMotion.rbxmx`);
+    console.log(`    Lint source : plugin/.generated/ValencyStudioSpoofer.generated.luau`);
+    console.log(`    Output      : dist-plugin/ValencyStudioSpoofer.rbxmx`);
     console.log(``);
   } catch (err) {
     console.error('Failed to build plugin:', err);
