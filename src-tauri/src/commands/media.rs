@@ -21,6 +21,29 @@ pub enum AudioFormat {
     Wav,
 }
 
+/// External programs the editor drives, and how each one reports its version.
+///
+/// yt-dlp matters here: it parses `-version` as a *config file path* and exits
+/// non-zero, so probing it with ffmpeg's flag made it look missing on machines
+/// where it was installed correctly.
+struct ToolSpec {
+    program: &'static str,
+    version_arg: &'static str,
+}
+
+const FFMPEG: ToolSpec = ToolSpec {
+    program: "ffmpeg",
+    version_arg: "-version",
+};
+const FFPROBE: ToolSpec = ToolSpec {
+    program: "ffprobe",
+    version_arg: "-version",
+};
+const YTDLP: ToolSpec = ToolSpec {
+    program: "yt-dlp",
+    version_arg: "--version",
+};
+
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaTools {
@@ -54,42 +77,67 @@ pub struct ImportedMedia {
 #[tauri::command]
 #[specta::specta]
 pub async fn check_media_tools() -> Result<MediaTools> {
-    let (ffmpeg, ffprobe, ytdlp) = tokio::join!(
-        which("ffmpeg"),
-        which("ffprobe"),
-        which("yt-dlp"),
-    );
+    let (ffmpeg, ffprobe, ytdlp) =
+        tokio::join!(resolve(FFMPEG), resolve(FFPROBE), resolve(YTDLP));
 
     Ok(MediaTools {
-        ffmpeg,
-        ffprobe,
-        ytdlp,
+        ffmpeg: ffmpeg.is_some(),
+        ffprobe: ffprobe.is_some(),
+        ytdlp: ytdlp.is_some(),
     })
 }
 
-async fn which(program: &str) -> bool {
-    // Windows resolves .cmd shims, so probe the platform-specific names too.
-    let mut candidates = vec![program.to_string()];
-    if cfg!(windows) {
-        candidates.push(format!("{program}.exe"));
-        candidates.push(format!("{program}.cmd"));
-    }
+/// Locates a tool by walking PATH and confirms it runs.
+///
+/// Scanning PATH explicitly rather than relying on the child's own resolution
+/// keeps discovery and the later invocation consistent, and lets the error name
+/// the directories that were searched.
+async fn resolve(spec: ToolSpec) -> Option<std::path::PathBuf> {
+    let path_var = std::env::var_os("PATH")?;
 
-    for candidate in candidates {
-        let ok = Command::new(&candidate)
-            .arg("-version")
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .await
-            .map(|status| status.success())
-            .unwrap_or(false);
-        if ok {
-            return true;
+    for dir in std::env::split_paths(&path_var) {
+        if dir.as_os_str().is_empty() {
+            continue;
+        }
+        for candidate in candidate_names(spec.program) {
+            let full = dir.join(&candidate);
+            if !full.is_file() {
+                continue;
+            }
+
+            // Confirm it actually executes. Some PATH entries are stale, and a
+            // file that cannot run is no more useful than a missing one.
+            let works = Command::new(&full)
+                .arg(spec.version_arg)
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .await
+                .map(|status| status.success())
+                .unwrap_or(false);
+
+            if works {
+                return Some(full);
+            }
         }
     }
-    false
+
+    None
+}
+
+/// File names to try for a program, covering the Windows resolution rules.
+fn candidate_names(program: &str) -> Vec<String> {
+    if cfg!(windows) {
+        vec![
+            format!("{program}.exe"),
+            format!("{program}.cmd"),
+            format!("{program}.bat"),
+            program.to_string(),
+        ]
+    } else {
+        vec![program.to_string()]
+    }
 }
 
 fn media_dir(app: &AppHandle) -> Result<PathBuf> {
@@ -112,11 +160,9 @@ pub async fn probe_media(path: String) -> Result<MediaInfo> {
     if !path.is_file() {
         return Err("The media file could not be found.".into());
     }
-    if !which("ffprobe").await {
-        return Err(tool_error("ffprobe", "read audio details"));
-    }
+    let ffprobe = resolve(FFPROBE).await.ok_or_else(|| tool_error("ffprobe", "read audio details"))?;
 
-    let output = Command::new("ffprobe")
+    let output = Command::new(&ffprobe)
         .args([
             "-v",
             "error",
@@ -184,13 +230,11 @@ pub async fn import_media_from_url(app: AppHandle, url: String) -> Result<Import
     if !lower.starts_with("http://") && !lower.starts_with("https://") {
         return Err("That does not look like a link. It should start with http:// or https://.".into());
     }
-    if !which("yt-dlp").await {
-        return Err(tool_error("yt-dlp", "import a track from a link"));
-    }
+    let ytdlp = resolve(YTDLP).await.ok_or_else(|| tool_error("yt-dlp", "import a track from a link"))?;
 
     let dir = media_dir(&app)?;
 
-    let probe = Command::new("yt-dlp")
+    let probe = Command::new(&ytdlp)
         .args(["--no-playlist", "--dump-single-json", "--skip-download"])
         .arg(&url)
         .output()
@@ -217,7 +261,7 @@ pub async fn import_media_from_url(app: AppHandle, url: String) -> Result<Import
         .and_then(|v| v.as_str())
         .map(str::to_string);
 
-    let download = Command::new("yt-dlp")
+    let download = Command::new(&ytdlp)
         .args([
             "--no-playlist",
             "-x",
@@ -398,9 +442,7 @@ pub async fn bake_media(
     if !input.is_file() {
         return Err("The source file could not be found.".into());
     }
-    if !which("ffmpeg").await {
-        return Err(tool_error("ffmpeg", "export audio"));
-    }
+    let ffmpeg = resolve(FFMPEG).await.ok_or_else(|| tool_error("ffmpeg", "export audio"))?;
 
     if !speed.is_finite() || !(0.25..=4.0).contains(&speed) {
         return Err("Playback speed must be between 0.25x and 4x.".into());
@@ -430,7 +472,7 @@ pub async fn bake_media(
     };
     let output = dir.join(format!("{safe_name}.{extension}"));
 
-    let mut command = Command::new("ffmpeg");
+    let mut command = Command::new(&ffmpeg);
     command.arg("-y").arg("-v").arg("error").arg("-i").arg(&input);
 
     let filter = build_filter(speed, semitones, rate);
@@ -524,5 +566,48 @@ mod tests {
             assert!(!args.is_empty());
             assert!(args.iter().any(|a| a == "-c:a"));
         }
+    }
+
+    #[tokio::test]
+    async fn resolves_tools_that_are_really_installed() {
+        // Probes this machine, so it only asserts about what is present. The
+        // point is that resolution returns a runnable path when a tool exists,
+        // which is what the old -version probe failed to do for yt-dlp.
+        if let Some(path) = super::resolve(super::YTDLP).await {
+            assert!(path.is_file(), "resolved yt-dlp should be a real file");
+            assert!(
+                path.to_string_lossy().to_ascii_lowercase().contains("yt-dlp"),
+                "unexpected match for yt-dlp: {path:?}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn a_missing_tool_resolves_to_none() {
+        assert!(super::resolve(super::ToolSpec {
+            program: "definitely-not-a-real-program-xyz",
+            version_arg: "--version",
+        })
+        .await
+        .is_none());
+    }
+
+    #[test]
+    fn candidate_names_cover_windows_extensions() {
+        let names = super::candidate_names("ffmpeg");
+        if cfg!(windows) {
+            assert!(names.contains(&"ffmpeg.exe".to_string()));
+            assert!(names.contains(&"ffmpeg.cmd".to_string()));
+        }
+        assert!(names.iter().any(|n| n == "ffmpeg"));
+    }
+
+    #[test]
+    fn version_flags_are_per_tool() {
+        // yt-dlp reads a single-dash -version as a config file path and fails,
+        // so it must be probed with the double-dash form.
+        assert_eq!(super::YTDLP.version_arg, "--version");
+        assert_eq!(super::FFMPEG.version_arg, "-version");
+        assert_eq!(super::FFPROBE.version_arg, "-version");
     }
 }
