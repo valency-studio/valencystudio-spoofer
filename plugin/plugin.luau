@@ -505,7 +505,7 @@ local toolbar = plugin:CreateToolbar("ValencyStudio - Spoofer")
 local toggleButton = toolbar:CreateButton(
 	"Toggle UI",
 	"Show/Hide ValencyStudio - Spoofer UI",
-	"rbxassetid://137844667859456"
+	"rbxassetid://92060078238517"
 )
 
 toggleButton.Click:Connect(function()
