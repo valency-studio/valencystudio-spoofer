@@ -249,6 +249,7 @@ export const en: TranslationTree = {
     studioNotConnected:
       'Open Roblox Studio with the ValencyStudio - Spoofer plugin loaded, then scan.',
     studioNotConnectedAction: 'No plugin connected. Connect Roblox Studio, then scan.',
+    openFile: 'Open File',
     connectWithoutScanning: 'Browse the tree without scanning',
     resolvingScriptRefs: 'Resolving Script References',
     clearExplorer: 'Clear Explorer',

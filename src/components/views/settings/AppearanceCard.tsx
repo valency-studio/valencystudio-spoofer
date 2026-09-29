@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useThemeAccent } from '../../../contexts/ThemeContext';
 import { cn } from '../../../lib/utils';
+import { SUPPORTED_LANGS } from '../../../utils/i18n';
 import { Label } from '../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { SettingCard } from './SettingComponents';
@@ -18,12 +19,7 @@ export default function AppearanceCard() {
   const [pickerCoords, setPickerCoords] = useState({ top: 0, left: 0 });
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const langOptions = {
-    en: '🇬🇧 English',
-    es: '🇪🇸 Español',
-    ru: '🇷🇺 Русский',
-    fr: '🇫🇷 Français',
-  };
+  const langOptions = Object.fromEntries(SUPPORTED_LANGS.map((entry) => [entry.code, entry.label]));
 
   useEffect(() => {
     setLocalAccent(accentColor);

@@ -70,7 +70,7 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>,
     );
 
-    expect(screen.getByText(/Something stopped working/)).toBeInTheDocument();
+    expect(screen.getByText(/Ada yang berhenti berfungsi/)).toBeInTheDocument();
     expect(screen.getByText(/Test error!/)).toBeInTheDocument();
 
     consoleError.mockRestore();
@@ -164,7 +164,7 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>,
     );
 
-    const reloadBtn = screen.getByText('Reload Application');
+    const reloadBtn = screen.getByText('Muat Ulang Aplikasi');
     fireEvent.click(reloadBtn);
 
     expect(reloadMock).toHaveBeenCalled();

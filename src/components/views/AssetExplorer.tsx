@@ -869,7 +869,7 @@ export default function AssetExplorer({
                     className="flex items-center justify-center gap-2 px-5 h-11 text-text-primary font-bold text-sm hover:bg-bg-elevated disabled:opacity-50 transition-colors cursor-pointer"
                   >
                     <FolderOpen size={18} />
-                    Open File
+                    {t('explorer.openFile')}
                   </button>
 
                   <Popover>

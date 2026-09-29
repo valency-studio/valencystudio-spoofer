@@ -252,6 +252,7 @@ export const ru: TranslationTree = {
     studioNotConnected:
       'Откройте Roblox Studio с загруженным плагином ValencyStudio - Spoofer, затем просканируйте.',
     studioNotConnectedAction: 'Плагин не подключён. Подключите Roblox Studio, затем просканируйте.',
+    openFile: 'Открыть файл',
     connectWithoutScanning: 'Открыть дерево без сканирования',
     title: 'Проводник Ресурсов',
     search: 'Поиск ресурсов...',
