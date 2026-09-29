@@ -70,6 +70,8 @@ export const fr: TranslationTree = {
     remove: 'Retirer le morceau',
     export: 'Exporter',
     exporting: 'Exportation...',
+    willSplit: 'Roblox limite les téléversements à 7 minutes, donc ceci devient {count} parties.',
+    exportedSplit: '{count} parties exportées. Chacune peut être téléversée séparément.',
     exported: 'Morceau exporté. Le fichier modifié est prêt à être téléversé.',
     exportedLabel: 'copie modifiée',
     editedNote:

@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 
-import type { AudioFormat, MediaInfo, MediaTools } from '../utils/music';
+import type { AudioFormat, BakedFile, MediaInfo, MediaTools, SplitPreview } from '../utils/music';
 import {
   checkMediaTools,
   ensureMediaTools,
   importLocalMedia,
   importMediaFromUrl,
   pickLocalAudio,
+  previewSplit,
   probeMedia,
   stripExtension,
 } from '../utils/music';
@@ -30,11 +31,18 @@ export interface MusicTrack {
 
   /** Path of the last rendered file, if the track has been exported. */
   exportedPath: string | null;
+  /** Every rendered piece, when the track had to be split. */
+  exportedFiles: BakedFile[];
+  /** How the track will be cut up, refreshed as the edits change. */
+  split: SplitPreview | null;
   busy: boolean;
 }
 
 export type TrackEdit = Partial<
-  Pick<MusicTrack, 'speed' | 'semitones' | 'format' | 'sampleRate' | 'exportedPath'>
+  Pick<
+    MusicTrack,
+    'speed' | 'semitones' | 'format' | 'sampleRate' | 'exportedPath' | 'exportedFiles'
+  >
 >;
 
 interface MusicState {
@@ -45,6 +53,7 @@ interface MusicState {
   toolError: string | null;
 
   refreshTools: () => Promise<void>;
+  refreshSplit: (id: string) => Promise<void>;
   installMissingTools: () => Promise<void>;
   addFromUrl: (url: string) => Promise<void>;
   addFromFile: () => Promise<void>;
@@ -78,6 +87,8 @@ const toTrack = (
   format: 'mp3',
   sampleRate: 44100,
   exportedPath: null,
+  exportedFiles: [],
+  split: null,
   busy: false,
 });
 
@@ -131,7 +142,9 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       } catch {
         // Metadata is a nicety; the track is still usable without it.
       }
-      set((state) => ({ tracks: [...state.tracks, toTrack(media, 'url', info)] }));
+      const track = toTrack(media, 'url', info);
+      set((state) => ({ tracks: [...state.tracks, track] }));
+      void get().refreshSplit(track.id);
     } catch (err) {
       set({ error: String(err) });
     }
@@ -150,7 +163,9 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       } catch {
         // Same as above: a track without probe data is still importable.
       }
-      set((state) => ({ tracks: [...state.tracks, toTrack(media, 'local', info)] }));
+      const track = toTrack(media, 'local', info);
+      set((state) => ({ tracks: [...state.tracks, track] }));
+      void get().refreshSplit(track.id);
     } catch (err) {
       set({ error: String(err) });
     }
@@ -158,10 +173,37 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   remove: (id) => set((state) => ({ tracks: state.tracks.filter((track) => track.id !== id) })),
 
-  update: (id, edit) =>
+  update: (id, edit) => {
     set((state) => ({
       tracks: state.tracks.map((track) => (track.id === id ? { ...track, ...edit } : track)),
-    })),
+    }));
+    // The split depends on the edited length, so recompute after every change.
+    void get().refreshSplit(id);
+  },
+
+  refreshSplit: async (id) => {
+    const track = get().tracks.find((candidate) => candidate.id === id);
+    if (!track?.info?.duration) return;
+
+    try {
+      const split = await previewSplit({
+        sourceDuration: track.info.duration,
+        speed: track.speed,
+        title: track.title,
+        format: track.format,
+        sampleRate: track.sampleRate,
+      });
+      // The track may have been edited or removed while this was in flight.
+      if (!get().tracks.some((candidate) => candidate.id === id)) return;
+      set((state) => ({
+        tracks: state.tracks.map((candidate) =>
+          candidate.id === id ? { ...candidate, split } : candidate,
+        ),
+      }));
+    } catch {
+      // Without a preview the export still works; it just renders in one go.
+    }
+  },
 
   setError: (message) => set({ error: message }),
   setNotice: (message) => set({ notice: message }),

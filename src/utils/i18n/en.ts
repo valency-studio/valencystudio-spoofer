@@ -76,6 +76,8 @@ export const en: TranslationTree = {
     remove: 'Remove track',
     export: 'Export',
     exporting: 'Exporting...',
+    willSplit: 'Roblox caps uploads at 7 minutes, so this becomes {count} parts.',
+    exportedSplit: 'Exported {count} parts. Each is ready to upload on its own.',
     exported: 'Track exported. The edited file is ready to upload.',
     exportedLabel: 'edited copy',
     editedNote: 'Exported files keep these edits. Your source file is untouched.',

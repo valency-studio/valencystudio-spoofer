@@ -69,6 +69,8 @@ export const es: TranslationTree = {
     remove: 'Quitar pista',
     export: 'Exportar',
     exporting: 'Exportando...',
+    willSplit: 'Roblox limita las subidas a 7 minutos, así que esto se divide en {count} partes.',
+    exportedSplit: '{count} partes exportadas. Cada una se puede subir por separado.',
     exported: 'Pista exportada. El archivo editado está listo para subirse.',
     exportedLabel: 'copia editada',
     editedNote: 'Los archivos exportados conservan estos cambios. Tu archivo original no se toca.',

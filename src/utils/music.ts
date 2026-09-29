@@ -35,6 +35,32 @@ export const importMediaFromUrl = (url: string) =>
 export const importLocalMedia = (path: string) =>
   invoke<ImportedMedia>('import_local_media', { path });
 
+export interface BakedFile {
+  name: string;
+  path: string;
+  bytes: number;
+  outputDuration: number;
+}
+
+export interface BakedMedia {
+  files: BakedFile[];
+  totalDuration: number;
+  wasSplit: boolean;
+}
+
+export interface SplitPlan {
+  sourceStart: number;
+  sourceEnd: number;
+  outputDuration: number;
+  name: string;
+}
+
+export interface SplitPreview {
+  parts: SplitPlan[];
+  outputDuration: number;
+  needsSplit: boolean;
+}
+
 export const bakeMedia = (input: {
   path: string;
   title: string;
@@ -42,13 +68,31 @@ export const bakeMedia = (input: {
   semitones: number;
   format: AudioFormat;
   sampleRate: number;
+  sourceDuration?: number;
 }) =>
-  invoke<ImportedMedia>('bake_media', {
+  invoke<BakedMedia>('bake_media', {
     inputPath: input.path,
     outputName: input.title,
     speed: input.speed,
     semitones: input.semitones,
     // The Rust enum is serialised in camelCase, so the discriminant is lowercased.
+    format: input.format,
+    sampleRate: input.sampleRate,
+    sourceDuration: input.sourceDuration,
+  });
+
+/** Works out how the track will be cut up without rendering anything. */
+export const previewSplit = (input: {
+  sourceDuration: number;
+  speed: number;
+  title: string;
+  format: AudioFormat;
+  sampleRate: number;
+}) =>
+  invoke<SplitPreview>('preview_split', {
+    sourceDuration: input.sourceDuration,
+    speed: input.speed,
+    title: input.title,
     format: input.format,
     sampleRate: input.sampleRate,
   });

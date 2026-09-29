@@ -76,6 +76,8 @@ export const id: TranslationTree = {
     remove: 'Hapus lagu',
     export: 'Ekspor',
     exporting: 'Mengekspor...',
+    willSplit: 'Roblox membatasi unggahan 7 menit, jadi ini menjadi {count} bagian.',
+    exportedSplit: '{count} bagian diekspor. Masing-masing siap diunggah sendiri.',
     exported: 'Lagu diekspor. File yang sudah diedit siap diunggah.',
     exportedLabel: 'salinan hasil edit',
     editedNote: 'File hasil ekspor memakai edit ini. File sumber Anda tidak diubah.',

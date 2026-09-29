@@ -9,6 +9,22 @@ use crate::error::AppError;
 
 type Result<T> = crate::error::Result<T>;
 
+/// Keeps a spawned helper from opening a console window.
+///
+/// The app is only a GUI process in release builds; in debug it keeps the
+/// console subsystem so developer output is visible. Either way, a child that
+/// is itself a console program will put a terminal on screen unless it is
+/// started with CREATE_NO_WINDOW, which is what this applies everywhere.
+fn no_console(command: &mut Command) {
+    #[cfg(windows)]
+    {
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    #[cfg(not(windows))]
+    let _ = command;
+}
+
 /// Semitones in an octave, the divisor of the pitch ratio.
 const SEMITONES_PER_OCTAVE: f64 = 12.0;
 
@@ -107,7 +123,9 @@ async fn resolve(spec: ToolSpec) -> Option<std::path::PathBuf> {
 
             // Confirm it actually executes. Some PATH entries are stale, and a
             // file that cannot run is no more useful than a missing one.
-            let works = Command::new(&full)
+            let mut probe = Command::new(&full);
+            no_console(&mut probe);
+            let works = probe
                 .arg(spec.version_arg)
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
@@ -209,7 +227,9 @@ async fn resolve_ytdlp(app: &AppHandle) -> Option<PathBuf> {
 }
 
 async fn runs(path: &std::path::Path, version_arg: &str) -> bool {
-    Command::new(path)
+    let mut probe = Command::new(path);
+    no_console(&mut probe);
+    probe
         .arg(version_arg)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
@@ -360,7 +380,9 @@ pub async fn probe_media(path: String) -> Result<MediaInfo> {
     }
     let ffprobe = resolve(FFPROBE).await.ok_or_else(|| tool_error("ffprobe", "read audio details"))?;
 
-    let output = Command::new(&ffprobe)
+    let mut ffprobe_cmd = Command::new(&ffprobe);
+    no_console(&mut ffprobe_cmd);
+    let output = ffprobe_cmd
         .args([
             "-v",
             "error",
@@ -432,7 +454,9 @@ pub async fn import_media_from_url(app: AppHandle, url: String) -> Result<Import
 
     let dir = media_dir(&app)?;
 
-    let probe = Command::new(&ytdlp)
+    let mut ytdlp_probe = Command::new(&ytdlp);
+    no_console(&mut ytdlp_probe);
+    let probe = ytdlp_probe
         .args(["--no-playlist", "--dump-single-json", "--skip-download"])
         .arg(&url)
         .output()
@@ -459,7 +483,9 @@ pub async fn import_media_from_url(app: AppHandle, url: String) -> Result<Import
         .and_then(|v| v.as_str())
         .map(str::to_string);
 
-    let download = Command::new(&ytdlp)
+    let mut ytdlp_download = Command::new(&ytdlp);
+    no_console(&mut ytdlp_download);
+    let download = ytdlp_download
         .args([
             "--no-playlist",
             "-x",
@@ -756,7 +782,9 @@ pub async fn bake_media(
         let output = dir.join(format!("{}.{extension}", part.name));
         let args = segment_args(&input, &output, part, speed, semitones, format, rate);
 
-        let result = Command::new(&ffmpeg)
+        let mut ffmpeg_cmd = Command::new(&ffmpeg);
+        no_console(&mut ffmpeg_cmd);
+        let result = ffmpeg_cmd
             .args(&args)
             .output()
             .await

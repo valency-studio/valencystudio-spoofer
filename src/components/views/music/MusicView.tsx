@@ -22,6 +22,7 @@ import {
 import { useLanguage } from '../../../contexts/LanguageContext';
 import type { MusicTrack } from '../../../stores/musicStore';
 import { useMusicStore } from '../../../stores/musicStore';
+import type { BakedMedia } from '../../../utils/music';
 import {
   AUDIO_FORMATS,
   bakeMedia,
@@ -164,9 +165,16 @@ export default function MusicView() {
                     track={track}
                     onRemove={() => remove(track.id)}
                     onUpdate={(edit) => update(track.id, edit)}
-                    onExported={(path) => {
-                      update(track.id, { exportedPath: path });
-                      setNotice(t('music.exported'));
+                    onExported={(result) => {
+                      update(track.id, {
+                        exportedPath: result.files[0]?.path ?? null,
+                        exportedFiles: result.files,
+                      });
+                      setNotice(
+                        result.wasSplit
+                          ? t('music.exportedSplit').replace('{count}', String(result.files.length))
+                          : t('music.exported'),
+                      );
                     }}
                     onError={setError}
                   />
@@ -190,7 +198,7 @@ function TrackEditor({
   track: MusicTrack;
   onRemove: () => void;
   onUpdate: (edit: Partial<MusicTrack>) => void;
-  onExported: (path: string) => void;
+  onExported: (result: BakedMedia) => void;
   onError: (message: string) => void;
 }) {
   const { t } = useLanguage();
@@ -200,7 +208,6 @@ function TrackEditor({
 
   const src = mediaSrc(track.exportedPath ?? track.path);
   const isEdited = track.speed !== 1 || track.semitones !== 0;
-
   // Web Audio gives an instant preview of the edits without touching the file.
   // The uploaded/baked copy is produced separately by bakeMedia.
   useEffect(() => {
@@ -259,8 +266,11 @@ function TrackEditor({
         semitones: track.semitones,
         format: track.format,
         sampleRate: track.sampleRate,
+        // The plan is split against the edited length, so the backend needs the
+        // source duration to work it out.
+        sourceDuration: track.info?.duration ?? undefined,
       });
-      onExported(result.path);
+      onExported(result);
     } catch (err) {
       onError(String(err));
     } finally {
@@ -359,13 +369,30 @@ function TrackEditor({
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <p className="text-xs text-text-muted">
-          {isEdited ? t('music.editedNote') : t('music.untouchedNote')}
+          {track.split?.needsSplit
+            ? t('music.willSplit').replace('{count}', String(track.split.parts.length))
+            : isEdited
+              ? t('music.editedNote')
+              : t('music.untouchedNote')}
         </p>
         <Button onClick={() => void handleExport()} disabled={exporting || !track.info}>
           <Upload size={15} />
           {exporting ? t('music.exporting') : t('music.export')}
         </Button>
       </div>
+
+      {track.exportedFiles.length > 1 && (
+        <ul className="mt-3 flex flex-col gap-1 border-t border-border-subtle pt-3">
+          {track.exportedFiles.map((file) => (
+            <li key={file.path} className="flex items-center justify-between gap-3 text-xs">
+              <span className="truncate text-text-secondary">{file.name}</span>
+              <span className="shrink-0 text-text-muted tabular-nums">
+                {formatDuration(file.outputDuration)} · {(file.bytes / 1024 / 1024).toFixed(1)} MB
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {isEdited && track.thumbnailUrl && (
         <a
