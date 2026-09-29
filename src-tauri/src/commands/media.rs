@@ -709,9 +709,270 @@ pub async fn bake_media(
     })
 }
 
+// ---------------------------------------------------------------- audio splitting
+
+/// Roblox rejects audio longer than this.
+pub const ROBLOX_MAX_DURATION_SECS: f64 = 7.0 * 60.0;
+
+/// Roblox rejects any single upload above this.
+const ROBLOX_MAX_UPLOAD_BYTES: u64 = 20 * 1024 * 1024;
+
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SplitPlan {
+    /// Source-time start and end of the piece, in seconds.
+    pub source_start: f64,
+    pub source_end: f64,
+    /// Duration of the piece after speed and pitch are applied.
+    pub output_duration: f64,
+    /// Suggested file name, without an extension.
+    pub name: String,
+}
+
+/// How a track will be cut up to satisfy Roblox's upload limits.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SplitPreview {
+    pub parts: Vec<SplitPlan>,
+    /// Output duration of the whole track once edits are applied.
+    pub output_duration: f64,
+    pub needs_split: bool,
+}
+
+/// Works out how many pieces a track needs and where they fall in source time.
+///
+/// Duration is only known after the edits, so this runs on the exported length
+/// rather than the imported one: a ten minute track at 2x speed is five minutes
+/// and needs no split, while a five minute track at 0.5x becomes ten minutes and
+/// does. Pitch shifting alone leaves duration untouched, because the tempo stage
+/// cancels the rate change the pitch stage introduces, so only speed matters
+/// here.
+///
+/// Pieces are cut at even source-time boundaries rather than filled to the limit,
+/// so a 20 minute track becomes four five minute parts instead of 7+7+6.
+pub fn plan_split(
+    source_duration: f64,
+    speed: f64,
+    stem: &str,
+    max_output_secs: f64,
+) -> SplitPreview {
+    let speed = if speed.is_finite() && speed > 0.0 { speed } else { 1.0 };
+    let output_duration = source_duration / speed;
+
+    // Source-time length that yields one piece of at most max_output_secs.
+    let source_piece = (max_output_secs * speed).max(0.001);
+    let count = (source_duration / source_piece).ceil().max(1.0) as usize;
+    let even_piece = source_duration / count as f64;
+
+    let mut parts = Vec::with_capacity(count);
+    for index in 0..count {
+        let start = even_piece * index as f64;
+        let end = if index + 1 == count {
+            source_duration
+        } else {
+            (even_piece * (index + 1) as f64).min(source_duration)
+        };
+
+        parts.push(SplitPlan {
+            source_start: start,
+            source_end: end,
+            output_duration: (end - start) / speed,
+            name: if count == 1 {
+                stem.to_string()
+            } else {
+                format!("{stem} (part {})", index + 1)
+            },
+        });
+    }
+
+    SplitPreview {
+        needs_split: count > 1,
+        parts,
+        output_duration,
+    }
+}
+
+/// Estimates whether one piece will fit a single upload, given the encoded
+/// bitrate. Used to reject WAV and other high-bitrate choices up front.
+pub const fn estimate_part_bytes(output_duration: f64, bits_per_second: u32) -> u64 {
+    (output_duration * bits_per_second as f64 / 8.0) as u64
+}
+
+/// The bitrate each output format actually produces.
+pub const fn bits_per_second(format: AudioFormat, sample_rate: u32) -> u32 {
+    match format {
+        // libmp3lame is pinned to 320k in codec_args, independent of sample rate.
+        AudioFormat::Mp3 => 320_000,
+        // libvorbis quality 5 lands near 160k for typical material.
+        AudioFormat::Ogg => 160_000,
+        // pcm_s16le is uncompressed: channels * rate * 16.
+        AudioFormat::Wav => sample_rate * 2 * 16,
+    }
+}
+
+/// True when any planned piece would exceed the per-request byte limit.
+pub fn any_part_too_large(
+    plan: &SplitPreview,
+    format: AudioFormat,
+    sample_rate: u32,
+) -> bool {
+    let bps = bits_per_second(format, sample_rate);
+    plan.parts
+        .iter()
+        .any(|part| estimate_part_bytes(part.output_duration, bps) > ROBLOX_MAX_UPLOAD_BYTES)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{build_filter, AudioFormat, SEMITONES_PER_OCTAVE};
+    use super::{
+        any_part_too_large, bits_per_second, build_filter, estimate_part_bytes, plan_split,
+        AudioFormat, ROBLOX_MAX_DURATION_SECS, ROBLOX_MAX_UPLOAD_BYTES, SEMITONES_PER_OCTAVE,
+    };
+
+    #[test]
+    fn a_short_track_is_not_split() {
+        let plan = plan_split(180.0, 1.0, "clip", ROBLOX_MAX_DURATION_SECS);
+        assert!(!plan.needs_split);
+        assert_eq!(plan.parts.len(), 1);
+        assert_eq!(plan.parts[0].name, "clip");
+        assert!((plan.output_duration - 180.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn exactly_the_limit_is_one_part() {
+        let plan = plan_split(ROBLOX_MAX_DURATION_SECS, 1.0, "clip", ROBLOX_MAX_DURATION_SECS);
+        assert!(!plan.needs_split);
+        assert_eq!(plan.parts.len(), 1);
+    }
+
+    #[test]
+    fn a_twenty_minute_track_becomes_four_even_parts() {
+        // 20 / 7 = 2.86, so three parts of 400s each rather than 7+7+6.
+        let plan = plan_split(1200.0, 1.0, "song", ROBLOX_MAX_DURATION_SECS);
+        assert!(plan.needs_split);
+        assert_eq!(plan.parts.len(), 3);
+        for part in &plan.parts {
+            assert!(part.output_duration <= ROBLOX_MAX_DURATION_SECS + 0.001);
+        }
+        assert!((plan.parts[0].output_duration - 400.0).abs() < 0.001);
+        assert_eq!(plan.parts[0].name, "song (part 1)");
+    }
+
+    #[test]
+    fn parts_are_contiguous_and_cover_the_whole_source() {
+        let plan = plan_split(1000.0, 1.0, "song", ROBLOX_MAX_DURATION_SECS);
+        let mut expected_start = 0.0;
+        for part in &plan.parts {
+            assert!((part.source_start - expected_start).abs() < 0.001, "gap in parts");
+            assert!(part.source_end > part.source_start);
+            expected_start = part.source_end;
+        }
+        let last_end = plan.parts.last().map(|p| p.source_end).unwrap_or(0.0);
+        assert!((last_end - 1000.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn speed_change_is_accounted_for_after_editing() {
+        // 10 minutes at 2x is 5 minutes output, so it must not be split.
+        let fast = plan_split(600.0, 2.0, "clip", ROBLOX_MAX_DURATION_SECS);
+        assert!(!fast.needs_split);
+        assert!((fast.output_duration - 300.0).abs() < 0.001);
+
+        // 5 minutes at 0.5x is 10 minutes output, so it now must be split.
+        let slow = plan_split(300.0, 0.5, "clip", ROBLOX_MAX_DURATION_SECS);
+        assert!(slow.needs_split);
+        assert!(slow.output_duration > ROBLOX_MAX_DURATION_SECS);
+    }
+
+    #[test]
+    fn pitch_alone_does_not_change_the_plan() {
+        // build_filter keeps duration at source/speed regardless of semitones,
+        // so the plan must not depend on pitch at all.
+        let plan = plan_split(900.0, 1.0, "clip", ROBLOX_MAX_DURATION_SECS);
+        assert!((plan.output_duration - 900.0).abs() < 0.001);
+        // 900 / 420 = 2.14, so three even pieces of 300s.
+        assert_eq!(plan.parts.len(), 3);
+    }
+
+    #[test]
+    fn a_degenerate_speed_does_not_divide_by_zero() {
+        // Speed 0 is sanitised to 1x, so a ten minute track is a normal split.
+        let plan = plan_split(600.0, 0.0, "clip", ROBLOX_MAX_DURATION_SECS);
+        assert!(plan.output_duration.is_finite());
+        assert_eq!(plan.parts.len(), 2);
+    }
+
+    #[test]
+    fn wav_pieces_are_capped_at_about_two_minutes() {
+        // Uncompressed stereo 16 bit runs about 1.4 Mbps, so the 20 MB request
+        // ceiling allows only about 119 seconds per piece. This is why WAV needs
+        // its own piece length rather than the seven minute audio limit.
+        let bps = bits_per_second(AudioFormat::Wav, 44_100);
+        let max_secs = ROBLOX_MAX_UPLOAD_BYTES as f64 * 8.0 / bps as f64;
+        assert!(
+            (max_secs - 119.0).abs() < 2.0,
+            "unexpected wav ceiling of {max_secs}s"
+        );
+
+        // A plan built for that ceiling produces pieces that do fit.
+        let plan = plan_split(400.0, 1.0, "clip", max_secs);
+        assert!(plan.parts.len() >= 4);
+        assert!(!any_part_too_large(&plan, AudioFormat::Wav, 44_100));
+
+        // Whereas pieces sized for the seven minute limit do not.
+        let loose = plan_split(400.0, 1.0, "clip", ROBLOX_MAX_DURATION_SECS);
+        assert!(any_part_too_large(&loose, AudioFormat::Wav, 44_100));
+    }
+
+    #[test]
+    fn short_pieces_are_never_emitted() {
+        // A track just over the limit should not produce a sliver second part.
+        let plan = plan_split(ROBLOX_MAX_DURATION_SECS + 0.5, 1.0, "clip", ROBLOX_MAX_DURATION_SECS);
+        assert_eq!(plan.parts.len(), 2);
+        let Some(last) = plan.parts.last() else {
+            panic!("expected at least one part");
+        };
+        assert!(last.output_duration > 0.1, "trailing sliver of {last:?}");
+    }
+
+    #[test]
+    fn uncompressed_audio_cannot_be_seven_minutes_long() {
+        // 16 bit stereo at 44.1k is about 74 MB for seven minutes, far past the
+        // 20 MB per-request limit, so WAV always needs shorter pieces.
+        let seven_min = ROBLOX_MAX_DURATION_SECS;
+        assert!(estimate_part_bytes(seven_min, bits_per_second(AudioFormat::Wav, 44_100))
+            > ROBLOX_MAX_UPLOAD_BYTES);
+
+        let plan = plan_split(seven_min, 1.0, "clip", ROBLOX_MAX_DURATION_SECS);
+        assert!(any_part_too_large(
+            &plan,
+            AudioFormat::Wav,
+            44_100
+        ));
+
+        // The same length in mp3 fits comfortably.
+        assert!(!any_part_too_large(
+            &plan,
+            AudioFormat::Mp3,
+            44_100
+        ));
+    }
+
+    #[test]
+    fn shorter_wav_pieces_do_fit() {
+        // Halving the piece length is not enough for uncompressed audio; see
+        // wav_pieces_are_capped_at_about_two_minutes for the real ceiling.
+        let plan = plan_split(200.0, 1.0, "clip", 100.0);
+        assert!(!any_part_too_large(&plan, AudioFormat::Wav, 44_100));
+    }
+
+    #[test]
+    fn compressed_formats_stay_well_inside_the_byte_limit() {
+        let plan = plan_split(ROBLOX_MAX_DURATION_SECS * 4.0, 1.0, "song", ROBLOX_MAX_DURATION_SECS);
+        assert!(plan.parts.len() >= 4);
+        assert!(!any_part_too_large(&plan, AudioFormat::Mp3, 44_100));
+        assert!(!any_part_too_large(&plan, AudioFormat::Ogg, 44_100));
+    }
 
     #[test]
     fn no_edits_only_resamples() {
