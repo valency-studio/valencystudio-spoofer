@@ -623,10 +623,74 @@ pub async fn import_local_media(app: AppHandle, path: String) -> Result<Imported
     })
 }
 
-/// Renders the edited track to a new file. The input is never modified.
+/// Short fade applied to the outer edges of every piece. Cutting a waveform
+/// mid-cycle leaves a step discontinuity, which is audible as a click at every
+/// seam, so each piece fades in and out over a few milliseconds.
+const EDGE_FADE_SECS: f64 = 0.02;
+
+/// Piece length that keeps the encoded file inside one upload request.
+fn max_output_secs(format: AudioFormat, sample_rate: u32) -> f64 {
+    // Uncompressed audio is limited by bytes long before it is limited by the
+    // seven minute duration cap.
+    let by_bytes = ROBLOX_MAX_UPLOAD_BYTES as f64 * 8.0 / bits_per_second(format, sample_rate) as f64;
+    ROBLOX_MAX_DURATION_SECS.min(by_bytes)
+}
+
+/// Builds the ffmpeg arguments that render one piece: seek the source window,
+/// apply the edits, then encode.
+fn segment_args(
+    input: &std::path::Path,
+    output: &std::path::Path,
+    part: &SplitPlan,
+    speed: f64,
+    semitones: f64,
+    format: AudioFormat,
+    sample_rate: u32,
+) -> Vec<String> {
+    let mut args: Vec<String> = vec!["-y".into(), "-v".into(), "error".into()];
+
+    // Input seeking keeps each piece independent, so one failure does not
+    // invalidate the whole set.
+    args.push("-ss".into());
+    args.push(format!("{:.3}", part.source_start));
+    args.push("-to".into());
+    args.push(format!("{:.3}", part.source_end));
+    args.push("-i".into());
+    args.push(input.to_string_lossy().to_string());
+
+    let mut filters = Vec::new();
+    // A fade must never be longer than half the piece, or it would run past the
+    // end of a very short segment.
+    let fade = EDGE_FADE_SECS.min(part.output_duration / 2.0);
+    if part.source_start > 0.0 && fade > 0.0 {
+        filters.push(format!("afade=t=in:st=0:d={fade:.3}"));
+    }
+    if part.source_end > 0.0 && fade > 0.0 {
+        let out_start = (part.output_duration - fade).max(0.0);
+        filters.push(format!("afade=t=out:st={out_start:.3}:d={fade:.3}"));
+    }
+    let edit = build_filter(speed, semitones, sample_rate);
+    if !edit.is_empty() {
+        filters.push(edit);
+    }
+    if !filters.is_empty() {
+        args.push("-af".into());
+        args.push(filters.join(","));
+    }
+
+    for arg in codec_args(format, sample_rate) {
+        args.push(arg);
+    }
+    args.push(output.to_string_lossy().to_string());
+    args
+}
+
+/// Renders the edited track, splitting it when Roblox's limits require it.
+///
+/// The source file is never modified. A track that fits comes back as one file;
+/// a longer one comes back as one file per piece, in order.
 #[tauri::command]
 #[specta::specta]
-#[allow(clippy::too_many_arguments)]
 pub async fn bake_media(
     app: AppHandle,
     input_path: String,
@@ -635,7 +699,8 @@ pub async fn bake_media(
     semitones: f64,
     format: AudioFormat,
     sample_rate: u32,
-) -> Result<ImportedMedia> {
+    source_duration: Option<f64>,
+) -> Result<BakedMedia> {
     let input = PathBuf::from(input_path.trim());
     if !input.is_file() {
         return Err("The source file could not be found.".into());
@@ -668,45 +733,107 @@ pub async fn bake_media(
         AudioFormat::Ogg => "ogg",
         AudioFormat::Wav => "wav",
     };
-    let output = dir.join(format!("{safe_name}.{extension}"));
 
-    let mut command = Command::new(&ffmpeg);
-    command.arg("-y").arg("-v").arg("error").arg("-i").arg(&input);
+    // Without a probed duration we cannot reason about limits, so render whole.
+    let plan = source_duration.filter(|d| d.is_finite() && *d > 0.0).map(|duration| {
+        plan_split(duration, speed, &safe_name, max_output_secs(format, rate))
+    });
 
-    let filter = build_filter(speed, semitones, rate);
-    if !filter.is_empty() {
-        command.arg("-af").arg(filter);
+    let parts: Vec<SplitPlan> = plan
+        .as_ref()
+        .map(|p| p.parts.clone())
+        .unwrap_or_else(|| {
+            vec![SplitPlan {
+                source_start: 0.0,
+                source_end: f64::MAX,
+                output_duration: 0.0,
+                name: safe_name.clone(),
+            }]
+        });
+
+    let mut files = Vec::with_capacity(parts.len());
+    for part in &parts {
+        let output = dir.join(format!("{}.{extension}", part.name));
+        let args = segment_args(&input, &output, part, speed, semitones, format, rate);
+
+        let result = Command::new(&ffmpeg)
+            .args(&args)
+            .output()
+            .await
+            .map_err(|_| tool_error("ffmpeg", "export audio"))?;
+
+        if !result.status.success() {
+            let stderr = String::from_utf8_lossy(&result.stderr);
+            return Err(AppError::Custom(format!(
+                "ffmpeg could not export \"{}\": {}",
+                part.name,
+                summarize(&stderr)
+            )));
+        }
+
+        if !output.is_file() {
+            return Err(AppError::Custom(format!(
+                "ffmpeg produced no file for \"{}\".",
+                part.name
+            )));
+        }
+
+        let size = std::fs::metadata(&output).map(|m| m.len()).unwrap_or(0);
+        files.push(BakedFile {
+            name: part.name.clone(),
+            path: output.to_string_lossy().to_string(),
+            bytes: size,
+            output_duration: part.output_duration,
+        });
     }
 
-    for arg in codec_args(format, rate) {
-        command.arg(arg);
-    }
-    command.arg(&output);
-
-    let result = command
-        .output()
-        .await
-        .map_err(|_| tool_error("ffmpeg", "export audio"))?;
-
-    if !result.status.success() {
-        let stderr = String::from_utf8_lossy(&result.stderr);
-        return Err(AppError::Custom(format!(
-            "ffmpeg could not export the track: {}",
-            summarize(&stderr)
-        )));
-    }
-
-    if !output.is_file() {
-        return Err("ffmpeg finished but produced no file.".into());
-    }
-
-    Ok(ImportedMedia {
-        path: output.to_string_lossy().to_string(),
-        title: safe_name,
-        uploader: None,
-        thumbnail_url: None,
-        source_url: String::new(),
+    let total = files.iter().map(|f| f.output_duration).sum();
+    let was_split = files.len() > 1;
+    Ok(BakedMedia {
+        files,
+        total_duration: total,
+        was_split,
     })
+}
+
+/// Previews how a track will be split without rendering anything, so the Music
+/// view can tell the user up front that a long track becomes several parts.
+#[tauri::command]
+#[specta::specta]
+pub fn preview_split(
+    source_duration: f64,
+    speed: f64,
+    title: String,
+    format: AudioFormat,
+    sample_rate: u32,
+) -> Result<SplitPreview> {
+    let rate = sample_rate.clamp(8000, 192000);
+    let mut plan = plan_split(
+        source_duration,
+        speed,
+        &title,
+        max_output_secs(format, rate),
+    );
+    // Titles are user supplied; keep them usable as file names.
+    for part in &mut plan.parts {
+        part.name = sanitize_stem(&part.name);
+    }
+    Ok(plan)
+}
+
+fn sanitize_stem(name: &str) -> String {
+    let cleaned: String = name
+        .chars()
+        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+        .take(80)
+        .collect();
+
+    // A title made only of separators would otherwise become a name like "___".
+    if cleaned.trim_matches(['-', '_']).is_empty() {
+        "track".to_string()
+    } else {
+        cleaned
+    }
 }
 
 // ---------------------------------------------------------------- audio splitting
@@ -716,6 +843,23 @@ pub const ROBLOX_MAX_DURATION_SECS: f64 = 7.0 * 60.0;
 
 /// Roblox rejects any single upload above this.
 const ROBLOX_MAX_UPLOAD_BYTES: u64 = 20 * 1024 * 1024;
+
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct BakedFile {
+    pub name: String,
+    pub path: String,
+    pub bytes: u64,
+    pub output_duration: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct BakedMedia {
+    pub files: Vec<BakedFile>,
+    pub total_duration: f64,
+    pub was_split: bool,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -825,8 +969,9 @@ pub fn any_part_too_large(
 #[cfg(test)]
 mod tests {
     use super::{
-        any_part_too_large, bits_per_second, build_filter, estimate_part_bytes, plan_split,
-        AudioFormat, ROBLOX_MAX_DURATION_SECS, ROBLOX_MAX_UPLOAD_BYTES, SEMITONES_PER_OCTAVE,
+        any_part_too_large, bits_per_second, build_filter, estimate_part_bytes, max_output_secs,
+        plan_split, sanitize_stem, segment_args, AudioFormat, SplitPlan, ROBLOX_MAX_DURATION_SECS,
+        ROBLOX_MAX_UPLOAD_BYTES, SEMITONES_PER_OCTAVE,
     };
 
     #[test]
@@ -972,6 +1117,165 @@ mod tests {
         assert!(plan.parts.len() >= 4);
         assert!(!any_part_too_large(&plan, AudioFormat::Mp3, 44_100));
         assert!(!any_part_too_large(&plan, AudioFormat::Ogg, 44_100));
+    }
+
+    #[test]
+    fn wav_gets_a_tighter_piece_length_than_mp3() {
+        let wav = max_output_secs(AudioFormat::Wav, 44_100);
+        let mp3 = max_output_secs(AudioFormat::Mp3, 44_100);
+        assert!(wav < mp3, "wav pieces must be shorter: {wav} vs {mp3}");
+        assert!((wav - 119.0).abs() < 2.0, "wav piece length was {wav}");
+        assert!((mp3 - ROBLOX_MAX_DURATION_SECS).abs() < 0.001);
+    }
+
+    #[test]
+    fn a_segment_seeks_the_source_window_it_was_given() {
+        let part = SplitPlan {
+            source_start: 600.0,
+            source_end: 1200.0,
+            output_duration: 600.0,
+            name: "song (part 2)".to_string(),
+        };
+        let args = segment_args(
+            std::path::Path::new("in.mp3"),
+            std::path::Path::new("out.mp3"),
+            &part,
+            1.0,
+            0.0,
+            AudioFormat::Mp3,
+            44_100,
+        );
+
+        let seek = args.iter().position(|a| a == "-ss").expect("-ss present");
+        assert_eq!(args[seek + 1], "600.000");
+        let to = args.iter().position(|a| a == "-to").expect("-to present");
+        assert_eq!(args[to + 1], "1200.000");
+
+        // Seeking must come before the input, otherwise it applies to the output.
+        let input = args.iter().position(|a| a == "-i").expect("-i present");
+        assert!(seek < input && to < input, "seek options must precede -i");
+        assert_eq!(args[input + 1], "in.mp3");
+        assert_eq!(args.last().map(String::as_str), Some("out.mp3"));
+    }
+
+    #[test]
+    fn the_first_piece_does_not_fade_in_from_nothing() {
+        // A fade on the leading edge of the very first piece would eat into
+        // real audio, so it is only added where a cut actually happened.
+        let part = SplitPlan {
+            source_start: 0.0,
+            source_end: 420.0,
+            output_duration: 420.0,
+            name: "song".to_string(),
+        };
+        let args = segment_args(
+            std::path::Path::new("in.mp3"),
+            std::path::Path::new("out.mp3"),
+            &part,
+            1.0,
+            0.0,
+            AudioFormat::Mp3,
+            44_100,
+        );
+        let filter = args.iter().find(|a| a.contains("afade")).expect("fade present");
+        assert!(!filter.contains("afade=t=in"), "leading fade on part 1");
+        assert!(filter.contains("afade=t=out"), "trailing fade still needed");
+    }
+
+    #[test]
+    fn the_fade_never_runs_past_the_end_of_a_short_piece() {
+        // A 30ms piece cannot take a 20ms fade at each end, so the fade is
+        // clamped to half the piece and the two no longer overlap.
+        let part = SplitPlan {
+            source_start: 0.0,
+            source_end: 0.03,
+            output_duration: 0.03,
+            name: "clip".to_string(),
+        };
+        let args = segment_args(
+            std::path::Path::new("in.mp3"),
+            std::path::Path::new("out.mp3"),
+            &part,
+            1.0,
+            0.0,
+            AudioFormat::Mp3,
+            44_100,
+        );
+        let filter = args.iter().find(|a| a.contains("afade")).expect("fade present");
+        assert!(filter.contains("d=0.015"), "fade not clamped: {filter}");
+    }
+
+    #[test]
+    fn a_normal_length_piece_keeps_the_full_fade() {
+        // 20ms of fade is well inside a 100ms piece, so it is left alone.
+        let part = SplitPlan {
+            source_start: 0.0,
+            source_end: 0.1,
+            output_duration: 0.1,
+            name: "clip".to_string(),
+        };
+        let args = segment_args(
+            std::path::Path::new("in.mp3"),
+            std::path::Path::new("out.mp3"),
+            &part,
+            1.0,
+            0.0,
+            AudioFormat::Mp3,
+            44_100,
+        );
+        let filter = args.iter().find(|a| a.contains("afade")).expect("fade present");
+        assert!(filter.contains("d=0.020"), "fade changed unnecessarily: {filter}");
+    }
+
+    #[test]
+    fn a_piece_too_short_to_fade_gets_no_fade_at_all() {
+        let part = SplitPlan {
+            source_start: 300.0,
+            source_end: 300.0,
+            output_duration: 0.0,
+            name: "clip".to_string(),
+        };
+        let args = segment_args(
+            std::path::Path::new("in.mp3"),
+            std::path::Path::new("out.mp3"),
+            &part,
+            1.0,
+            0.0,
+            AudioFormat::Mp3,
+            44_100,
+        );
+        assert!(!args.iter().any(|a| a.contains("afade")));
+    }
+
+    #[test]
+    fn edits_are_still_applied_to_every_piece() {
+        let part = SplitPlan {
+            source_start: 300.0,
+            source_end: 600.0,
+            output_duration: 300.0,
+            name: "song (part 2)".to_string(),
+        };
+        let args = segment_args(
+            std::path::Path::new("in.mp3"),
+            std::path::Path::new("out.mp3"),
+            &part,
+            2.0,
+            3.0,
+            AudioFormat::Mp3,
+            44_100,
+        );
+        let filter = args.iter().find(|a| a.contains("atempo")).expect("edit applied");
+        assert!(filter.contains("asetrate=44100*1.18920712"), "pitch stage: {filter}");
+        assert!(filter.contains("atempo="), "tempo stage: {filter}");
+    }
+
+    #[test]
+    fn user_titles_cannot_escape_the_output_directory() {
+        // Dots are replaced too, so a title cannot force a file extension.
+        assert_eq!(sanitize_stem("../../../etc/passwd"), "_________etc_passwd");
+        assert_eq!(sanitize_stem("a/b\\c:d"), "a_b_c_d");
+        assert_eq!(sanitize_stem("my.track"), "my_track");
+        assert_eq!(sanitize_stem("   "), "track");
     }
 
     #[test]
