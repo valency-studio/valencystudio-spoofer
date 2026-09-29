@@ -91,6 +91,6 @@ pub async fn record_failed_transfer_diagnostic(
         error!("Failed to serialize diagnostic metadata for {asset_id}");
     }
 
-    info!("Saved failed transfer diagnostic to {record_dir:?}");
+    info!("Saved failed transfer diagnostic");
     prune_transfer_diagnostics(&diagnostics_dir).await;
 }
