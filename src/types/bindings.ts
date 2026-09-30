@@ -19,9 +19,36 @@ export const commands = {
    *  what is missing instead of failing later with an opaque error.
    */
   checkMediaTools: () => typedError<MediaTools, AppError>(__TAURI_INVOKE('check_media_tools')),
+  ensureMediaTools: () =>
+    typedError<MediaToolStatus, AppError>(__TAURI_INVOKE('ensure_media_tools')),
+  /**
+   *  Downloads yt-dlp if it is not already reachable, verifying it against the
+   *  SHA2-256SUMS file published in the same release.
+   */
+  ensureYtdlp: () => typedError<boolean, AppError>(__TAURI_INVOKE('ensure_ytdlp')),
   /**  Reads stream metadata with ffprobe. */
   probeMedia: (path: string) =>
     typedError<MediaInfo, AppError>(__TAURI_INVOKE('probe_media', { path })),
+  /**  Uploads one rendered piece and returns the new Roblox asset id. */
+  uploadAudioPiece: (path: string, name: string, creatorUserId: number | null) =>
+    typedError<UploadedAsset, AppError>(
+      __TAURI_INVOKE('upload_audio_piece', { path, name, creatorUserId }),
+    ),
+  /**  Uploads every rendered piece, for a track that was split. */
+  uploadAudioParts: (paths: string[], names: string[], creatorUserId: number | null) =>
+    typedError<UploadSummary, AppError>(
+      __TAURI_INVOKE('upload_audio_parts', { paths, names, creatorUserId }),
+    ),
+  /**  Audio uploads left this month, according to Roblox. */
+  fetchOpenCloudAudioQuota: (creatorUserId: number | null) =>
+    typedError<AudioQuota, AppError>(
+      __TAURI_INVOKE('fetch_open_cloud_audio_quota', { creatorUserId }),
+    ),
+  getUploadHistory: () =>
+    typedError<UploadRecord[], AppError>(__TAURI_INVOKE('get_upload_history')),
+  deleteUploadRecord: (id: string) =>
+    typedError<boolean, AppError>(__TAURI_INVOKE('delete_upload_record', { id })),
+  clearUploadHistory: () => typedError<boolean, AppError>(__TAURI_INVOKE('clear_upload_history')),
   /**
    *  Fetches a track from a URL using a user-installed yt-dlp.
    *
@@ -40,17 +67,57 @@ export const commands = {
    */
   importLocalMedia: (path: string) =>
     typedError<ImportedMedia, AppError>(__TAURI_INVOKE('import_local_media', { path })),
-  /**  Renders the edited track to a new file. The input is never modified. */
+  /**
+   *  Renders the edited track, splitting it when Roblox's limits require it.
+   *
+   *  The source file is never modified. A track that fits comes back as one file;
+   *  a longer one comes back as one file per piece, in order.
+   */
   bakeMedia: (
     inputPath: string,
     outputName: string,
     speed: number | null,
     semitones: number | null,
+    gainDb: number | null,
+    quality: number,
+    format: AudioFormat,
+    sampleRate: number,
+    sourceDuration: number | null,
+  ) =>
+    typedError<BakedMedia, AppError>(
+      __TAURI_INVOKE('bake_media', {
+        inputPath,
+        outputName,
+        speed,
+        semitones,
+        gainDb,
+        quality,
+        format,
+        sampleRate,
+        sourceDuration,
+      }),
+    ),
+  /**
+   *  Previews how a track will be split without rendering anything, so the Music
+   *  view can tell the user up front that a long track becomes several parts.
+   */
+  previewSplit: (
+    sourceDuration: number | null,
+    speed: number | null,
+    title: string,
+    quality: number,
     format: AudioFormat,
     sampleRate: number,
   ) =>
-    typedError<ImportedMedia, AppError>(
-      __TAURI_INVOKE('bake_media', { inputPath, outputName, speed, semitones, format, sampleRate }),
+    typedError<SplitPreview, AppError>(
+      __TAURI_INVOKE('preview_split', {
+        sourceDuration,
+        speed,
+        title,
+        quality,
+        format,
+        sampleRate,
+      }),
     ),
   fetchAssets: (query: FetchAssetsRequest) =>
     typedError<FetchAssetsResponse, AppError>(__TAURI_INVOKE('fetch_assets', { query })),
@@ -267,6 +334,28 @@ export type AssetExplorerItem = {
 /**  Output container/codec combinations offered by the Music editor. */
 export type AudioFormat = 'mp3' | 'ogg' | 'wav';
 
+export type AudioQuota = {
+  remaining: number;
+  limit: number;
+};
+
+export type BakedFile = {
+  name: string;
+  /**
+   * The name Roblox should show for this piece, exactly as the user typed it.
+   */
+  displayName: string;
+  path: string;
+  bytes: number;
+  outputDuration: number | null;
+};
+
+export type BakedMedia = {
+  files: BakedFile[];
+  totalDuration: number | null;
+  wasSplit: boolean;
+};
+
 export type BatchGrantPermissionsRequest = {
   asset_ids: (number | null)[];
   subject_type: string;
@@ -327,6 +416,15 @@ export type MediaInfo = {
   formatName: string;
 };
 
+/**
+ *  Tool availability plus whether this call installed yt-dlp, so the caller can
+ *  report what actually changed.
+ */
+export type MediaToolStatus = {
+  tools: MediaTools;
+  ytdlpInstalled: boolean;
+};
+
 export type MediaTools = {
   ffmpeg: boolean;
   ffprobe: boolean;
@@ -372,6 +470,13 @@ export type RbxInstance = {
   name: string;
   assets: ParsedAssetRef[];
   children: RbxInstance[];
+};
+
+export type RecordedAsset = {
+  name: string;
+  assetId: number | null;
+  path: string;
+  bytes: number;
 };
 
 export type ResolverAsset = {
@@ -424,6 +529,24 @@ export type RobloxUserInfo = {
   displayName: string;
 };
 
+export type SplitPlan = {
+  /**  Source-time start and end of the piece, in seconds. */
+  sourceStart: number | null;
+  sourceEnd: number | null;
+  /**  Duration of the piece after speed and pitch are applied. */
+  outputDuration: number | null;
+  /**  Suggested file name, without an extension. */
+  name: string;
+};
+
+/**  How a track will be cut up to satisfy Roblox's upload limits. */
+export type SplitPreview = {
+  parts: SplitPlan[];
+  /**  Output duration of the whole track once edits are applied. */
+  outputDuration: number | null;
+  needsSplit: boolean;
+};
+
 export type SpooferActionRequest = {
   assets: string | null;
   cookie: string | null;
@@ -451,6 +574,28 @@ export type SpooferActionRequest = {
   preserveMetadata: boolean | null;
   enableArchiveRecovery: boolean | null;
   proxyUrl: string | null;
+};
+
+/**  One track's upload, kept so the ids can be found again later. */
+export type UploadRecord = {
+  id: string;
+  title: string;
+  uploadedAt: string;
+  wasSplit: boolean;
+  totalBytes: number;
+  assets: RecordedAsset[];
+};
+
+export type UploadSummary = {
+  assets: UploadedAsset[];
+  wasSplit: boolean;
+};
+
+export type UploadedAsset = {
+  name: string;
+  assetId: number | null;
+  path: string;
+  bytes: number;
 };
 
 /* Tauri Specta runtime */

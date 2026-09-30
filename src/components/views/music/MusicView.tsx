@@ -1,9 +1,12 @@
 import {
+  Check,
   CircleAlert,
-  CloudUpload,
+  Copy,
   ExternalLink,
   FileAudio,
+  Info,
   Link2,
+  Pencil,
   Play,
   Square,
   Trash2,
@@ -13,27 +16,24 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../../components/ui/select';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { cn } from '../../../lib/utils';
 import type { MusicTrack } from '../../../stores/musicStore';
 import { bindUploadProgress, useMusicStore } from '../../../stores/musicStore';
 import type { BakedMedia, UploadProgress } from '../../../utils/music';
 import {
-  AUDIO_FORMATS,
+  activeSpeedPreset,
   bakeMedia,
   formatBytes,
   formatDuration,
   formatUploadDate,
+  GAIN_RANGE,
   mediaSrc,
   PITCH_RANGE,
-  SAMPLE_RATES,
+  QUALITY_RANGE,
+  qualityBitrateKbps,
+  robloxPlaybackSpeed,
+  SPEED_PRESETS,
   SPEED_RANGE,
 } from '../../../utils/music';
 
@@ -57,6 +57,7 @@ export default function MusicView() {
     addFromFile,
     remove,
     update,
+    rename,
     setError,
     setNotice,
   } = useMusicStore();
@@ -202,8 +203,8 @@ export default function MusicView() {
                     track={track}
                     onRemove={() => remove(track.id)}
                     onUpdate={(edit) => update(track.id, edit)}
+                    onRename={(title) => rename(track.id, title)}
                     onUpload={() => void uploadTrack(track.id)}
-                    uploadDisabled={uploading}
                     onExported={(result) => {
                       update(track.id, {
                         exportedPath: result.files[0]?.path ?? null,
@@ -211,8 +212,8 @@ export default function MusicView() {
                       });
                       setNotice(
                         result.wasSplit
-                          ? t('music.exportedSplit').replace('{count}', String(result.files.length))
-                          : t('music.exported'),
+                          ? t('music.uploadedSplit').replace('{count}', String(result.files.length))
+                          : t('music.uploaded'),
                       );
                     }}
                     onError={setError}
@@ -337,16 +338,16 @@ function TrackEditor({
   track,
   onRemove,
   onUpdate,
+  onRename,
   onUpload,
-  uploadDisabled,
   onExported,
   onError,
 }: {
   track: MusicTrack;
   onRemove: () => void;
   onUpdate: (edit: Partial<MusicTrack>) => void;
+  onRename: (title: string) => void;
   onUpload: () => void;
-  uploadDisabled: boolean;
   onExported: (result: BakedMedia) => void;
   onError: (message: string) => void;
 }) {
@@ -354,9 +355,15 @@ function TrackEditor({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(track.title);
 
   const src = mediaSrc(track.exportedPath ?? track.path);
-  const isEdited = track.speed !== 1 || track.semitones !== 0;
+  const isEdited = track.speed !== 1 || track.semitones !== 0 || track.gainDb !== 0;
+  const preset = activeSpeedPreset(track.speed);
+  // Roblox divides the baked speed back out, so the hint has to follow the
+  // slider rather than a stored default.
+  const playbackSpeed = robloxPlaybackSpeed(track.speed);
   // Web Audio gives an instant preview of the edits without touching the file.
   // The uploaded/baked copy is produced separately by bakeMedia.
   useEffect(() => {
@@ -404,22 +411,25 @@ function TrackEditor({
     }
   };
 
-  const handleExport = async () => {
+  const handleUpload = async () => {
     setExporting(true);
     onError('');
     try {
-      const result = await bakeMedia({
-        path: track.path,
-        title: track.title,
-        speed: track.speed,
-        semitones: track.semitones,
-        format: track.format,
-        sampleRate: track.sampleRate,
-        // The plan is split against the edited length, so the backend needs the
-        // source duration to work it out.
-        sourceDuration: track.info?.duration ?? undefined,
-      });
-      onExported(result);
+      if (track.exportedFiles.length === 0) {
+        const result = await bakeMedia({
+          path: track.path,
+          title: track.title,
+          speed: track.speed,
+          semitones: track.semitones,
+          gainDb: track.gainDb,
+          quality: track.quality,
+          format: track.format,
+          sampleRate: track.sampleRate,
+          sourceDuration: track.info?.duration ?? undefined,
+        });
+        onExported(result);
+      }
+      await onUpload();
     } catch (err) {
       onError(String(err));
     } finally {
@@ -427,11 +437,43 @@ function TrackEditor({
     }
   };
 
+  const commitRename = () => {
+    // Enter commits and then the field blurs, so the second call has to be a
+    // no-op rather than a second rename.
+    if (!renaming) return;
+    onRename(draftTitle);
+    setRenaming(false);
+  };
+
+  const cancelRename = () => {
+    if (!renaming) return;
+    setDraftTitle(track.title);
+    setRenaming(false);
+  };
+
   return (
     <li className="rounded-xl border border-border-subtle bg-card p-4">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-text-primary">{track.title}</p>
+          {renaming ? (
+            <Input
+              autoFocus
+              value={draftTitle}
+              onChange={(e) => setDraftTitle(e.target.value)}
+              onBlur={commitRename}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  commitRename();
+                }
+                if (e.key === 'Escape') cancelRename();
+              }}
+              aria-label={t('music.renameTitle')}
+              className="h-8 text-sm font-semibold"
+            />
+          ) : (
+            <p className="truncate text-sm font-semibold text-text-primary">{track.title}</p>
+          )}
           <p className="mt-0.5 text-xs text-text-muted">
             {formatDuration(track.info?.duration)}
             {track.uploader ? ` · ${track.uploader}` : ''}
@@ -439,6 +481,19 @@ function TrackEditor({
           </p>
         </div>
 
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => {
+            setDraftTitle(track.title);
+            setRenaming((value) => !value);
+          }}
+          disabled={renaming}
+          aria-label={t('music.rename')}
+          title={t('music.renameHint')}
+        >
+          <Pencil size={15} />
+        </Button>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -452,11 +507,39 @@ function TrackEditor({
         </Button>
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <Control label={t('music.speed')} value={`${track.speed.toFixed(2)}x`}>
+      <div className="mt-4 flex flex-col gap-4">
+        <Control
+          label={t('music.speed')}
+          value={
+            preset
+              ? `${t(preset.labelKey)} · ${track.speed.toFixed(2)}x`
+              : `${track.speed.toFixed(2)}x`
+          }
+        >
+          <div className="flex flex-wrap gap-1.5">
+            {SPEED_PRESETS.map((option) => {
+              const active = preset?.value === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => onUpdate({ speed: option.value })}
+                  aria-pressed={active}
+                  className={cn(
+                    'rounded-md border px-2 py-1 text-xs font-medium transition-colors',
+                    active
+                      ? 'border-primary bg-primary/15 text-primary'
+                      : 'border-border-subtle text-text-secondary hover:border-primary/50 hover:text-text-primary',
+                  )}
+                >
+                  {t(option.labelKey)}
+                </button>
+              );
+            })}
+          </div>
           <input
             type="range"
-            className="theme-range"
+            className="theme-range mt-1"
             value={track.speed}
             min={SPEED_RANGE.min}
             max={SPEED_RANGE.max}
@@ -466,55 +549,63 @@ function TrackEditor({
           />
         </Control>
 
-        <Control label={t('music.pitch')} value={semitoneLabel(track.semitones)}>
-          <input
-            type="range"
-            className="theme-range"
-            value={track.semitones}
-            min={PITCH_RANGE.min}
-            max={PITCH_RANGE.max}
-            step={PITCH_RANGE.step}
-            aria-label={t('music.pitch')}
-            onChange={(e) => onUpdate({ semitones: Number(e.target.value) })}
-          />
-        </Control>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Control label={t('music.pitch')} value={semitoneLabel(track.semitones)}>
+            <input
+              type="range"
+              className="theme-range"
+              value={track.semitones}
+              min={PITCH_RANGE.min}
+              max={PITCH_RANGE.max}
+              step={PITCH_RANGE.step}
+              aria-label={t('music.pitch')}
+              onChange={(e) => onUpdate({ semitones: Number(e.target.value) })}
+            />
+          </Control>
 
-        <Control label={t('music.format')}>
-          <Select
-            value={track.format}
-            onValueChange={(value) => onUpdate({ format: value as MusicTrack['format'] })}
+          <Control
+            label={t('music.amplification')}
+            value={track.gainDb > 0 ? `+${track.gainDb} dB` : `${track.gainDb} dB`}
           >
-            <SelectTrigger aria-label={t('music.format')}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {AUDIO_FORMATS.map((format) => (
-                <SelectItem key={format.value} value={format.value}>
-                  {format.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Control>
+            <input
+              type="range"
+              className="theme-range"
+              value={track.gainDb}
+              min={GAIN_RANGE.min}
+              max={GAIN_RANGE.max}
+              step={GAIN_RANGE.step}
+              aria-label={t('music.amplification')}
+              onChange={(e) => onUpdate({ gainDb: Number(e.target.value) })}
+            />
+          </Control>
 
-        <Control label={t('music.sampleRate')}>
-          <Select
-            value={String(track.sampleRate)}
-            onValueChange={(value) => onUpdate({ sampleRate: Number(value) })}
+          <Control
+            label={t('music.quality')}
+            value={`${track.quality}/${QUALITY_RANGE.max} · ${qualityBitrateKbps(track.quality)} kbps`}
           >
-            <SelectTrigger aria-label={t('music.sampleRate')}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SAMPLE_RATES.map((rate) => (
-                <SelectItem key={rate} value={String(rate)}>
-                  {rate.toLocaleString()} Hz
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Control>
+            <input
+              type="range"
+              className="theme-range"
+              value={track.quality}
+              min={QUALITY_RANGE.min}
+              max={QUALITY_RANGE.max}
+              step={QUALITY_RANGE.step}
+              aria-label={t('music.quality')}
+              onChange={(e) => onUpdate({ quality: Number(e.target.value) })}
+            />
+          </Control>
+
+          <Control label={t('music.outputFormat')} value={track.format.toUpperCase()}>
+            <p className="text-xs leading-relaxed text-text-muted">{t('music.outputFormatNote')}</p>
+          </Control>
+        </div>
       </div>
+
+      <RobloxHint
+        playbackSpeed={playbackSpeed}
+        hint={t('music.robloxSpeedHint').replace('{value}', playbackSpeed)}
+        snippet={t('music.robloxSpeedSnippet').replace('{value}', playbackSpeed)}
+      />
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <p className="text-xs text-text-muted">
@@ -524,23 +615,17 @@ function TrackEditor({
               ? t('music.editedNote')
               : t('music.untouchedNote')}
         </p>
-        <Button onClick={() => void handleExport()} disabled={exporting || !track.info}>
+        <Button onClick={() => void handleUpload()} disabled={exporting || !track.info}>
           <Upload size={15} />
-          {exporting ? t('music.exporting') : t('music.export')}
+          {exporting ? t('music.uploading') : t('music.upload')}
         </Button>
-        {track.exportedFiles.length > 0 && (
-          <Button onClick={onUpload} disabled={uploadDisabled} title={t('music.uploadHint')}>
-            <CloudUpload size={15} />
-            {t('music.upload')}
-          </Button>
-        )}
       </div>
 
       {track.exportedFiles.length > 1 && (
         <ul className="mt-3 flex flex-col gap-1 border-t border-border-subtle pt-3">
           {track.exportedFiles.map((file) => (
             <li key={file.path} className="flex items-center justify-between gap-3 text-xs">
-              <span className="truncate text-text-secondary">{file.name}</span>
+              <span className="truncate text-text-secondary">{file.displayName}</span>
               <span className="shrink-0 text-text-muted tabular-nums">
                 {formatDuration(file.outputDuration)} · {(file.bytes / 1024 / 1024).toFixed(1)} MB
               </span>
@@ -549,7 +634,7 @@ function TrackEditor({
         </ul>
       )}
 
-      {isEdited && track.thumbnailUrl && (
+      {track.thumbnailUrl && (
         <a
           href={track.sourceUrl ?? track.thumbnailUrl}
           target="_blank"
@@ -561,6 +646,59 @@ function TrackEditor({
         </a>
       )}
     </li>
+  );
+}
+
+/**
+ * The value a track needs on `Sound.PlaybackSpeed` in Roblox.
+ *
+ * The render bakes the speed in, so the game has to divide it back out. This is
+ * the one number a user has to copy by hand, so it is shown as a snippet and can
+ * be copied in one click.
+ */
+function RobloxHint({
+  playbackSpeed,
+  hint,
+  snippet,
+}: {
+  playbackSpeed: string;
+  hint: string;
+  snippet: string;
+}) {
+  const { t } = useLanguage();
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  return (
+    <div className="mt-4 flex items-start gap-2 rounded-lg border border-border-subtle bg-bg-elevated/50 p-3">
+      <Info size={15} className="mt-0.5 shrink-0 text-primary" />
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium text-text-secondary">{t('music.robloxSettings')}</p>
+        <p className="mt-0.5 text-xs text-text-muted">{hint}</p>
+        <div className="mt-2 flex items-center gap-2">
+          <code className="min-w-0 flex-1 truncate rounded bg-bg-elevated px-2 py-1 font-mono text-xs text-text-primary">
+            {snippet}
+          </code>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => {
+              void navigator.clipboard.writeText(playbackSpeed);
+              setCopied(true);
+            }}
+            aria-label={t('music.copyPlaybackSpeed')}
+            title={t('music.copyPlaybackSpeed')}
+          >
+            {copied ? <Check size={15} /> : <Copy size={15} />}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 

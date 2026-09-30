@@ -13,6 +13,11 @@ import type {
 } from '../utils/music';
 import {
   checkMediaTools,
+  DEFAULT_FORMAT,
+  DEFAULT_GAIN_DB,
+  DEFAULT_QUALITY,
+  DEFAULT_SAMPLE_RATE,
+  DEFAULT_SPEED,
   deleteUploadRecord,
   ensureMediaTools,
   fetchAudioQuota,
@@ -22,10 +27,14 @@ import {
   pickLocalAudio,
   previewSplit,
   probeMedia,
+  stripAudioExtension,
   stripExtension,
   uploadAudioParts,
 } from '../utils/music';
 import { useConfigStore } from './configStore';
+
+/** Longest name Roblox accepts on an asset. */
+const MAX_TITLE_LENGTH = 100;
 
 export interface MusicTrack {
   /** Stable client id; the file path can change after a bake. */
@@ -41,6 +50,10 @@ export interface MusicTrack {
   // Edit state. The source file is never touched; edits describe the export.
   speed: number;
   semitones: number;
+  /** Level change applied to the render, in decibels. */
+  gainDb: number;
+  /** Encoder quality step, 0 (smallest) to 10 (best). */
+  quality: number;
   format: AudioFormat;
   sampleRate: number;
 
@@ -56,9 +69,28 @@ export interface MusicTrack {
 export type TrackEdit = Partial<
   Pick<
     MusicTrack,
-    'speed' | 'semitones' | 'format' | 'sampleRate' | 'exportedPath' | 'exportedFiles'
+    | 'title'
+    | 'speed'
+    | 'semitones'
+    | 'gainDb'
+    | 'quality'
+    | 'format'
+    | 'sampleRate'
+    | 'exportedPath'
+    | 'exportedFiles'
   >
 >;
+
+/** Edits that change the rendered audio, so a previous bake no longer applies. */
+const RENDER_EDIT_KEYS: (keyof TrackEdit)[] = [
+  'title',
+  'speed',
+  'semitones',
+  'gainDb',
+  'quality',
+  'format',
+  'sampleRate',
+];
 
 interface MusicState {
   tools: MediaTools | null;
@@ -82,6 +114,7 @@ interface MusicState {
   addFromFile: () => Promise<void>;
   remove: (id: string) => void;
   update: (id: string, edit: TrackEdit) => void;
+  rename: (id: string, title: string) => void;
   setError: (message: string | null) => void;
   setNotice: (message: string | null) => void;
 }
@@ -113,10 +146,12 @@ const toTrack = (
   uploader: media.uploader,
   thumbnailUrl: media.thumbnailUrl,
   info,
-  speed: 1,
+  speed: DEFAULT_SPEED,
   semitones: 0,
-  format: 'mp3',
-  sampleRate: 44100,
+  gainDb: DEFAULT_GAIN_DB,
+  quality: DEFAULT_QUALITY,
+  format: DEFAULT_FORMAT,
+  sampleRate: DEFAULT_SAMPLE_RATE,
   exportedPath: null,
   exportedFiles: [],
   split: null,
@@ -178,6 +213,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     try {
       const summary = await uploadAudioParts(
         track.exportedFiles.map((file) => file.path),
+        track.exportedFiles.map((file) => file.displayName),
         userId,
       );
       set({ notice: summary.wasSplit ? 'split' : 'single' });
@@ -266,10 +302,36 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   update: (id, edit) => {
     set((state) => ({
-      tracks: state.tracks.map((track) => (track.id === id ? { ...track, ...edit } : track)),
+      tracks: state.tracks.map((track) => {
+        if (track.id !== id) return track;
+
+        // A bake is only valid for the settings it was rendered with. Keeping a
+        // stale one would make the next upload send the previous render while
+        // the sliders show something else, so it is dropped here instead.
+        const stale = RENDER_EDIT_KEYS.some((key) => key in edit);
+        return stale
+          ? { ...track, ...edit, exportedPath: null, exportedFiles: [] }
+          : { ...track, ...edit };
+      }),
     }));
     // The split depends on the edited length, so recompute after every change.
     void get().refreshSplit(id);
+  },
+
+  rename: (id, title) => {
+    // Roblox shows the name as typed, and it already knows the format, so the
+    // extension a user naturally types back in is dropped here rather than in
+    // three different places. Only a real audio extension goes: "Mr. Blue Sky"
+    // is a title, not a file name.
+    const clean = stripAudioExtension(title).replace(/\s+/g, ' ').trim().slice(0, MAX_TITLE_LENGTH);
+    const track = get().tracks.find((candidate) => candidate.id === id);
+    // An empty field means the user cleared it to retype, not that the track
+    // should lose its name.
+    if (!track || !clean) return;
+    // Opening the field and closing it again is not a rename, and must not throw
+    // away a render that is still valid.
+    if (clean === track.title) return;
+    get().update(id, { title: clean });
   },
 
   refreshSplit: async (id) => {
@@ -281,6 +343,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         sourceDuration: track.info.duration,
         speed: track.speed,
         title: track.title,
+        quality: track.quality,
         format: track.format,
         sampleRate: track.sampleRate,
       });

@@ -13,8 +13,62 @@ export const AUDIO_FORMATS: { value: AudioFormat; label: string }[] = [
 
 export const SAMPLE_RATES = [22050, 44100, 48000];
 
-export const SPEED_RANGE = { min: 0.25, max: 4, step: 0.05 } as const;
+export const SPEED_RANGE = { min: 0.25, max: 4, step: 0.01 } as const;
 export const PITCH_RANGE = { min: -12, max: 12, step: 1 } as const;
+export const GAIN_RANGE = { min: -40, max: 20, step: 1 } as const;
+export const QUALITY_RANGE = { min: 0, max: 10, step: 1 } as const;
+
+/**
+ * A track starts on Default rather than Normal.
+ *
+ * The editor exists to push a track's tempo, and Normal would be a special case
+ * rather than the useful one. `DEFAULT_SPEED` is the value the Roblox hint is
+ * derived from, so the two can never drift.
+ */
+export const DEFAULT_SPEED = 2.3;
+export const DEFAULT_GAIN_DB = -4;
+export const DEFAULT_QUALITY = 5;
+export const DEFAULT_SAMPLE_RATE = 44100;
+
+/** The output format the editor always renders. Roblox takes all three. */
+export const DEFAULT_FORMAT: AudioFormat = 'mp3';
+
+export interface SpeedPreset {
+  value: number;
+  /** Translation key, so the chip labels follow the selected language. */
+  labelKey: string;
+}
+
+export const SPEED_PRESETS: SpeedPreset[] = [
+  { value: 1, labelKey: 'music.presetNormal' },
+  { value: 2.1, labelKey: 'music.presetSlow' },
+  { value: 2.3, labelKey: 'music.presetDefault' },
+  { value: 2.5, labelKey: 'music.presetFast' },
+  { value: 2.7, labelKey: 'music.presetFaster' },
+  { value: 2.9, labelKey: 'music.presetUltra' },
+];
+
+/** True when a speed is one of the presets, within slider rounding. */
+export const activeSpeedPreset = (speed: number) =>
+  SPEED_PRESETS.find((preset) => Math.abs(preset.value - speed) < 0.005);
+
+/**
+ * The `Sound.PlaybackSpeed` that plays a rendered track back at its own tempo.
+ *
+ * The render bakes the speed in, so Roblox has to divide it back out: a 2.3x
+ * track needs 0.435. The value is what the Music view shows and copies, so the
+ * two never disagree.
+ */
+export const robloxPlaybackSpeed = (speed: number) => {
+  if (!Number.isFinite(speed) || speed <= 0) return '1.000';
+  return (1 / speed).toFixed(3);
+};
+
+/** Encoded kbps for an MP3 at a quality step; mirrors the Rust ladder. */
+const MP3_KBPS_BY_QUALITY = [64, 80, 96, 112, 128, 160, 192, 224, 256, 285, 320];
+
+export const qualityBitrateKbps = (quality: number) =>
+  MP3_KBPS_BY_QUALITY[Math.min(QUALITY_RANGE.max, Math.max(0, Math.round(quality)))];
 
 const AUDIO_EXTENSIONS = ['mp3', 'ogg', 'wav', 'm4a', 'aac', 'flac', 'webm', 'opus'];
 
@@ -36,7 +90,10 @@ export const importLocalMedia = (path: string) =>
   invoke<ImportedMedia>('import_local_media', { path });
 
 export interface BakedFile {
+  /** File name on disk, sanitised for the file system. */
   name: string;
+  /** The name Roblox shows, exactly as the user typed it. */
+  displayName: string;
   path: string;
   bytes: number;
   outputDuration: number;
@@ -66,6 +123,8 @@ export const bakeMedia = (input: {
   title: string;
   speed: number;
   semitones: number;
+  gainDb: number;
+  quality: number;
   format: AudioFormat;
   sampleRate: number;
   sourceDuration?: number;
@@ -75,6 +134,8 @@ export const bakeMedia = (input: {
     outputName: input.title,
     speed: input.speed,
     semitones: input.semitones,
+    gainDb: input.gainDb,
+    quality: input.quality,
     // The Rust enum is serialised in camelCase, so the discriminant is lowercased.
     format: input.format,
     sampleRate: input.sampleRate,
@@ -86,6 +147,7 @@ export const previewSplit = (input: {
   sourceDuration: number;
   speed: number;
   title: string;
+  quality: number;
   format: AudioFormat;
   sampleRate: number;
 }) =>
@@ -93,6 +155,7 @@ export const previewSplit = (input: {
     sourceDuration: input.sourceDuration,
     speed: input.speed,
     title: input.title,
+    quality: input.quality,
     format: input.format,
     sampleRate: input.sampleRate,
   });
@@ -113,6 +176,23 @@ export const pickLocalAudio = async (): Promise<string | null> => {
 export const mediaSrc = (path: string) => convertFileSrc(path);
 
 export const stripExtension = (name: string) => name.replace(/\.[^./\\]+$/, '');
+
+/**
+ * Removes a trailing audio extension from a name the user typed.
+ *
+ * Unlike {@link stripExtension} this only removes extensions Roblox recognises,
+ * so a title that happens to contain a dot ("Mr. Blue Sky") survives a rename.
+ * Mirrors `strip_audio_extension` on the Rust side, which sees the same name.
+ */
+export const stripAudioExtension = (name: string) => {
+  const trimmed = name.trim();
+  const lower = trimmed.toLowerCase();
+  return AUDIO_EXTENSIONS.reduce(
+    (kept, extension) =>
+      lower.endsWith(`.${extension}`) ? trimmed.slice(0, -(extension.length + 1)) : kept,
+    trimmed,
+  );
+};
 
 export const formatDuration = (seconds: number | null | undefined) => {
   if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) return '--:--';
@@ -164,8 +244,15 @@ export interface UploadRecord {
   assets: RecordedAsset[];
 }
 
-export const uploadAudioParts = (paths: string[], creatorUserId: number) =>
-  invoke<UploadSummary>('upload_audio_parts', { paths, creatorUserId });
+/**
+ * Uploads rendered pieces in order.
+ *
+ * The names are sent separately because the file on disk has been through
+ * sanitising and carries an extension, and neither belongs in a Roblox asset
+ * name.
+ */
+export const uploadAudioParts = (paths: string[], names: string[], creatorUserId: number) =>
+  invoke<UploadSummary>('upload_audio_parts', { paths, names, creatorUserId });
 
 export const fetchAudioQuota = (creatorUserId: number) =>
   invoke<AudioQuota>('fetch_open_cloud_audio_quota', { creatorUserId });

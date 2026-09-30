@@ -27,10 +27,10 @@ pub const MAX_UPLOAD_BYTES: u64 = 20 * 1024 * 1024;
 #[serde(rename_all = "camelCase")]
 pub struct UploadProgress {
     pub file: String,
-    pub index: usize,
-    pub total: usize,
-    pub sent: u64,
-    pub bytes: u64,
+    pub index: u32,
+    pub total: u32,
+    pub sent: u32,
+    pub bytes: u32,
     /// "uploading" while bytes move, "processing" while Roblox approves.
     pub stage: String,
 }
@@ -39,9 +39,10 @@ pub struct UploadProgress {
 #[serde(rename_all = "camelCase")]
 pub struct UploadedAsset {
     pub name: String,
+    #[specta(type = f64)]
     pub asset_id: u64,
     pub path: String,
-    pub bytes: u64,
+    pub bytes: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -54,8 +55,8 @@ pub struct UploadSummary {
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioQuota {
-    pub remaining: u64,
-    pub limit: u64,
+    pub remaining: u32,
+    pub limit: u32,
 }
 
 // ------------------------------------------------------------------- history
@@ -68,7 +69,7 @@ pub struct UploadRecord {
     pub title: String,
     pub uploaded_at: String,
     pub was_split: bool,
-    pub total_bytes: u64,
+    pub total_bytes: u32,
     pub assets: Vec<RecordedAsset>,
 }
 
@@ -76,9 +77,10 @@ pub struct UploadRecord {
 #[serde(rename_all = "camelCase")]
 pub struct RecordedAsset {
     pub name: String,
+    #[specta(type = f64)]
     pub asset_id: u64,
     pub path: String,
-    pub bytes: u64,
+    pub bytes: u32,
 }
 
 /// Records default to this many entries, oldest dropped first.
@@ -278,7 +280,7 @@ pub async fn upload_pieces(
             name: name.clone(),
             asset_id,
             path: path.to_string_lossy().to_string(),
-            bytes: std::fs::metadata(path).map(|m| m.len()).unwrap_or(0),
+            bytes: std::fs::metadata(path).map(|m| m.len()).unwrap_or(0) as u32,
         });
     }
 
@@ -295,6 +297,27 @@ pub async fn upload_pieces(
     record_upload(app, &summary).await?;
 
     Ok(summary)
+}
+
+/// The `request` field of a Create Asset call.
+///
+/// The creator is not a top level attribute of the request: it belongs to
+/// `creationContext`. Roblox silently ignores a top level `creator` and then
+/// answers "Creator is required.", which is the only clue that the field was in
+/// the wrong place.
+///
+/// The name is also kept under Roblox's 100 character limit, and the creator has
+/// to be the uploader's own user id or the asset is rejected.
+fn create_asset_request(name: &str, creator_user_id: u64) -> serde_json::Value {
+    let display_name: String = name.chars().take(100).collect();
+    serde_json::json!({
+        "assetType": "Audio",
+        "displayName": display_name,
+        "description": display_name,
+        "creationContext": {
+            "creator": { "userId": creator_user_id },
+        },
+    })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -320,22 +343,19 @@ async fn upload_one(
     }
 
     let content_type = content_type_for(path)?;
-    // The name is kept under Roblox's 100 character limit, and the creator has
-    // to be the uploader's own user id or the asset is rejected.
-    let display_name: String = name.chars().take(100).collect();
-    let request = serde_json::json!({
-        "assetType": "Audio",
-        "displayName": display_name,
-        "description": display_name,
-        "creator": { "userId": creator_user_id },
-    });
+    let request = create_asset_request(name, creator_user_id);
 
     let file = tokio::fs::File::open(path)
         .await
         .map_err(|e| AppError::Custom(format!("Could not open {}: {e}", name)))?;
 
-    let emitter =
-        ProgressEmitter { app: app.clone(), file: name.to_string(), index, total, bytes: size };
+    let emitter = ProgressEmitter {
+        app: app.clone(),
+        file: name.to_string(),
+        index: index as u32,
+        total: total as u32,
+        bytes: size as u32,
+    };
 
     let body = reqwest::Body::wrap_stream(file_stream(file, emitter));
     let part = reqwest::multipart::Part::stream(body)
@@ -399,8 +419,8 @@ async fn wait_for_operation(
             "music-upload-progress",
             UploadProgress {
                 file: name.to_string(),
-                index,
-                total,
+                index: index as u32,
+                total: total as u32,
                 sent: 0,
                 bytes: 0,
                 stage: "processing".to_string(),
@@ -509,7 +529,7 @@ pub async fn upload_audio_piece(
     app: AppHandle,
     path: String,
     name: String,
-    creator_user_id: u64,
+    creator_user_id: f64,
 ) -> Result<UploadedAsset> {
     let file_path = PathBuf::from(path.trim());
     if !file_path.is_file() {
@@ -517,7 +537,7 @@ pub async fn upload_audio_piece(
     }
 
     let summary =
-        upload_pieces(&app, &[(name.clone(), file_path.clone())], creator_user_id).await?;
+        upload_pieces(&app, &[(name.clone(), file_path.clone())], creator_user_id as u64).await?;
 
     summary
         .assets
@@ -532,11 +552,16 @@ pub async fn upload_audio_piece(
 pub async fn upload_audio_parts(
     app: AppHandle,
     paths: Vec<String>,
-    creator_user_id: u64,
+    names: Vec<String>,
+    creator_user_id: f64,
 ) -> Result<UploadSummary> {
+    if names.len() != paths.len() {
+        return Err("Each rendered piece needs a name.".into());
+    }
+
     let mut files: Vec<(String, PathBuf)> = Vec::with_capacity(paths.len());
 
-    for path in paths {
+    for (path, name) in paths.into_iter().zip(names) {
         let file_path = PathBuf::from(path.trim());
         if !file_path.is_file() {
             return Err(format!(
@@ -545,26 +570,29 @@ pub async fn upload_audio_parts(
             )
             .into());
         }
-        let name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("track").to_string();
+        // The name is the one chosen in the editor rather than the name on disk:
+        // the file has been through sanitising and carries an extension, and
+        // neither belongs in a Roblox asset name.
+        let name = super::media::strip_audio_extension(&name);
         files.push((name, file_path));
     }
 
-    upload_pieces(&app, &files, creator_user_id).await
+    upload_pieces(&app, &files, creator_user_id as u64).await
 }
 
 /// Audio uploads left this month, according to Roblox.
 #[tauri::command]
 #[specta::specta]
-pub async fn fetch_open_cloud_audio_quota(creator_user_id: u64) -> Result<AudioQuota> {
-    if creator_user_id == 0 {
+pub async fn fetch_open_cloud_audio_quota(creator_user_id: f64) -> Result<AudioQuota> {
+    if creator_user_id == 0.0 {
         return Err("Add a Roblox account first.".into());
     }
 
     let key = api_key()?;
     let client = crate::utils::get_http_client();
-    let (remaining, limit) = audio_quota(&client, &key, creator_user_id).await?;
+    let (remaining, limit) = audio_quota(&client, &key, creator_user_id as u64).await?;
 
-    Ok(AudioQuota { remaining, limit })
+    Ok(AudioQuota { remaining: remaining as u32, limit: limit as u32 })
 }
 
 /// Turns a Roblox error body into something a user can act on.
@@ -589,9 +617,39 @@ fn describe(body: &str, status: u16) -> AppError {
 
 #[cfg(test)]
 mod tests {
-    use super::{content_type_for, describe, MAX_UPLOAD_BYTES};
+    use super::{content_type_for, create_asset_request, describe, MAX_UPLOAD_BYTES};
     use crate::error::AppError;
     use std::path::Path;
+
+    #[test]
+    fn the_creator_is_nested_inside_the_creation_context() {
+        // A top level creator is ignored by the API and comes back as
+        // "Creator is required.", so pin the shape Roblox actually documents.
+        let request = create_asset_request("WHERE_DO_WE_BEGIN (edited).mp3", 1_234_567);
+        let creator = request
+            .get("creationContext")
+            .and_then(|c| c.get("creator"))
+            .and_then(|c| c.get("userId"))
+            .and_then(serde_json::Value::as_u64);
+        assert_eq!(creator, Some(1_234_567));
+        assert!(request.get("creator").is_none(), "creator must not be top level");
+        assert_eq!(request.get("assetType").and_then(|v| v.as_str()), Some("Audio"));
+    }
+
+    #[test]
+    fn the_asset_description_is_never_empty() {
+        // Roblox requires a description as well as a name on Create Asset.
+        let request = create_asset_request("a", 1);
+        assert_eq!(request.get("description").and_then(|v| v.as_str()), Some("a"));
+        assert_eq!(request.get("displayName").and_then(|v| v.as_str()), Some("a"));
+    }
+
+    #[test]
+    fn a_long_name_is_cut_to_robloxs_limit() {
+        let request = create_asset_request(&"n".repeat(400), 1);
+        let name = request.get("displayName").and_then(|v| v.as_str()).unwrap_or_default();
+        assert_eq!(name.len(), 100);
+    }
 
     #[test]
     fn roblox_only_accepts_four_audio_formats() {
@@ -719,13 +777,13 @@ mod tests {
 struct ProgressEmitter {
     app: AppHandle,
     file: String,
-    index: usize,
-    total: usize,
-    bytes: u64,
+    index: u32,
+    total: u32,
+    bytes: u32,
 }
 
 impl ProgressEmitter {
-    fn report(&self, sent: u64) {
+    fn report(&self, sent: u32) {
         // A failure here must not abort the upload, so it is deliberately
         // ignored: progress is a nicety, the transfer is the point.
         let _ = self.app.emit(
@@ -763,7 +821,7 @@ fn file_stream(
                 Ok(read) => {
                     buffer.truncate(read);
                     let total = sent.fetch_add(read as u64, Ordering::Relaxed) + read as u64;
-                    emitter.report(total);
+                    emitter.report(total as u32);
                     Some((Ok(Bytes::from(buffer)), (file, emitter, sent)))
                 }
             }

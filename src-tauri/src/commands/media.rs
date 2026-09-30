@@ -25,6 +25,19 @@ fn no_console(command: &mut Command) {
     let _ = command;
 }
 
+fn safe_stem(name: &str, max_len: usize) -> String {
+    let stem: String = name
+        .chars()
+        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+        .take(max_len)
+        .collect();
+    if stem.trim().is_empty() {
+        "track".to_string()
+    } else {
+        stem
+    }
+}
+
 /// Semitones in an octave, the divisor of the pitch ratio.
 const SEMITONES_PER_OCTAVE: f64 = 12.0;
 
@@ -96,13 +109,14 @@ pub async fn check_media_tools() -> Result<MediaTools> {
 /// the directories that were searched.
 async fn resolve(spec: ToolSpec) -> Option<std::path::PathBuf> {
     let path_var = std::env::var_os("PATH")?;
+    let candidates = candidate_names(spec.program);
 
     for dir in std::env::split_paths(&path_var) {
         if dir.as_os_str().is_empty() {
             continue;
         }
-        for candidate in candidate_names(spec.program) {
-            let full = dir.join(&candidate);
+        for candidate in &candidates {
+            let full = dir.join(candidate);
             if !full.is_file() {
                 continue;
             }
@@ -345,6 +359,32 @@ fn media_dir(app: &AppHandle) -> Result<PathBuf> {
     Ok(dir)
 }
 
+/// Scratch directory that in-progress renders are written to.
+///
+/// It sits inside the media directory so the finished piece can be moved into
+/// place without crossing a volume, and under its own name so a render that is
+/// still in flight, or was abandoned by a crash, can never be mistaken for a
+/// finished track.
+fn bake_dir(app: &AppHandle) -> Result<PathBuf> {
+    let dir = media_dir(app)?.join(".bake");
+    std::fs::create_dir_all(&dir)?;
+    Ok(dir)
+}
+
+/// Clears leftovers from a render that was killed before it could move its
+/// result into place.
+fn clear_bake_dir(dir: &Path) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let _ = std::fs::remove_file(entry.path());
+    }
+}
+
+/// Distinguishes two pieces of a render that is running alongside another.
+static BAKE_SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
 fn tool_error(tool: &str, purpose: &str) -> AppError {
     AppError::Custom(format!(
         "{tool} is required to {purpose}. Install it and make sure it is on your PATH, then try again."
@@ -391,9 +431,16 @@ pub async fn probe_media(path: String) -> Result<MediaInfo> {
         parsed.get("streams").and_then(|s| s.get(0)).cloned().unwrap_or(serde_json::Value::Null);
     let format = parsed.get("format").cloned().unwrap_or(serde_json::Value::Null);
 
+    // ffprobe emits numbers or strings depending on the field, so both are read.
+    let as_duration = |value: Option<&serde_json::Value>| -> Option<f64> {
+        match value {
+            Some(serde_json::Value::Number(n)) => n.as_f64(),
+            Some(serde_json::Value::String(s)) => s.parse().ok(),
+            _ => None,
+        }
+    };
     let as_u64 = |value: Option<&serde_json::Value>| -> Option<u64> {
         match value {
-            // ffprobe emits numbers or strings depending on the field.
             Some(serde_json::Value::Number(n)) => n.as_u64(),
             Some(serde_json::Value::String(s)) => s.parse().ok(),
             _ => None,
@@ -401,7 +448,7 @@ pub async fn probe_media(path: String) -> Result<MediaInfo> {
     };
 
     Ok(MediaInfo {
-        duration: as_u64(format.get("duration")).map(|d| d as f64),
+        duration: as_duration(format.get("duration")),
         sample_rate: as_u64(stream.get("sample_rate")).map(|v| v as u32),
         channels: as_u64(stream.get("channels")).map(|v| v as u32),
         bit_rate: as_u64(stream.get("bit_rate")).map(|v| v as u32),
@@ -431,8 +478,9 @@ pub async fn import_media_from_url(app: AppHandle, url: String) -> Result<Import
             "That does not look like a link. It should start with http:// or https://.".into()
         );
     }
-    let ytdlp =
-        resolve(YTDLP).await.ok_or_else(|| tool_error("yt-dlp", "import a track from a link"))?;
+    let ytdlp = resolve_ytdlp(&app)
+        .await
+        .ok_or_else(|| tool_error("yt-dlp", "import a track from a link"))?;
 
     let dir = media_dir(&app)?;
 
@@ -481,8 +529,22 @@ pub async fn import_media_from_url(app: AppHandle, url: String) -> Result<Import
     let path = newest_audio_file(&dir)
         .ok_or_else(|| AppError::Custom("yt-dlp finished but no audio file appeared.".into()))?;
 
+    let truncated_name = format!(
+        "{}.{}",
+        safe_stem(&title, 50),
+        path.extension().and_then(|e| e.to_str()).unwrap_or("m4a")
+    );
+    let target = dir.join(&truncated_name);
+    if path != target {
+        // On Windows, rename fails if the destination already exists.
+        let _ = tokio::fs::remove_file(&target).await;
+        tokio::fs::rename(&path, &target)
+            .await
+            .map_err(|e| AppError::Custom(format!("Could not rename downloaded file: {e}")))?;
+    }
+
     Ok(ImportedMedia {
-        path: path.to_string_lossy().to_string(),
+        path: target.to_string_lossy().to_string(),
         title,
         uploader,
         thumbnail_url: meta.get("thumbnail").and_then(|v| v.as_str()).map(str::to_string),
@@ -527,41 +589,97 @@ fn newest_audio_file(dir: &Path) -> Option<PathBuf> {
 /// while shortening the audio by the same factor. `atempo` then corrects the
 /// tempo back to the requested speed, so the two controls stay independent.
 /// r = 2^(semitones/12), equal temperament.
-fn build_filter(speed: f64, semitones: f64, target_sample_rate: u32) -> String {
+///
+/// `atempo` only accepts factors in the range 0.5-100. For extreme combinations
+/// of speed and pitch the required factor can fall outside that window, so the
+/// tempo change is split across several chained `atempo` stages.
+fn build_filter(speed: f64, semitones: f64, gain_db: f64, target_sample_rate: u32) -> String {
     let mut filters: Vec<String> = Vec::new();
+
+    // Appends one or more atempo stages whose product equals `tempo`.
+    fn push_tempo(filters: &mut Vec<String>, mut tempo: f64) {
+        while tempo < 0.5 {
+            filters.push("atempo=0.5".to_string());
+            tempo /= 0.5;
+        }
+        while tempo > 100.0 {
+            filters.push("atempo=100.0".to_string());
+            tempo /= 100.0;
+        }
+        filters.push(format!("atempo={tempo:.8}"));
+    }
 
     if semitones.abs() > f64::EPSILON {
         let ratio = 2.0f64.powf(semitones / SEMITONES_PER_OCTAVE);
         filters.push(format!("asetrate={target_sample_rate}*{ratio:.8}"));
         filters.push(format!("aresample={target_sample_rate}"));
-        filters.push(format!("atempo={:.8}", speed / ratio));
+        push_tempo(&mut filters, speed / ratio);
     } else if (speed - 1.0).abs() > f64::EPSILON {
-        // atempo only accepts 0.5-100, so stay well inside that range.
-        filters.push(format!("atempo={speed:.8}"));
+        push_tempo(&mut filters, speed);
+    }
+
+    // Gain sits after the tempo stages so it is a straight level change and does
+    // not interact with the resampling. Silence is left out entirely: unity gain
+    // through a filter is not bit transparent.
+    if gain_db.abs() > f64::EPSILON {
+        filters.push(format!("volume={gain_db:.2}dB"));
     }
 
     filters.push(format!("aresample={target_sample_rate}"));
     filters.join(",")
 }
 
-fn codec_args(format: AudioFormat, target_sample_rate: u32) -> Vec<String> {
+/// Bitrate for each quality step, in kbps.
+///
+/// Spaced by ear rather than linearly: below about 96 kbps an MP3 starts losing
+/// the top end, and above 256 there is little left to hear, so the low half of
+/// the scale gets more of the range.
+const MP3_KBPS_BY_QUALITY: [u32; 11] = [64, 80, 96, 112, 128, 160, 192, 224, 256, 285, 320];
+
+/// Nominal bitrate of libvorbis at each quality step, in kbps.
+///
+/// libvorbis is variable bitrate, so these are averages rather than guarantees.
+/// They are kept on the generous side, because this number decides how long a
+/// piece may get and an over-optimistic estimate is what produces a rejected
+/// upload.
+const OGG_KBPS_BY_QUALITY: [u32; 11] = [96, 112, 128, 144, 160, 176, 192, 224, 256, 288, 320];
+
+/// The quality steps offered, lowest first.
+pub const QUALITY_MIN: u8 = 0;
+pub const QUALITY_MAX: u8 = 10;
+
+/// Clamps a quality step onto the supported range.
+pub fn clamp_quality(quality: u8) -> u8 {
+    quality.clamp(QUALITY_MIN, QUALITY_MAX)
+}
+
+/// Encoded bitrate of an MP3 at a given quality step, in bits per second.
+pub const fn mp3_bps_for_quality(quality: u8) -> u32 {
+    let step = if quality > QUALITY_MAX { QUALITY_MAX } else { quality } as usize;
+    MP3_KBPS_BY_QUALITY[step] * 1000
+}
+
+fn codec_args(format: AudioFormat, target_sample_rate: u32, quality: u8) -> Vec<String> {
+    let quality = clamp_quality(quality);
     match format {
         AudioFormat::Mp3 => vec![
             "-c:a".into(),
             "libmp3lame".into(),
             "-b:a".into(),
-            "320k".into(),
+            format!("{}k", mp3_bps_for_quality(quality) / 1000),
             "-ar".into(),
             target_sample_rate.to_string(),
         ],
+        // libvorbis takes the scale directly: 0 is smallest and 10 is best.
         AudioFormat::Ogg => vec![
             "-c:a".into(),
             "libvorbis".into(),
             "-q:a".into(),
-            "5".into(),
+            quality.to_string(),
             "-ar".into(),
             target_sample_rate.to_string(),
         ],
+        // Uncompressed, so there is no quality to trade against.
         AudioFormat::Wav => vec!["-c:a".into(), "pcm_s16le".into()],
     }
 }
@@ -580,10 +698,18 @@ pub async fn import_local_media(app: AppHandle, path: String) -> Result<Imported
     }
 
     let dir = media_dir(&app)?;
-    let stem = source.file_stem().and_then(|s| s.to_str()).unwrap_or("track").to_string();
-    let extension = source.extension().and_then(|e| e.to_str()).unwrap_or("mp3").to_string();
+    let raw_stem = source.file_stem().and_then(|s| s.to_str()).unwrap_or("track");
+    let stem = safe_stem(raw_stem, 50);
 
-    let target = dir.join(format!("{stem}.{extension}"));
+    // Preserve whatever extension the file actually has; do not invent one.
+    let extension = source.extension().and_then(|e| e.to_str()).unwrap_or("").to_string();
+
+    let target = if extension.is_empty() {
+        dir.join(&stem)
+    } else {
+        dir.join(format!("{stem}.{extension}"))
+    };
+
     if source != target {
         tokio::fs::copy(&source, &target)
             .await
@@ -605,35 +731,51 @@ pub async fn import_local_media(app: AppHandle, path: String) -> Result<Imported
 const EDGE_FADE_SECS: f64 = 0.02;
 
 /// Piece length that keeps the encoded file inside one upload request.
-fn max_output_secs(format: AudioFormat, sample_rate: u32) -> f64 {
+fn max_output_secs(format: AudioFormat, sample_rate: u32, quality: u8) -> f64 {
     // Uncompressed audio is limited by bytes long before it is limited by the
     // seven minute duration cap.
     let by_bytes =
-        ROBLOX_MAX_UPLOAD_BYTES as f64 * 8.0 / bits_per_second(format, sample_rate) as f64;
+        ROBLOX_MAX_UPLOAD_BYTES as f64 * 8.0 / bits_per_second(format, sample_rate, quality) as f64;
     ROBLOX_MAX_DURATION_SECS.min(by_bytes)
 }
 
 /// Builds the ffmpeg arguments that render one piece: seek the source window,
 /// apply the edits, then encode.
+///
+/// `-ss` is placed before `-i` so ffmpeg performs a fast input seek and then
+/// decodes accurately from the requested point; `-t` is placed after `-i` and
+/// takes the piece duration (not an absolute end time), which is the correct
+/// way to bound the copied output.
 fn segment_args(
     input: &std::path::Path,
     output: &std::path::Path,
     part: &SplitPlan,
     speed: f64,
     semitones: f64,
+    gain_db: f64,
     format: AudioFormat,
     sample_rate: u32,
+    quality: u8,
 ) -> Vec<String> {
     let mut args: Vec<String> = vec!["-y".into(), "-v".into(), "error".into()];
 
-    // Input seeking keeps each piece independent, so one failure does not
-    // invalidate the whole set.
-    args.push("-ss".into());
-    args.push(format!("{:.3}", part.source_start));
-    args.push("-to".into());
-    args.push(format!("{:.3}", part.source_end));
+    if part.source_start > 0.0 {
+        args.push("-ss".into());
+        args.push(format!("{:.3}", part.source_start));
+    }
+
     args.push("-i".into());
     args.push(input.to_string_lossy().to_string());
+
+    // source_end == f64::MAX means "until the end of the source".
+    let has_end = part.source_end > 0.0 && part.source_end < f64::MAX;
+    if has_end {
+        let duration = part.source_end - part.source_start;
+        if duration > 0.0 {
+            args.push("-t".into());
+            args.push(format!("{:.3}", duration));
+        }
+    }
 
     let mut filters = Vec::new();
     // A fade must never be longer than half the piece, or it would run past the
@@ -642,11 +784,11 @@ fn segment_args(
     if part.source_start > 0.0 && fade > 0.0 {
         filters.push(format!("afade=t=in:st=0:d={fade:.3}"));
     }
-    if part.source_end > 0.0 && fade > 0.0 {
+    if has_end && fade > 0.0 {
         let out_start = (part.output_duration - fade).max(0.0);
         filters.push(format!("afade=t=out:st={out_start:.3}:d={fade:.3}"));
     }
-    let edit = build_filter(speed, semitones, sample_rate);
+    let edit = build_filter(speed, semitones, gain_db, sample_rate);
     if !edit.is_empty() {
         filters.push(edit);
     }
@@ -655,11 +797,75 @@ fn segment_args(
         args.push(filters.join(","));
     }
 
-    for arg in codec_args(format, sample_rate) {
+    for arg in codec_args(format, sample_rate, quality) {
         args.push(arg);
     }
     args.push(output.to_string_lossy().to_string());
     args
+}
+
+/// True when two paths name the same file.
+fn paths_match(a: &Path, b: &Path) -> bool {
+    // The canonical form resolves the short name and casing Windows actually
+    // stored, so it settles the question whenever the file is already there.
+    if let (Ok(a), Ok(b)) = (a.canonicalize(), b.canonicalize()) {
+        return a == b;
+    }
+    // The rendered file does not exist yet, so fall back to a textual compare.
+    #[cfg(windows)]
+    {
+        a.to_string_lossy().eq_ignore_ascii_case(&b.to_string_lossy())
+    }
+    #[cfg(not(windows))]
+    {
+        a == b
+    }
+}
+
+/// Where a rendered piece ends up.
+///
+/// A track that was imported or downloaded already lives in the media directory
+/// under its own title, so the obvious output path is very often the file ffmpeg
+/// is being asked to read. ffmpeg refuses that outright and reports "Error
+/// opening output files: Invalid argument", and writing over the source would
+/// quietly make the next render start from already edited audio. A name that
+/// would land on the source therefore gets an explicit suffix.
+fn final_output_path(input: &Path, dir: &Path, name: &str, extension: &str) -> PathBuf {
+    let plain = dir.join(format!("{name}.{extension}"));
+    if paths_match(input, &plain) {
+        dir.join(format!("{name} (edited).{extension}"))
+    } else {
+        plain
+    }
+}
+
+/// The throwaway path one piece is rendered into before it is moved into place.
+///
+/// Rendering to the final path is what trips ffmpeg's "output is also the
+/// input" guard, so the render always goes somewhere else first. The suffix
+/// keeps the real extension, because ffmpeg picks the muxer from it.
+fn staging_path(dir: &Path, name: &str, extension: &str) -> PathBuf {
+    use std::sync::atomic::Ordering;
+    let sequence = BAKE_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+    let unique = format!("{name}-{:x}-{sequence:x}", std::process::id());
+    dir.join(format!("{unique}.{extension}"))
+}
+
+/// Strips a trailing audio extension from a user-supplied name.
+///
+/// The name is shown in Roblox's Creator Dashboard, where "Song.mp3" reads as a
+/// mistake: Roblox already knows the format from the upload. Renaming a track
+/// after import also means the user can type one back in.
+pub fn strip_audio_extension(name: &str) -> String {
+    let trimmed = name.trim();
+    let lower = trimmed.to_ascii_lowercase();
+    for extension in ["mp3", "ogg", "wav", "flac", "m4a", "aac", "opus", "webm"] {
+        if let Some(stem) = lower.strip_suffix(&format!(".{extension}")) {
+            // Only the extension is removed, never a trailing dot in the title.
+            return trimmed[..stem.len()].trim().to_string();
+        }
+    }
+    trimmed.to_string()
 }
 
 /// Renders the edited track, splitting it when Roblox's limits require it.
@@ -674,6 +880,8 @@ pub async fn bake_media(
     output_name: String,
     speed: f64,
     semitones: f64,
+    gain_db: f64,
+    quality: u8,
     format: AudioFormat,
     sample_rate: u32,
     source_duration: Option<f64>,
@@ -690,16 +898,20 @@ pub async fn bake_media(
     if !semitones.is_finite() || !(-24.0..=24.0).contains(&semitones) {
         return Err("Pitch must be between -24 and +24 semitones.".into());
     }
+    if !gain_db.is_finite() || !(-40.0..=20.0).contains(&gain_db) {
+        return Err("Amplification must be between -40 and +20 dB.".into());
+    }
 
+    let quality = clamp_quality(quality);
     let rate = sample_rate.clamp(8000, 192000);
     let dir = media_dir(&app)?;
 
-    let safe_name: String = output_name
-        .chars()
-        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
-        .take(80)
-        .collect();
-    let safe_name = if safe_name.trim().is_empty() { "track".to_string() } else { safe_name };
+    // The title is what Roblox shows, so it is kept exactly as typed; only the
+    // file name on disk has to be reduced to something a path can hold.
+    let display_title = strip_audio_extension(&output_name);
+    let display_title =
+        if display_title.is_empty() { String::from("track") } else { display_title };
+    let safe_name = sanitize_stem(&display_title);
 
     let extension = match format {
         AudioFormat::Mp3 => "mp3",
@@ -708,11 +920,11 @@ pub async fn bake_media(
     };
 
     // Without a probed duration we cannot reason about limits, so render whole.
-    let plan = source_duration
-        .filter(|d| d.is_finite() && *d > 0.0)
-        .map(|duration| plan_split(duration, speed, &safe_name, max_output_secs(format, rate)));
+    let plan = source_duration.filter(|d| d.is_finite() && *d > 0.0).map(|duration| {
+        plan_split(duration, speed, &safe_name, max_output_secs(format, rate, quality))
+    });
 
-    let parts: Vec<SplitPlan> = plan.as_ref().map(|p| p.parts.clone()).unwrap_or_else(|| {
+    let mut parts: Vec<SplitPlan> = plan.as_ref().map(|p| p.parts.clone()).unwrap_or_else(|| {
         vec![SplitPlan {
             source_start: 0.0,
             source_end: f64::MAX,
@@ -720,11 +932,29 @@ pub async fn bake_media(
             name: safe_name.clone(),
         }]
     });
+    // Piece names carry " (part n)", which is not a safe file name on its own.
+    // preview_split already sanitises them, so do the same here or the files on
+    // disk will not match the names the view already showed the user.
+    for part in &mut parts {
+        part.name = sanitize_stem(&part.name);
+    }
+
+    // Roblox names the assets, and the parts are numbered in upload order.
+    let display_names: Vec<String> = if parts.len() <= 1 {
+        vec![display_title.clone()]
+    } else {
+        (1..=parts.len()).map(|index| format!("{display_title} (part {index})")).collect()
+    };
+
+    let staging_dir = bake_dir(&app)?;
+    clear_bake_dir(&staging_dir);
 
     let mut files = Vec::with_capacity(parts.len());
-    for part in &parts {
-        let output = dir.join(format!("{}.{extension}", part.name));
-        let args = segment_args(&input, &output, part, speed, semitones, format, rate);
+    for (index, part) in parts.iter().enumerate() {
+        let output = final_output_path(&input, &dir, &part.name, extension);
+        let staging = staging_path(&staging_dir, &part.name, extension);
+        let args =
+            segment_args(&input, &staging, part, speed, semitones, gain_db, format, rate, quality);
 
         let mut ffmpeg_cmd = Command::new(&ffmpeg);
         no_console(&mut ffmpeg_cmd);
@@ -736,6 +966,7 @@ pub async fn bake_media(
 
         if !result.status.success() {
             let stderr = String::from_utf8_lossy(&result.stderr);
+            let _ = std::fs::remove_file(&staging);
             return Err(AppError::Custom(format!(
                 "ffmpeg could not export \"{}\": {}",
                 part.name,
@@ -743,18 +974,27 @@ pub async fn bake_media(
             )));
         }
 
-        if !output.is_file() {
+        if !staging.is_file() {
             return Err(AppError::Custom(format!(
                 "ffmpeg produced no file for \"{}\".",
                 part.name
             )));
         }
 
+        // Move only once the render is known good, so a failure leaves any
+        // earlier export of this piece in place instead of replacing it with
+        // nothing.
+        if let Err(e) = std::fs::rename(&staging, &output) {
+            let _ = std::fs::remove_file(&staging);
+            return Err(AppError::Custom(format!("could not save \"{}\": {e}", part.name)));
+        }
+
         let size = std::fs::metadata(&output).map(|m| m.len()).unwrap_or(0);
         files.push(BakedFile {
             name: part.name.clone(),
+            display_name: display_names.get(index).cloned().unwrap_or_else(|| part.name.clone()),
             path: output.to_string_lossy().to_string(),
-            bytes: size,
+            bytes: size as u32,
             output_duration: part.output_duration,
         });
     }
@@ -772,11 +1012,17 @@ pub fn preview_split(
     source_duration: f64,
     speed: f64,
     title: String,
+    quality: u8,
     format: AudioFormat,
     sample_rate: u32,
 ) -> Result<SplitPreview> {
     let rate = sample_rate.clamp(8000, 192000);
-    let mut plan = plan_split(source_duration, speed, &title, max_output_secs(format, rate));
+    let mut plan = plan_split(
+        source_duration,
+        speed,
+        &title,
+        max_output_secs(format, rate, clamp_quality(quality)),
+    );
     // Titles are user supplied; keep them usable as file names.
     for part in &mut plan.parts {
         part.name = sanitize_stem(&part.name);
@@ -810,9 +1056,12 @@ const ROBLOX_MAX_UPLOAD_BYTES: u64 = 20 * 1024 * 1024;
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct BakedFile {
+    /// File name on disk, reduced to characters a path can hold.
     pub name: String,
+    /// The name Roblox should show for this piece, exactly as the user typed it.
+    pub display_name: String,
     pub path: String,
-    pub bytes: u64,
+    pub bytes: u32,
     pub output_duration: f64,
 }
 
@@ -897,25 +1146,32 @@ pub fn plan_split(
 
 /// Estimates whether one piece will fit a single upload, given the encoded
 /// bitrate. Used to reject WAV and other high-bitrate choices up front.
-pub const fn estimate_part_bytes(output_duration: f64, bits_per_second: u32) -> u64 {
+pub fn estimate_part_bytes(output_duration: f64, bits_per_second: u32) -> u64 {
     (output_duration * bits_per_second as f64 / 8.0) as u64
 }
 
 /// The bitrate each output format actually produces.
-pub const fn bits_per_second(format: AudioFormat, sample_rate: u32) -> u32 {
+pub const fn bits_per_second(format: AudioFormat, sample_rate: u32, quality: u8) -> u32 {
     match format {
-        // libmp3lame is pinned to 320k in codec_args, independent of sample rate.
-        AudioFormat::Mp3 => 320_000,
-        // libvorbis quality 5 lands near 160k for typical material.
-        AudioFormat::Ogg => 160_000,
+        AudioFormat::Mp3 => mp3_bps_for_quality(quality),
+        // libvorbis takes the quality scale directly; see the ladder above.
+        AudioFormat::Ogg => {
+            let step = if quality > QUALITY_MAX { QUALITY_MAX } else { quality } as usize;
+            OGG_KBPS_BY_QUALITY[step] * 1000
+        }
         // pcm_s16le is uncompressed: channels * rate * 16.
         AudioFormat::Wav => sample_rate * 2 * 16,
     }
 }
 
 /// True when any planned piece would exceed the per-request byte limit.
-pub fn any_part_too_large(plan: &SplitPreview, format: AudioFormat, sample_rate: u32) -> bool {
-    let bps = bits_per_second(format, sample_rate);
+pub fn any_part_too_large(
+    plan: &SplitPreview,
+    format: AudioFormat,
+    sample_rate: u32,
+    quality: u8,
+) -> bool {
+    let bps = bits_per_second(format, sample_rate, quality);
     plan.parts
         .iter()
         .any(|part| estimate_part_bytes(part.output_duration, bps) > ROBLOX_MAX_UPLOAD_BYTES)
@@ -924,10 +1180,12 @@ pub fn any_part_too_large(plan: &SplitPreview, format: AudioFormat, sample_rate:
 #[cfg(test)]
 mod tests {
     use super::{
-        any_part_too_large, bits_per_second, build_filter, estimate_part_bytes, max_output_secs,
-        plan_split, sanitize_stem, segment_args, AudioFormat, SplitPlan, ROBLOX_MAX_DURATION_SECS,
+        any_part_too_large, bits_per_second, build_filter, clamp_quality, estimate_part_bytes,
+        final_output_path, max_output_secs, paths_match, plan_split, sanitize_stem, segment_args,
+        staging_path, strip_audio_extension, AudioFormat, SplitPlan, ROBLOX_MAX_DURATION_SECS,
         ROBLOX_MAX_UPLOAD_BYTES, SEMITONES_PER_OCTAVE,
     };
+    use std::path::Path;
 
     #[test]
     fn a_short_track_is_not_split() {
@@ -1007,18 +1265,18 @@ mod tests {
         // Uncompressed stereo 16 bit runs about 1.4 Mbps, so the 20 MB request
         // ceiling allows only about 119 seconds per piece. This is why WAV needs
         // its own piece length rather than the seven minute audio limit.
-        let bps = bits_per_second(AudioFormat::Wav, 44_100);
+        let bps = bits_per_second(AudioFormat::Wav, 44_100, 5);
         let max_secs = ROBLOX_MAX_UPLOAD_BYTES as f64 * 8.0 / bps as f64;
         assert!((max_secs - 119.0).abs() < 2.0, "unexpected wav ceiling of {max_secs}s");
 
         // A plan built for that ceiling produces pieces that do fit.
         let plan = plan_split(400.0, 1.0, "clip", max_secs);
         assert!(plan.parts.len() >= 4);
-        assert!(!any_part_too_large(&plan, AudioFormat::Wav, 44_100));
+        assert!(!any_part_too_large(&plan, AudioFormat::Wav, 44_100, 5));
 
         // Whereas pieces sized for the seven minute limit do not.
         let loose = plan_split(400.0, 1.0, "clip", ROBLOX_MAX_DURATION_SECS);
-        assert!(any_part_too_large(&loose, AudioFormat::Wav, 44_100));
+        assert!(any_part_too_large(&loose, AudioFormat::Wav, 44_100, 5));
     }
 
     #[test]
@@ -1039,15 +1297,15 @@ mod tests {
         // 20 MB per-request limit, so WAV always needs shorter pieces.
         let seven_min = ROBLOX_MAX_DURATION_SECS;
         assert!(
-            estimate_part_bytes(seven_min, bits_per_second(AudioFormat::Wav, 44_100))
+            estimate_part_bytes(seven_min, bits_per_second(AudioFormat::Wav, 44_100, 5))
                 > ROBLOX_MAX_UPLOAD_BYTES
         );
 
         let plan = plan_split(seven_min, 1.0, "clip", ROBLOX_MAX_DURATION_SECS);
-        assert!(any_part_too_large(&plan, AudioFormat::Wav, 44_100));
+        assert!(any_part_too_large(&plan, AudioFormat::Wav, 44_100, 5));
 
         // The same length in mp3 fits comfortably.
-        assert!(!any_part_too_large(&plan, AudioFormat::Mp3, 44_100));
+        assert!(!any_part_too_large(&plan, AudioFormat::Mp3, 44_100, 5));
     }
 
     #[test]
@@ -1055,7 +1313,7 @@ mod tests {
         // Halving the piece length is not enough for uncompressed audio; see
         // wav_pieces_are_capped_at_about_two_minutes for the real ceiling.
         let plan = plan_split(200.0, 1.0, "clip", 100.0);
-        assert!(!any_part_too_large(&plan, AudioFormat::Wav, 44_100));
+        assert!(!any_part_too_large(&plan, AudioFormat::Wav, 44_100, 5));
     }
 
     #[test]
@@ -1063,17 +1321,159 @@ mod tests {
         let plan =
             plan_split(ROBLOX_MAX_DURATION_SECS * 4.0, 1.0, "song", ROBLOX_MAX_DURATION_SECS);
         assert!(plan.parts.len() >= 4);
-        assert!(!any_part_too_large(&plan, AudioFormat::Mp3, 44_100));
-        assert!(!any_part_too_large(&plan, AudioFormat::Ogg, 44_100));
+        assert!(!any_part_too_large(&plan, AudioFormat::Mp3, 44_100, 5));
+        assert!(!any_part_too_large(&plan, AudioFormat::Ogg, 44_100, 5));
+    }
+
+    #[test]
+    fn a_render_never_targets_its_own_input() {
+        // A track downloaded or imported into the media directory is already
+        // named after its title, so the obvious output path is the input.
+        // ffmpeg answers that with "Error opening output files: Invalid
+        // argument", so the finished file has to move somewhere else.
+        let dir = Path::new("C:/media");
+        let input = dir.join("WHERE_DO_WE_BEGIN.mp3");
+        let output = final_output_path(&input, dir, "WHERE_DO_WE_BEGIN", "mp3");
+        assert_ne!(output, input);
+        assert!(output.to_string_lossy().contains("(edited)"));
+        assert!(!paths_match(&input, &output));
+    }
+
+    #[test]
+    fn a_render_that_cannot_hit_the_input_keeps_the_plain_name() {
+        let dir = Path::new("C:/media");
+        let input = dir.join("WHERE_DO_WE_BEGIN.mp3");
+        let output = final_output_path(&input, dir, "WHERE_DO_WE_BEGIN", "ogg");
+        assert_eq!(output, dir.join("WHERE_DO_WE_BEGIN.ogg"));
+    }
+
+    #[test]
+    fn staging_paths_are_unique_and_keep_the_extension() {
+        // The extension has to survive or ffmpeg cannot tell which muxer to
+        // open, and two pieces must never share one scratch file.
+        let dir = Path::new("C:/media/.bake");
+        let first = staging_path(dir, "song_part_1", "mp3");
+        let second = staging_path(dir, "song_part_1", "mp3");
+        assert_ne!(first, second);
+        for path in [first, second] {
+            assert_eq!(path.extension().and_then(|e| e.to_str()), Some("mp3"));
+            assert_eq!(path.parent(), Some(dir));
+        }
+    }
+
+    #[test]
+    fn rendered_piece_names_match_the_names_the_view_previewed() {
+        // preview_split sanitises piece names; bake has to agree, or the file on
+        // disk will not be the file the split preview described.
+        let title = "WHERE DO WE BEGIN / BREAKBEAT";
+        let Ok(preview) =
+            super::preview_split(1200.0, 1.0, title.to_string(), 5, AudioFormat::Mp3, 44_100)
+        else {
+            panic!("preview_split should not fail");
+        };
+        let safe = sanitize_stem(title);
+        let plan = plan_split(1200.0, 1.0, &safe, ROBLOX_MAX_DURATION_SECS);
+        for (baked, shown) in plan.parts.iter().zip(&preview.parts) {
+            assert_eq!(sanitize_stem(&baked.name), shown.name);
+            assert_eq!(sanitize_stem(&baked.name), sanitize_stem(&shown.name));
+        }
     }
 
     #[test]
     fn wav_gets_a_tighter_piece_length_than_mp3() {
-        let wav = max_output_secs(AudioFormat::Wav, 44_100);
-        let mp3 = max_output_secs(AudioFormat::Mp3, 44_100);
+        let wav = max_output_secs(AudioFormat::Wav, 44_100, 5);
+        let mp3 = max_output_secs(AudioFormat::Mp3, 44_100, 5);
         assert!(wav < mp3, "wav pieces must be shorter: {wav} vs {mp3}");
         assert!((wav - 119.0).abs() < 2.0, "wav piece length was {wav}");
         assert!((mp3 - ROBLOX_MAX_DURATION_SECS).abs() < 0.001);
+    }
+
+    #[test]
+    fn quality_reaches_the_encoder() {
+        // The step has to end up in the bitrate for MP3 and in libvorbis's own
+        // scale for OGG, since neither reads the other.
+        let low = super::codec_args(AudioFormat::Mp3, 44_100, 0);
+        let high = super::codec_args(AudioFormat::Mp3, 44_100, 10);
+        assert!(low.contains(&"64k".to_string()), "low quality bitrate: {low:?}");
+        assert!(high.contains(&"320k".to_string()), "high quality bitrate: {high:?}");
+
+        let ogg = super::codec_args(AudioFormat::Ogg, 44_100, 7);
+        assert!(ogg.contains(&"-q:a".to_string()));
+        assert!(ogg.contains(&"7".to_string()), "vorbis quality: {ogg:?}");
+    }
+
+    #[test]
+    fn quality_outside_the_scale_is_clamped() {
+        assert_eq!(super::mp3_bps_for_quality(200), super::mp3_bps_for_quality(10));
+        assert_eq!(clamp_quality(200), 10);
+        assert_eq!(clamp_quality(0), 0);
+    }
+
+    #[test]
+    fn a_lower_quality_encodes_to_a_smaller_upload() {
+        // For a lossy format the seven minute cap binds long before the byte cap,
+        // so quality does not change how many pieces there are. What it does
+        // change is the size of each piece, and that is what an upload costs.
+        for quality in 0..=10u8 {
+            let ceiling = max_output_secs(AudioFormat::Mp3, 44_100, quality);
+            assert!((ceiling - ROBLOX_MAX_DURATION_SECS).abs() < 0.001, "at quality {quality}");
+        }
+        let small = estimate_part_bytes(
+            ROBLOX_MAX_DURATION_SECS,
+            bits_per_second(AudioFormat::Mp3, 44_100, 0),
+        );
+        let large = estimate_part_bytes(
+            ROBLOX_MAX_DURATION_SECS,
+            bits_per_second(AudioFormat::Mp3, 44_100, 10),
+        );
+        assert!(small * 4 < large, "64k should be far smaller than 320k: {small} vs {large}");
+    }
+
+    #[test]
+    fn every_quality_step_produces_a_plan_that_fits() {
+        // The nominal bitrate has to stay close enough to the real one that the
+        // estimate never promises more than Roblox accepts. WAV is the format
+        // where the byte ceiling actually binds.
+        for quality in 0..=10u8 {
+            let ceiling = max_output_secs(AudioFormat::Wav, 44_100, quality);
+            let plan = plan_split(ceiling * 2.0, 1.0, "song", ceiling);
+            assert!(
+                !any_part_too_large(&plan, AudioFormat::Wav, 44_100, quality),
+                "quality {quality} produced an oversized piece"
+            );
+        }
+    }
+
+    #[test]
+    fn amplification_becomes_a_gain_stage() {
+        let filter = build_filter(1.0, 0.0, -4.0, 44_100);
+        assert!(filter.contains("volume=-4.00dB"), "gain stage missing: {filter}");
+        // The gain must come after the tempo stages, or the two would compound.
+        assert!(filter.starts_with("volume="), "gain ran before the resample: {filter}");
+
+        let louder = build_filter(1.0, 0.0, 3.5, 44_100);
+        assert!(louder.contains("volume=3.50dB"), "positive gain: {louder}");
+    }
+
+    #[test]
+    fn unity_gain_adds_no_filter() {
+        // A unity volume filter is not bit transparent, so it is left out.
+        assert!(!build_filter(1.0, 0.0, 0.0, 44_100).contains("volume"));
+        assert!(!build_filter(2.0, 3.0, 0.0, 44_100).contains("volume"));
+    }
+
+    #[test]
+    fn an_audio_extension_never_reaches_the_asset_name() {
+        // Roblox knows the format from the upload; showing it in the name reads
+        // as a mistake in the Creator Dashboard.
+        for name in ["Song.mp3", "Song.MP3", "My Song.ogg", "Track.wav", "Take.flac"] {
+            let stripped = strip_audio_extension(name);
+            assert!(!stripped.contains('.'), "{name} kept an extension: {stripped}");
+        }
+        // A title that merely contains a dot is left alone.
+        assert_eq!(strip_audio_extension("Mr. Blue Sky"), "Mr. Blue Sky");
+        assert_eq!(strip_audio_extension("  Padded  "), "Padded");
+        assert_eq!(strip_audio_extension(""), "");
     }
 
     #[test]
@@ -1090,18 +1490,21 @@ mod tests {
             &part,
             1.0,
             0.0,
+            0.0,
             AudioFormat::Mp3,
             44_100,
+            5,
         );
 
         let seek = args.iter().position(|a| a == "-ss").expect("-ss present");
         assert_eq!(args[seek + 1], "600.000");
-        let to = args.iter().position(|a| a == "-to").expect("-to present");
-        assert_eq!(args[to + 1], "1200.000");
-
-        // Seeking must come before the input, otherwise it applies to the output.
         let input = args.iter().position(|a| a == "-i").expect("-i present");
-        assert!(seek < input && to < input, "seek options must precede -i");
+        assert!(seek < input, "input seeking must come before -i");
+
+        let t = args.iter().position(|a| a == "-t").expect("-t present");
+        assert_eq!(args[t + 1], "600.000");
+        assert!(t > input, "duration must come after -i");
+
         assert_eq!(args[input + 1], "in.mp3");
         assert_eq!(args.last().map(String::as_str), Some("out.mp3"));
     }
@@ -1122,8 +1525,10 @@ mod tests {
             &part,
             1.0,
             0.0,
+            0.0,
             AudioFormat::Mp3,
             44_100,
+            5,
         );
         let filter = args.iter().find(|a| a.contains("afade")).expect("fade present");
         assert!(!filter.contains("afade=t=in"), "leading fade on part 1");
@@ -1146,8 +1551,10 @@ mod tests {
             &part,
             1.0,
             0.0,
+            0.0,
             AudioFormat::Mp3,
             44_100,
+            5,
         );
         let filter = args.iter().find(|a| a.contains("afade")).expect("fade present");
         assert!(filter.contains("d=0.015"), "fade not clamped: {filter}");
@@ -1168,8 +1575,10 @@ mod tests {
             &part,
             1.0,
             0.0,
+            0.0,
             AudioFormat::Mp3,
             44_100,
+            5,
         );
         let filter = args.iter().find(|a| a.contains("afade")).expect("fade present");
         assert!(filter.contains("d=0.020"), "fade changed unnecessarily: {filter}");
@@ -1189,8 +1598,10 @@ mod tests {
             &part,
             1.0,
             0.0,
+            0.0,
             AudioFormat::Mp3,
             44_100,
+            5,
         );
         assert!(!args.iter().any(|a| a.contains("afade")));
     }
@@ -1209,8 +1620,10 @@ mod tests {
             &part,
             2.0,
             3.0,
+            0.0,
             AudioFormat::Mp3,
             44_100,
+            5,
         );
         let filter = args.iter().find(|a| a.contains("atempo")).expect("edit applied");
         assert!(filter.contains("asetrate=44100*1.18920712"), "pitch stage: {filter}");
@@ -1228,13 +1641,13 @@ mod tests {
 
     #[test]
     fn no_edits_only_resamples() {
-        assert_eq!(build_filter(1.0, 0.0, 44_100), "aresample=44100");
+        assert_eq!(build_filter(1.0, 0.0, 0.0, 44_100), "aresample=44100");
     }
 
     #[test]
     fn speed_alone_never_touches_pitch() {
         // Without the asetrate stage there is nothing to shift pitch.
-        let filter = build_filter(1.5, 0.0, 44_100);
+        let filter = build_filter(1.5, 0.0, 0.0, 44_100);
         assert!(filter.contains("atempo=1.50000000"));
         assert!(!filter.contains("asetrate"));
     }
@@ -1242,7 +1655,7 @@ mod tests {
     #[test]
     fn pitch_stage_is_corrected_by_tempo() {
         // +12 semitones doubles the frequency, so the tempo filter halves.
-        let filter = build_filter(1.0, 12.0, 44_100);
+        let filter = build_filter(1.0, 12.0, 0.0, 44_100);
         assert!(filter.contains("asetrate=44100*2.00000000"));
         assert!(filter.contains("atempo=0.50000000"));
     }
@@ -1250,15 +1663,40 @@ mod tests {
     #[test]
     fn pitch_and_speed_combine_into_one_tempo_factor() {
         // +12 semitones at 2x speed still needs atempo 1.0 overall.
-        let filter = build_filter(2.0, 12.0, 44_100);
+        let filter = build_filter(2.0, 12.0, 0.0, 44_100);
         assert!(filter.contains("atempo=1.00000000"));
     }
 
     #[test]
     fn negative_pitch_lowers_the_ratio() {
-        let filter = build_filter(1.0, -12.0, 44_100);
+        let filter = build_filter(1.0, -12.0, 0.0, 44_100);
         assert!(filter.contains("asetrate=44100*0.50000000"));
         assert!(filter.contains("atempo=2.00000000"));
+    }
+
+    #[test]
+    fn extreme_speed_and_pitch_keep_atempo_in_range() {
+        // Reads one atempo factor back out of the chain so the bounds can be
+        // checked without re-deriving the maths.
+        fn atempo_factor(value: &str) -> f64 {
+            let first = value.split(',').next().unwrap_or_default();
+            first.parse().unwrap_or_else(|_| panic!("{value} is not an atempo factor"))
+        }
+
+        // 0.25x speed with +24 semitones needs tempo 0.0625, which is below the
+        // 0.5 lower bound, so it must be split across chained atempo stages.
+        let filter = build_filter(0.25, 24.0, 0.0, 44_100);
+        for value in filter.split("atempo=").skip(1) {
+            let factor = atempo_factor(value);
+            assert!((0.5..=100.0).contains(&factor), "atempo {factor} out of range");
+        }
+        // Conversely, 4x speed with -24 semitones needs tempo 16, which is fine,
+        // and 4x with +24 needs tempo 1: still fine. Push the other direction.
+        let filter = build_filter(4.0, -24.0, 0.0, 44_100);
+        for value in filter.split("atempo=").skip(1) {
+            let factor = atempo_factor(value);
+            assert!((0.5..=100.0).contains(&factor), "atempo {factor} out of range");
+        }
     }
 
     #[test]
@@ -1273,7 +1711,7 @@ mod tests {
     fn every_format_maps_to_a_codec() {
         for format in [AudioFormat::Mp3, AudioFormat::Ogg, AudioFormat::Wav] {
             let rate = 48_000;
-            let args = super::codec_args(format, rate);
+            let args = super::codec_args(format, rate, 5);
             assert!(!args.is_empty());
             assert!(args.iter().any(|a| a == "-c:a"));
         }
