@@ -21,8 +21,8 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { cn } from '../../../lib/utils';
 import type { MusicTrack } from '../../../stores/musicStore';
 import type { UploadStatus as UploadStatusState } from '../../../stores/musicStore';
-import { bindUploadProgress, useMusicStore } from '../../../stores/musicStore';
-import type { BakedMedia, UploadProgress } from '../../../utils/music';
+import { bindUploadProgress, bindUploadStatus, useMusicStore } from '../../../stores/musicStore';
+import type { BakedMedia, UploadProgress, UploadRecord } from '../../../utils/music';
 import {
   activeSpeedPreset,
   bakeMedia,
@@ -34,6 +34,7 @@ import {
   PITCH_RANGE,
   QUALITY_RANGE,
   qualityBitrateKbps,
+  recordStatus,
   robloxPlaybackSpeed,
   SPEED_PRESETS,
   SPEED_RANGE,
@@ -51,8 +52,8 @@ export default function MusicView() {
     progress,
     uploading,
     refreshTools,
-    refreshHistory,
     refreshQuota,
+    resumeValidation,
     uploadTrack,
     deleteRecord,
     addFromUrl,
@@ -68,10 +69,20 @@ export default function MusicView() {
 
   useEffect(() => {
     void refreshTools();
-    void refreshHistory();
+    // Resumes validation left unfinished by a previous session, so a row is
+    // never frozen on "validating" just because the app was closed.
+    void resumeValidation();
     void refreshQuota();
-    return bindUploadProgress();
-  }, [refreshTools, refreshHistory, refreshQuota]);
+    // Both listeners are bound here and torn down together; leaving the status
+    // one attached would keep writing into a store the view no longer reads.
+    const stopProgress = bindUploadProgress();
+    const stopStatus = bindUploadStatus();
+    return () => {
+      stopProgress();
+      stopStatus();
+    };
+    // These are stable store actions, so this runs once on mount.
+  }, [refreshTools, resumeValidation, refreshQuota]);
 
   const handleImportUrl = async () => {
     if (!url.trim() || importing) return;
@@ -193,6 +204,10 @@ export default function MusicView() {
                     onUpdate={(edit) => update(track.id, edit)}
                     onRename={(title) => rename(track.id, title)}
                     onUpload={() => void uploadTrack(track.id)}
+                    // Every track shares one upload slot, so while an upload is
+                    // in flight this is true for the row that owns it. The row
+                    // disables itself; the store guards the actual call.
+                    sending={uploading}
                     onExported={(result) => {
                       update(track.id, {
                         exportedPath: result.files[0]?.path ?? null,
@@ -200,7 +215,9 @@ export default function MusicView() {
                       });
                     }}
                     onFailure={(message) =>
-                      setStatus({ kind: 'rejected', reason: 'failed', message })
+                      setStatus(
+                        message === null ? null : { kind: 'rejected', reason: 'failed', message },
+                      )
                     }
                   />
                 ))}
@@ -225,49 +242,7 @@ export default function MusicView() {
             ) : (
               <ul className="flex flex-col gap-2">
                 {history.map((record) => (
-                  <li
-                    key={record.id}
-                    className="rounded-lg border border-border-subtle bg-card px-3 py-2.5"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-text-primary">
-                          {record.title}
-                        </p>
-                        <p className="mt-0.5 text-xs text-text-muted">
-                          {formatUploadDate(record.uploadedAt)} · {formatBytes(record.totalBytes)}
-                          {record.wasSplit
-                            ? ` · ${t('music.parts').replace('{count}', String(record.assets.length))}`
-                            : ''}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => void deleteRecord(record.id)}
-                        aria-label={t('music.removeRecord')}
-                      >
-                        <Trash2 size={15} />
-                      </Button>
-                    </div>
-                    <ul className="mt-2 flex flex-col gap-1">
-                      {record.assets.map((asset) => (
-                        <li key={asset.assetId} className="flex items-center gap-2 text-xs">
-                          <span className="truncate text-text-secondary">{asset.name}</span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              void navigator.clipboard.writeText(String(asset.assetId))
-                            }
-                            className="ml-auto shrink-0 rounded border border-border-subtle px-1.5 py-0.5 font-mono text-text-muted hover:text-text-primary"
-                            title={t('music.copyId')}
-                          >
-                            {asset.assetId}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </li>
+                  <HistoryRow key={record.id} record={record} onDelete={deleteRecord} />
                 ))}
               </ul>
             )}
@@ -286,6 +261,157 @@ export default function MusicView() {
  * is how the same outcome ended up on screen twice, so the whole lifecycle goes
  * through this one component.
  */
+/**
+ * One upload in the history: name, asset id and status.
+ *
+ * A split track shows its parts as indented rows under a parent row, because
+ * each part is a separate Roblox asset with its own id and its own verdict, and
+ * collapsing them would hide which part went wrong.
+ *
+ * The id appears as soon as Roblox reveals it, which is before validation ends.
+ * That is the point of moving uploads here immediately: the id is the thing the
+ * user came for, and making them wait for a verdict to see it was the problem.
+ */
+function HistoryRow({
+  record,
+  onDelete,
+}: {
+  record: UploadRecord;
+  onDelete: (id: string) => void;
+}) {
+  const { t } = useLanguage();
+  const overall = recordStatus(record);
+  // A single-piece upload has no parent row to hang parts off, so it renders as
+  // one line rather than a header plus a child.
+  const split = record.wasSplit && record.pieces.length > 1;
+
+  return (
+    <li className="overflow-hidden rounded-lg border border-border-subtle bg-card">
+      <div className="flex items-center gap-3 px-3 py-2.5">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-text-primary">{record.title}</p>
+          <p className="mt-0.5 text-xs text-text-muted">
+            {formatUploadDate(record.uploadedAt)} · {formatBytes(record.totalBytes)}
+            {split ? ` · ${t('music.parts').replace('{count}', String(record.pieces.length))}` : ''}
+          </p>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-3">
+          <AssetId value={record.pieces[0]?.assetId} />
+          <StatusPill status={overall} />
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => void onDelete(record.id)}
+            aria-label={t('music.removeRecord')}
+          >
+            <Trash2 size={15} />
+          </Button>
+        </div>
+      </div>
+
+      {split && (
+        <ul className="border-t border-border-subtle">
+          {record.pieces.map((piece, index) => (
+            <li
+              key={`${piece.name}-${index}`}
+              className="flex items-center gap-3 border-b border-border-subtle px-3 py-2 last:border-b-0"
+            >
+              {/* Indentation plus a rail is what marks these as belonging to the
+                  parent rather than being uploads of their own. */}
+              <span className="flex min-w-0 flex-1 items-center gap-2 pl-4">
+                <span className="h-3 w-px shrink-0 bg-border-subtle" aria-hidden />
+                <span className="truncate text-xs text-text-secondary">{piece.name}</span>
+              </span>
+              <AssetId value={piece.assetId} />
+              <StatusPill status={piece.status} detail={piece.message} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+/** The asset id, or a placeholder while Roblox has not handed one over yet. */
+function AssetId({ value }: { value?: number | null }) {
+  const { t } = useLanguage();
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  if (value === undefined || value === null) {
+    return (
+      <span className="w-24 shrink-0 text-right text-xs text-text-muted tabular-nums">
+        {t('music.idWaiting')}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => void navigator.clipboard.writeText(String(value))}
+      className="w-24 shrink-0 truncate rounded border border-border-subtle px-1.5 py-0.5 text-right font-mono text-xs text-text-muted hover:text-text-primary"
+      title={t('music.copyId')}
+    >
+      {copied ? t('music.copied') : value}
+    </button>
+  );
+}
+
+/** The verdict for a piece or a whole row. */
+function StatusPill({ status, detail }: { status: string; detail?: string }) {
+  const { t } = useLanguage();
+
+  const tone = {
+    accepted: 'border-signal-live/30 bg-signal-live/10 text-signal-live',
+    validating: 'border-primary/30 bg-primary/10 text-primary',
+    rejected: 'border-danger/30 bg-danger/10 text-danger',
+    uploading: 'border-border-subtle bg-bg-elevated text-text-muted',
+  }[status];
+
+  const label = {
+    accepted: t('music.statusAccepted'),
+    validating: t('music.statusValidating'),
+    rejected: t('music.statusRejected'),
+    uploading: t('music.statusUploading'),
+  }[status];
+
+  // An unrecognised status would render as undefined, which reads as a bug in
+  // the row rather than as a state. Falling back to the raw value keeps it
+  // honest if the backend ever grows a status the view does not know.
+  const text = label ?? status;
+
+  return (
+    <span
+      className={cn(
+        'flex w-28 shrink-0 items-center justify-center gap-1 rounded border px-1.5 py-0.5 text-xs',
+        tone ?? 'border-border-subtle bg-bg-elevated text-text-muted',
+      )}
+      title={detail}
+    >
+      {status !== 'accepted' && status !== 'rejected' && (
+        <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-current" />
+      )}
+      <span className="truncate">{text}</span>
+    </span>
+  );
+}
+
+/**
+ * The one place an upload's own progress is shown.
+ *
+ * This is scoped strictly to the bytes going to Roblox. Roblox's validation used
+ * to be reported here too, on a timer, and that is exactly what left a settled
+ * upload sitting on a progress bar: the bar outlived the thing it was measuring.
+ * Validation now lives on the history row, where the backend owns it, so this
+ * panel has nothing left to keep in sync and can only show work that is real.
+ */
 function UploadStatus({
   status,
   progress,
@@ -297,7 +423,6 @@ function UploadStatus({
 }) {
   const { t } = useLanguage();
   const [dismissed, setDismissed] = useState<UploadStatusState | null>(null);
-  const [elapsed, setElapsed] = useState(0);
 
   // A dismissal belongs to one outcome. The next upload produces a new object,
   // which clears it, so the panel reappears instead of staying hidden.
@@ -305,20 +430,8 @@ function UploadStatus({
     if (status && status !== dismissed) setDismissed(null);
   }, [status, dismissed]);
 
-  // Live elapsed counter during the processing phase.
-  useEffect(() => {
-    if (!progress || progress.stage !== 'processing') {
-      setElapsed(0);
-      return;
-    }
-    const base = progress.processingElapsedSecs;
-    setElapsed(base);
-    const id = setInterval(() => {
-      setElapsed((prev) => prev + 1);
-    }, 1000);
-    return () => clearInterval(id);
-  }, [progress?.stage, progress?.processingElapsedSecs]);
-
+  // While the bytes are moving. `busy` is cleared in a `finally` on the store,
+  // so a failed upload lands in the outcome branch below rather than here.
   if (busy) {
     return (
       <div className="flex flex-col gap-1.5 rounded-lg border border-border-subtle bg-card p-3">
@@ -330,23 +443,12 @@ function UploadStatus({
                   .replace('{total}', String(progress.total))
               : t('music.uploading')}
           </span>
-          <span className="shrink-0 text-text-muted tabular-nums">
-            {progress?.stage === 'processing'
-              ? `${t('music.validating')} (${formatDuration(elapsed)})`
-              : percentOf(progress)}
-          </span>
+          <span className="shrink-0 text-text-muted tabular-nums">{percentOf(progress)}%</span>
         </div>
         <div className="h-1 overflow-hidden rounded-full bg-bg-elevated">
           <div
-            className={cn(
-              'h-full transition-all duration-200',
-              progress?.stage === 'processing' ? 'animate-pulse bg-primary' : 'bg-primary',
-            )}
-            style={
-              progress?.stage === 'processing'
-                ? { width: `${Math.min(100, (elapsed / 120) * 100)}%` }
-                : { width: `${percentOf(progress) || 0}%` }
-            }
+            className="h-full bg-primary transition-all duration-200"
+            style={{ width: `${percentOf(progress)}%` }}
           />
         </div>
       </div>
@@ -355,17 +457,13 @@ function UploadStatus({
 
   if (!status || status === dismissed) return null;
 
-  if (status.kind === 'accepted') {
+  if (status.kind === 'sent') {
     return (
       <Outcome
         tone="live"
         icon={<Check size={15} />}
-        title={
-          status.count > 1
-            ? t('music.uploadedSplit').replace('{count}', String(status.count))
-            : t('music.uploaded')
-        }
-        detail={t('music.historyAutoNote')}
+        title={t('music.sentTitle')}
+        detail={t('music.sentNote')}
         onDismiss={() => setDismissed(status)}
       />
     );
@@ -440,6 +538,7 @@ function TrackEditor({
   onUpload,
   onExported,
   onFailure,
+  sending: sendingFromStore,
 }: {
   track: MusicTrack;
   onRemove: () => void;
@@ -447,7 +546,9 @@ function TrackEditor({
   onRename: (title: string) => void;
   onUpload: () => void;
   onExported: (result: BakedMedia) => void;
-  onFailure: (message: string) => void;
+  onFailure: (message: string | null) => void;
+  /** True while this track's bytes are on their way to Roblox. */
+  sending: boolean;
 }) {
   const { t } = useLanguage();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -456,6 +557,9 @@ function TrackEditor({
   // the second one is an upload, so the button says which one is happening.
   const [baking, setBaking] = useState(false);
   const [sending, setSending] = useState(false);
+  // The store owns the real flag; the local one only covers the render between
+  // the click and the store updating. Either one means the row is busy.
+  const busy = baking || sending || sendingFromStore;
   const [renaming, setRenaming] = useState(false);
   const [draftTitle, setDraftTitle] = useState(track.title);
 
@@ -513,10 +617,12 @@ function TrackEditor({
   };
 
   const handleUpload = async () => {
-    onFailure('');
+    // A failure clears any previous message rather than pushing an empty one
+    // into the panel, which used to render as a bare error border with no text.
+    onFailure(null);
+    setBaking(true);
     try {
       if (track.exportedFiles.length === 0) {
-        setBaking(true);
         const result = await bakeMedia({
           path: track.path,
           title: track.title,
@@ -529,13 +635,15 @@ function TrackEditor({
           sourceDuration: track.info?.duration ?? undefined,
         });
         onExported(result);
-        setBaking(false);
       }
+      setBaking(false);
       setSending(true);
       await onUpload();
     } catch (err) {
       onFailure(String(err));
     } finally {
+      // Both flags clear here as well as in the store's own `finally`, so the
+      // row cannot be left showing "uploading" if the store call throws.
       setBaking(false);
       setSending(false);
     }
@@ -556,7 +664,15 @@ function TrackEditor({
   };
 
   return (
-    <li className="rounded-xl border border-border-subtle bg-card p-4">
+    <li
+      className={cn(
+        'rounded-xl border border-border-subtle bg-card p-4 transition-opacity',
+        // A row that is uploading is inert: dimmed, and every control inside it
+        // is disabled below. Renaming or re-rendering mid-upload would act on a
+        // file that is already on its way to Roblox.
+        busy && 'pointer-events-none opacity-60',
+      )}
+    >
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           {renaming ? (
@@ -592,7 +708,7 @@ function TrackEditor({
             setDraftTitle(track.title);
             setRenaming((value) => !value);
           }}
-          disabled={renaming}
+          disabled={renaming || busy}
           aria-label={t('music.rename')}
           title={t('music.renameHint')}
         >
@@ -723,9 +839,9 @@ function TrackEditor({
                 ? t('music.editedNote')
                 : t('music.untouchedNote')}
         </p>
-        <Button onClick={() => void handleUpload()} disabled={baking || sending || !track.info}>
+        <Button onClick={() => void handleUpload()} disabled={busy || !track.info}>
           <Upload size={15} />
-          {baking ? t('music.rendering') : sending ? t('music.uploading') : t('music.upload')}
+          {baking ? t('music.rendering') : busy ? t('music.uploading') : t('music.upload')}
         </Button>
       </div>
 

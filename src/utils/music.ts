@@ -202,21 +202,7 @@ export const formatDuration = (seconds: number | null | undefined) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-export interface UploadedAsset {
-  name: string;
-  assetId: number;
-  path: string;
-  bytes: number;
-}
-
-export interface UploadSummary {
-  /** Pieces Roblox has finished validating. */
-  assets: UploadedAsset[];
-  /** Accepted by Roblox but still being validated, so no asset id yet. */
-  pending: string[];
-  wasSplit: boolean;
-}
-
+/** Byte-transfer progress for one piece, emitted while the file is sent. */
 export interface UploadProgress {
   file: string;
   index: number;
@@ -224,21 +210,28 @@ export interface UploadProgress {
   sent: number;
   bytes: number;
   stage: string;
-  /** Seconds the operation has been processing, so the UI can show a live
-   *  elapsed counter instead of a frozen spinner. */
   processingElapsedSecs: number;
 }
 
-export interface AudioQuota {
-  remaining: number;
-  limit: number;
-}
+/** Where a piece is in Roblox's pipeline, mirroring the Rust `status` module. */
+export const PIECE_STATUS = {
+  uploading: 'uploading',
+  validating: 'validating',
+  accepted: 'accepted',
+  rejected: 'rejected',
+} as const;
 
-export interface RecordedAsset {
+export type PieceStatus = (typeof PIECE_STATUS)[keyof typeof PIECE_STATUS];
+
+export interface UploadPiece {
   name: string;
-  assetId: number;
   path: string;
   bytes: number;
+  operationId?: string;
+  /** Present as soon as Roblox reveals it, which is before validation ends. */
+  assetId?: number | null;
+  status: string;
+  message?: string;
 }
 
 export interface UploadRecord {
@@ -247,7 +240,33 @@ export interface UploadRecord {
   uploadedAt: string;
   wasSplit: boolean;
   totalBytes: number;
-  assets: RecordedAsset[];
+  pieces: UploadPiece[];
+}
+
+/** The row's status, derived from its pieces, mirroring the Rust side. */
+export const recordStatus = (record: UploadRecord): string => {
+  if (record.pieces.some((piece) => piece.status === PIECE_STATUS.rejected)) return 'rejected';
+  // The `length` check is load-bearing: `every` on an empty array is true, so a
+  // row with no pieces would otherwise read as a success.
+  if (record.pieces.length > 0 && record.pieces.every((p) => p.status === PIECE_STATUS.accepted))
+    return 'accepted';
+  if (record.pieces.some(isUnfinished)) return 'validating';
+  return 'rejected';
+};
+
+export const isUnfinished = (piece: UploadPiece) =>
+  piece.status === PIECE_STATUS.uploading || piece.status === PIECE_STATUS.validating;
+
+export interface UploadSummary {
+  /** The history row this upload created, where the asset ids appear. */
+  recordId: string;
+  accepted: { name: string; assetId: number | null }[];
+  wasSplit: boolean;
+}
+
+export interface AudioQuota {
+  remaining: number;
+  limit: number;
 }
 
 /**
@@ -256,9 +275,15 @@ export interface UploadRecord {
  * The names are sent separately because the file on disk has been through
  * sanitising and carries an extension, and neither belongs in a Roblox asset
  * name.
+ *
+ * Resolves once the bytes are with Roblox. Roblox validates afterwards, and
+ * that result arrives on the history row rather than through this call.
  */
 export const uploadAudioParts = (paths: string[], names: string[], creatorUserId: number) =>
   invoke<UploadSummary>('upload_audio_parts', { paths, names, creatorUserId });
+
+/** Resumes validation for anything a previous session left unfinished. */
+export const resumePendingValidations = () => invoke<number>('resume_pending_validations');
 
 export const fetchAudioQuota = (creatorUserId: number) =>
   invoke<AudioQuota>('fetch_open_cloud_audio_quota', { creatorUserId });

@@ -29,16 +29,25 @@ export const commands = {
   /**  Reads stream metadata with ffprobe. */
   probeMedia: (path: string) =>
     typedError<MediaInfo, AppError>(__TAURI_INVOKE('probe_media', { path })),
-  /**  Uploads one rendered piece and returns the new Roblox asset id. */
-  uploadAudioPiece: (path: string, name: string, creatorUserId: number | null) =>
-    typedError<UploadedAsset, AppError>(
-      __TAURI_INVOKE('upload_audio_piece', { path, name, creatorUserId }),
-    ),
-  /**  Uploads every rendered piece, for a track that was split. */
+  /**
+   *  Uploads every rendered piece, for a track that was split.
+   *
+   *  Returns as soon as the bytes are with Roblox. The asset ids live in the
+   *  history row this creates, and fill in as Roblox reveals them.
+   */
   uploadAudioParts: (paths: string[], names: string[], creatorUserId: number | null) =>
     typedError<UploadSummary, AppError>(
       __TAURI_INVOKE('upload_audio_parts', { paths, names, creatorUserId }),
     ),
+  /**
+   *  Picks up validation for anything left unfinished by a previous session.
+   *
+   *  Without this, closing the app mid-validation would leave a row frozen on
+   *  "validating" forever, which is the exact ambiguity this flow exists to
+   *  remove.
+   */
+  resumePendingValidations: () =>
+    typedError<number, AppError>(__TAURI_INVOKE('resume_pending_validations')),
   /**  Audio uploads left this month, according to Roblox. */
   fetchOpenCloudAudioQuota: (creatorUserId: number | null) =>
     typedError<AudioQuota, AppError>(
@@ -471,13 +480,6 @@ export type RbxInstance = {
   children: RbxInstance[];
 };
 
-export type RecordedAsset = {
-  name: string;
-  assetId: number | null;
-  path: string;
-  bytes: number;
-};
-
 export type ResolverAsset = {
   assetId: string;
   name: string | null;
@@ -575,32 +577,71 @@ export type SpooferActionRequest = {
   proxyUrl: string | null;
 };
 
-/**  One track's upload, kept so the ids can be found again later. */
+/**
+ *  One rendered piece of a track, tracked from the moment its bytes start
+ *  moving until Roblox gives a verdict.
+ *
+ *  `asset_id` is optional because Roblox reveals it at its own pace. It is
+ *  filled in as soon as the operation response carries one, which is what lets
+ *  the history show an id while validation is still running.
+ */
+export type UploadPiece = {
+  /**  The name Roblox shows, exactly as the user typed it. */
+  name: string;
+  path: string;
+  bytes: number;
+  /**
+   *  Roblox's handle for the create call. Empty when the create call itself
+   *  failed, which is the only way a piece has no operation to poll.
+   */
+  operationId?: string;
+  /**
+   *  Exported as a float because a u64 would lose precision as a JavaScript
+   *  number. Roblox asset ids stay far below that limit.
+   */
+  assetId?: number | null;
+  /**  One of [`status`]. */
+  status: string;
+  /**  Why Roblox refused it, when it did. */
+  message?: string;
+};
+
+/**
+ *  One track's upload, kept so the ids and the verdict both survive a restart.
+ *
+ *  Validation outlives the app: Roblox can take minutes to answer, and closing
+ *  the window must not lose the answer. Everything the view needs to render a
+ *  row is therefore on disk, and a poller picks the unfinished pieces back up on
+ *  the next launch.
+ */
 export type UploadRecord = {
   id: string;
+  /**  The track's title, without any part suffix. */
   title: string;
   uploadedAt: string;
   wasSplit: boolean;
   totalBytes: number;
-  assets: RecordedAsset[];
+  pieces: UploadPiece[];
 };
 
 export type UploadSummary = {
-  /**  Pieces Roblox has finished validating. */
-  assets: UploadedAsset[];
   /**
-   *  Names of pieces that were accepted but are still being validated, so they
-   *  have no asset id to report yet.
+   *  The history row this upload created. The view uses it to scroll to the
+   *  row, which is where the asset ids appear as Roblox reveals them.
    */
-  pending: string[];
+  recordId: string;
+  /**
+   *  Pieces that were already fully accepted by the time the bytes finished
+   *  sending. Usually empty, since Roblox validates after the fact; it exists
+   *  so a caller can tell "nothing accepted yet" from "nothing sent".
+   */
+  accepted: UploadedAsset[];
   wasSplit: boolean;
 };
 
 export type UploadedAsset = {
   name: string;
   assetId: number | null;
-  path: string;
-  bytes: number;
 };
 
 /* Tauri Specta runtime */

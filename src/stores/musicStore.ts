@@ -27,6 +27,7 @@ import {
   pickLocalAudio,
   previewSplit,
   probeMedia,
+  resumePendingValidations,
   stripAudioExtension,
   stripExtension,
   uploadAudioParts,
@@ -100,7 +101,7 @@ const RENDER_EDIT_KEYS: (keyof TrackEdit)[] = [
  * `rejected`, and the result goes straight into upload history.
  */
 export type UploadStatus =
-  | { kind: 'accepted'; count: number }
+  | { kind: 'sent'; recordId: string }
   | { kind: 'rejected'; reason: 'no-account' | 'failed'; message: string };
 
 interface MusicState {
@@ -119,7 +120,20 @@ interface MusicState {
   refreshSplit: (id: string) => Promise<void>;
   installMissingTools: () => Promise<void>;
   refreshHistory: () => Promise<void>;
+  /**
+   * Re-reads the history and asks the backend to pick up validation that a
+   * previous session left unfinished.
+   */
+  resumeValidation: () => Promise<void>;
   refreshQuota: () => Promise<void>;
+  /**
+   * Uploads the track and hands it to the history.
+   *
+   * `uploading` is set before anything is sent and cleared in a `finally`, so a
+   * rejected upload can never leave the row stuck showing a spinner. The bytes
+   * going to Roblox is the only thing this waits for; Roblox's own validation
+   * is tracked on the history row instead of here.
+   */
   uploadTrack: (id: string) => Promise<void>;
   deleteRecord: (id: string) => Promise<void>;
   addFromUrl: (url: string) => Promise<void>;
@@ -189,6 +203,18 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     }
   },
 
+  resumeValidation: async () => {
+    // History first, so a row that is about to change already exists on screen
+    // and the update lands on it rather than appearing from nowhere.
+    await get().refreshHistory();
+    try {
+      await resumePendingValidations();
+    } catch {
+      // Losing the resume is not worth blocking the view over: the rows still
+      // show whatever was last written, and the next launch tries again.
+    }
+  },
+
   refreshQuota: async () => {
     const userId = uploaderUserId();
     if (!userId) {
@@ -214,6 +240,9 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   uploadTrack: async (id) => {
     const track = get().tracks.find((candidate) => candidate.id === id);
     if (!track || track.exportedFiles.length === 0) return;
+    // Guards a double click: the row is disabled while this runs, and this
+    // second guard covers a click that lands before React re-renders.
+    if (get().uploading) return;
 
     const userId = uploaderUserId();
     if (!userId) {
@@ -221,8 +250,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       return;
     }
 
-    // The previous outcome is cleared so a second attempt cannot leave a stale
-    // "uploaded" line next to a progress bar.
     set({ uploading: true, progress: null, error: null, status: null });
     try {
       const summary = await uploadAudioParts(
@@ -230,21 +257,16 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         track.exportedFiles.map((file) => file.displayName),
         userId,
       );
-      // Backend now blocks until Roblox gives a definitive answer, so there
-      // is never a pending piece. Every piece either has an asset id or the
-      // whole upload errors.
-      set({
-        status: { kind: 'accepted', count: summary.assets.length },
-      });
 
-      // Only once the upload is confirmed does the track leave the queue. It now
-      // lives in the history section with its asset ids, and dropping it earlier
-      // would throw away the rendered file the user would need to retry with if
-      // the upload failed.
+      // The bytes are with Roblox. Validation continues in the background, so
+      // the track leaves the queue now and the history row takes over.
+      set({ status: { kind: 'sent', recordId: summary.recordId } });
       set((state) => ({
         tracks: state.tracks.filter((candidate) => candidate.id !== id),
       }));
 
+      // The backend writes the row before it returns, so this only has to pick
+      // it up; the event stream keeps it live from here.
       await get().refreshHistory();
       await get().refreshQuota();
     } catch (err) {
@@ -252,6 +274,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       // re-importing and re-rendering it.
       set({ status: { kind: 'rejected', reason: 'failed', message: String(err) } });
     } finally {
+      // Clearing progress here is what stops a settled upload from sitting on
+      // a progress bar: the bar is scoped to `uploading`, so this ends it.
       set({ uploading: false, progress: null });
     }
   },
@@ -400,6 +424,27 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 export const bindUploadProgress = () => {
   const unlisten = listen<UploadProgress>('music-upload-progress', (event) => {
     useMusicStore.setState({ progress: event.payload });
+  });
+
+  return () => {
+    void unlisten.then((stop) => stop());
+  };
+};
+
+/**
+ * Replaces a history row whenever the backend reports on one.
+ *
+ * The backend owns the row's state, because it is the only side that can see
+ * Roblox's answer. Merging here rather than patching individual fields is what
+ * keeps the view from drifting: whatever the backend says wins, so a piece can
+ * never render "validating" after it was already accepted.
+ */
+export const bindUploadStatus = () => {
+  const unlisten = listen<UploadRecord>('music-upload-status', (event) => {
+    const record = event.payload;
+    useMusicStore.setState((state) => ({
+      history: [record, ...state.history.filter((existing) => existing.id !== record.id)],
+    }));
   });
 
   return () => {
