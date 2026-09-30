@@ -43,23 +43,23 @@ pub struct UploadProgress {
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct UploadedAsset {
-    pub name: String,
-    #[specta(type = f64)]
-    pub asset_id: u64,
-    pub path: String,
-    pub bytes: u32,
+pub struct UploadSummary {
+    /// The history row this upload created. The view uses it to scroll to the
+    /// row, which is where the asset ids appear as Roblox reveals them.
+    pub record_id: String,
+    /// Pieces that were already fully accepted by the time the bytes finished
+    /// sending. Usually empty, since Roblox validates after the fact; it exists
+    /// so a caller can tell "nothing accepted yet" from "nothing sent".
+    pub accepted: Vec<UploadedAsset>,
+    pub was_split: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct UploadSummary {
-    /// Pieces Roblox has finished validating.
-    pub assets: Vec<UploadedAsset>,
-    /// Names of pieces that were accepted but are still being validated, so they
-    /// have no asset id to report yet.
-    pub pending: Vec<String>,
-    pub was_split: bool,
+pub struct UploadedAsset {
+    pub name: String,
+    #[specta(type = f64)]
+    pub asset_id: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -71,26 +71,94 @@ pub struct AudioQuota {
 
 // ------------------------------------------------------------------- history
 
-/// One track's upload, kept so the ids can be found again later.
+/// Where a piece is in Roblox's pipeline.
+///
+/// These are plain strings rather than an enum so that a record written by an
+/// older build still deserialises, and so a new status can be added without
+/// stranding the pieces already on disk.
+pub mod status {
+    /// Bytes are still being sent to Roblox.
+    pub const UPLOADING: &str = "uploading";
+    /// Roblox has the bytes and is checking them. The asset id may or may not
+    /// exist yet; it is filled in the moment Roblox reveals it.
+    pub const VALIDATING: &str = "validating";
+    /// Roblox approved the piece and it has an asset id.
+    pub const ACCEPTED: &str = "accepted";
+    /// Roblox refused the piece. `message` says why.
+    pub const REJECTED: &str = "rejected";
+}
+
+/// One rendered piece of a track, tracked from the moment its bytes start
+/// moving until Roblox gives a verdict.
+///
+/// `asset_id` is optional because Roblox reveals it at its own pace. It is
+/// filled in as soon as the operation response carries one, which is what lets
+/// the history show an id while validation is still running.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct UploadPiece {
+    /// The name Roblox shows, exactly as the user typed it.
+    pub name: String,
+    pub path: String,
+    pub bytes: u32,
+    /// Roblox's handle for the create call. Empty when the create call itself
+    /// failed, which is the only way a piece has no operation to poll.
+    #[serde(default)]
+    pub operation_id: String,
+    #[serde(default)]
+    /// Exported as a float because a u64 would lose precision as a JavaScript
+    /// number. Roblox asset ids stay far below that limit.
+    #[specta(type = Option<f64>)]
+    pub asset_id: Option<u64>,
+    /// One of [`status`].
+    pub status: String,
+    /// Why Roblox refused it, when it did.
+    #[serde(default)]
+    pub message: String,
+}
+
+/// One track's upload, kept so the ids and the verdict both survive a restart.
+///
+/// Validation outlives the app: Roblox can take minutes to answer, and closing
+/// the window must not lose the answer. Everything the view needs to render a
+/// row is therefore on disk, and a poller picks the unfinished pieces back up on
+/// the next launch.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct UploadRecord {
     pub id: String,
+    /// The track's title, without any part suffix.
     pub title: String,
     pub uploaded_at: String,
     pub was_split: bool,
     pub total_bytes: u32,
-    pub assets: Vec<RecordedAsset>,
+    pub pieces: Vec<UploadPiece>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct RecordedAsset {
-    pub name: String,
-    #[specta(type = f64)]
-    pub asset_id: u64,
-    pub path: String,
-    pub bytes: u32,
+/// True while a piece still needs Roblox to answer something.
+pub fn is_unfinished(piece: &UploadPiece) -> bool {
+    matches!(piece.status.as_str(), status::UPLOADING | status::VALIDATING)
+}
+
+/// The row's status, derived from its pieces.
+///
+/// A row is only "accepted" when every piece is, so a split track cannot read as
+/// done while one of its parts is still being checked or was refused.
+pub fn record_status(record: &UploadRecord) -> &'static str {
+    if record.pieces.iter().any(|piece| piece.status == status::REJECTED) {
+        return status::REJECTED;
+    }
+    // The emptiness check is load-bearing: `all` on an empty iterator is true,
+    // so a record with no pieces would otherwise read as a success.
+    if !record.pieces.is_empty()
+        && record.pieces.iter().all(|piece| piece.status == status::ACCEPTED)
+    {
+        return status::ACCEPTED;
+    }
+    if record.pieces.iter().any(is_unfinished) {
+        return status::VALIDATING;
+    }
+    status::REJECTED
 }
 
 /// Records default to this many entries, oldest dropped first.
@@ -106,52 +174,132 @@ fn history_path(app: &AppHandle) -> Result<PathBuf> {
     Ok(app.path().app_data_dir()?.join("upload-history.json"))
 }
 
-/// A stable id for one upload, derived from the first asset so re-importing the
-/// same track does not silently duplicate rows.
-fn record_id(summary: &UploadSummary) -> String {
-    summary
-        .assets
-        .first()
-        .map(|asset| format!("{}:{}", asset.asset_id, summary.assets.len()))
-        .unwrap_or_else(|| "empty".to_string())
+/// Distinguishes two records created in the same millisecond.
+static RECORD_SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// A record id that exists before any asset id does.
+///
+/// The old id was derived from the first asset id, which is exactly the thing
+/// that does not exist yet at the moment the bytes are sent — so a record is now
+/// keyed by creation order instead.
+fn new_record_id() -> String {
+    use std::sync::atomic::Ordering;
+    let millis = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
+    let sequence = RECORD_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+    format!("{millis:x}-{sequence:x}")
 }
 
-/// Adds a finished upload to the history, replacing any earlier entry with the
-/// same id and trimming the oldest when the list grows too long.
-pub async fn record_upload(app: &AppHandle, summary: &UploadSummary) -> Result<()> {
-    let _guard = history_mutex().lock().await;
-    let path = history_path(app)?;
-
-    let mut stored: Vec<UploadRecord> = crate::commands::ipc::read_json_file(&path)
+/// Reads the whole history. A missing or corrupt file reads as empty rather than
+/// as an error, so a bad write cannot lock the user out of the Music view.
+async fn load_records(app: &AppHandle) -> Vec<UploadRecord> {
+    let Ok(path) = history_path(app) else {
+        return Vec::new();
+    };
+    crate::commands::ipc::read_json_file(&path)
         .await
         .ok()
         .and_then(|value| serde_json::from_value(value).ok())
-        .unwrap_or_default();
+        .unwrap_or_default()
+}
 
+/// Writes the history, newest first, dropping the oldest past the limit.
+async fn store_records(app: &AppHandle, mut records: Vec<UploadRecord>) -> Result<()> {
+    records.truncate(HISTORY_LIMIT);
+    let path = history_path(app)?;
+    crate::commands::ipc::write_json_file(&path, &serde_json::to_value(records)?).await
+}
+
+/// Inserts a record, or replaces the earlier one with the same id.
+///
+/// Replacing rather than appending is what keeps a re-polled record from
+/// stacking up duplicate rows in the history list.
+pub async fn upsert_record(app: &AppHandle, record: UploadRecord) -> Result<()> {
+    let _guard = history_mutex().lock().await;
+    let mut stored = load_records(app).await;
+    stored.retain(|existing| existing.id != record.id);
+    stored.insert(0, record);
+    store_records(app, stored).await
+}
+
+/// Emits the record so an open view can update the row without polling.
+fn announce(app: &AppHandle, record: &UploadRecord) {
+    // A closed window has no listener. The record is on disk either way, so the
+    // next launch reads the same state; dropping the event is harmless.
+    let _ = app.emit("music-upload-status", record.clone());
+}
+
+/// Creates the record for an upload and puts it in the history straight away.
+///
+/// This runs before a single byte is sent, so the row exists even if the upload
+/// fails outright and the view never gets a summary back.
+pub async fn begin_record(
+    app: &AppHandle,
+    title: &str,
+    pieces: &[(String, PathBuf, u32)],
+    was_split: bool,
+) -> Result<UploadRecord> {
     let record = UploadRecord {
-        id: record_id(summary),
-        title: summary.assets.first().map(|a| a.name.clone()).unwrap_or_default(),
+        id: new_record_id(),
+        title: title.to_string(),
         uploaded_at: chrono_like_now(),
-        was_split: summary.was_split,
-        total_bytes: summary.assets.iter().map(|a| a.bytes).sum(),
-        assets: summary
-            .assets
+        was_split,
+        total_bytes: pieces.iter().map(|(_, _, bytes)| *bytes).sum(),
+        pieces: pieces
             .iter()
-            .map(|a| RecordedAsset {
-                name: a.name.clone(),
-                asset_id: a.asset_id,
-                path: a.path.clone(),
-                bytes: a.bytes,
+            .map(|(name, path, bytes)| UploadPiece {
+                name: name.clone(),
+                path: path.to_string_lossy().to_string(),
+                bytes: *bytes,
+                operation_id: String::new(),
+                asset_id: None,
+                status: status::UPLOADING.to_string(),
+                message: String::new(),
             })
             .collect(),
     };
 
-    stored.retain(|existing| existing.id != record.id);
-    stored.insert(0, record);
-    stored.truncate(HISTORY_LIMIT);
+    upsert_record(app, record.clone()).await?;
+    announce(app, &record);
+    Ok(record)
+}
 
-    crate::commands::ipc::write_json_file(&path, &serde_json::to_value(stored)?).await?;
-    Ok(())
+/// Applies a change to one piece and persists the whole record.
+///
+/// Every status change goes through here so the file and the emitted event
+/// always describe the same state. Without that, a status could be announced
+/// but never written, and the row would silently revert on the next launch.
+pub async fn patch_piece(
+    app: &AppHandle,
+    record_id: &str,
+    index: usize,
+    apply: impl FnOnce(&mut UploadPiece),
+) -> Result<UploadRecord> {
+    let updated = {
+        let _guard = history_mutex().lock().await;
+        let mut stored = load_records(app).await;
+
+        let Some(record) = stored.iter_mut().find(|record| record.id == record_id) else {
+            return Err(AppError::Custom("That upload is no longer in the history.".into()));
+        };
+        let Some(piece) = record.pieces.get_mut(index) else {
+            return Err(AppError::Custom("That upload piece no longer exists.".into()));
+        };
+
+        apply(piece);
+        let updated = record.clone();
+        stored.retain(|existing| existing.id != updated.id);
+        stored.insert(0, updated.clone());
+        store_records(app, stored).await?;
+        updated
+    };
+
+    // Announced outside the lock: a listener is free to call back into a
+    // command, and holding the history lock across that would deadlock.
+    announce(app, &updated);
+    Ok(updated)
 }
 
 /// RFC 3339 without pulling in a date library, in UTC.
@@ -260,11 +408,17 @@ pub fn content_type_for(path: &Path) -> Result<&'static str> {
     }
 }
 
-/// Uploads the rendered pieces as new Roblox assets.
+/// Sends the rendered pieces to Roblox and returns as soon as the bytes are
+/// accepted.
 ///
-/// Roblox cannot update an existing audio asset, so a track that had to be
-/// split becomes one asset per piece. Each piece is uploaded on its own because
-/// the 20 MB limit applies per request.
+/// This deliberately does not wait for Roblox to finish validating. Waiting is
+/// what made the Music view sit on a progress bar for minutes with no way to
+/// tell whether the upload had worked, and it meant a single slow piece held
+/// back the asset ids of every other piece. Instead each piece is recorded and
+/// left in [`status::VALIDATING`], and a background poller resolves it.
+///
+/// Returns the pieces that are already fully accepted. Pieces still validating
+/// are in the history, not here, because this call has no id to give yet.
 pub async fn upload_pieces(
     app: &AppHandle,
     files: &[(String, PathBuf)],
@@ -281,62 +435,71 @@ pub async fn upload_pieces(
     let client = crate::utils::get_http_client();
     let total = files.len();
 
-    let mut assets = Vec::with_capacity(total);
-    for (index, (name, path)) in files.iter().enumerate() {
-        // `upload_one` does not return until Roblox has approved or rejected the
-        // piece, so every entry here has a real asset id. There is no longer a
-        // third "pending" outcome to report: an upload is either recorded in
-        // full or the whole call errors out.
-        let asset_id =
-            upload_one(&client, &key, name, path, index, total, app, creator_user_id).await?;
-
-        assets.push(UploadedAsset {
-            name: name.clone(),
-            asset_id,
-            path: path.to_string_lossy().to_string(),
-            bytes: std::fs::metadata(path).map(|m| m.len()).unwrap_or(0) as u32,
-        });
+    // Sizes are read up front so the history row can show the real byte count
+    // from the moment it appears, rather than growing into it.
+    let mut sized: Vec<(String, PathBuf, u32)> = Vec::with_capacity(total);
+    for (name, path) in files {
+        let bytes = std::fs::metadata(path).map(|m| m.len()).unwrap_or(0) as u32;
+        sized.push((name.clone(), path.clone(), bytes));
     }
 
-    // Permissions are applied after every asset exists, so a partial failure
-    // still leaves usable assets rather than uploads nobody can load.
-    for asset in &assets {
-        grant_use_permission(&client, &key, asset.asset_id).await?;
+    let title = display_title(&sized);
+    let record = begin_record(app, &title, &sized, total > 1).await?;
+
+    for (index, (name, path, _)) in sized.iter().enumerate() {
+        match send_piece(&client, &key, name, path, index, total, app, creator_user_id).await {
+            Ok(operation_id) => {
+                // The row is written before the poller starts, so a crash
+                // between the two still leaves a record to resume from.
+                patch_piece(app, &record.id, index, |piece| {
+                    piece.operation_id = operation_id;
+                    piece.status = status::VALIDATING.to_string();
+                })
+                .await?;
+            }
+            Err(err) => {
+                // One piece failing does not abandon the rest: the track still
+                // exists on Roblox's side for the pieces that did land, and the
+                // row records exactly which part went wrong.
+                patch_piece(app, &record.id, index, |piece| {
+                    piece.status = status::REJECTED.to_string();
+                    piece.message = err.to_string();
+                })
+                .await?;
+            }
+        }
     }
 
-    let summary = UploadSummary { assets, pending: Vec::new(), was_split: total > 1 };
+    // Validation is chased in the background so this command can return. The
+    // pollers outlive it and keep writing to the history file.
+    let app = app.clone();
+    let record_id = record.id.clone();
+    tauri::async_runtime::spawn(async move {
+        for index in 0..total {
+            follow_validation(&app, &record_id, index).await;
+        }
+    });
 
-    // Every piece has a real asset id by this point, so the upload is always
-    // worth recording. The old code skipped history whenever anything was still
-    // pending, which meant a slow Roblox validation lost the upload entirely.
-    record_upload(app, &summary).await?;
-
-    Ok(summary)
+    Ok(UploadSummary { record_id: record.id, accepted: Vec::new(), was_split: total > 1 })
 }
 
-/// The `request` field of a Create Asset call.
+/// The row's title: the track name, without any "(part n)" suffix.
 ///
-/// The creator is not a top level attribute of the request: it belongs to
-/// `creationContext`. Roblox silently ignores a top level `creator` and then
-/// answers "Creator is required.", which is the only clue that the field was in
-/// the wrong place.
-///
-/// The name is also kept under Roblox's 100 character limit, and the creator has
-/// to be the uploader's own user id or the asset is rejected.
-fn create_asset_request(name: &str, creator_user_id: u64) -> serde_json::Value {
-    let display_name: String = name.chars().take(100).collect();
-    serde_json::json!({
-        "assetType": "Audio",
-        "displayName": display_name,
-        "description": display_name,
-        "creationContext": {
-            "creator": { "userId": creator_user_id },
-        },
-    })
+/// A split track's pieces carry suffixes, so the title is the longest piece name
+/// with that suffix trimmed, which is the name the user typed.
+fn display_title(pieces: &[(String, PathBuf, u32)]) -> String {
+    let first = pieces.first().map(|(name, _, _)| name.as_str()).unwrap_or_default();
+    match first.rfind(" (part ") {
+        Some(cut) if first.ends_with(')') => first[..cut].to_string(),
+        _ => first.to_string(),
+    }
 }
 
-#[allow(clippy::too_many_arguments)]
-async fn upload_one(
+/// Sends one piece's bytes and returns Roblox's operation id.
+///
+/// Everything after this point is [`follow_validation`]'s problem. The only
+/// thing this function decides is whether Roblox accepted the bytes at all.
+async fn send_piece(
     client: &reqwest::Client,
     key: &str,
     name: &str,
@@ -345,14 +508,14 @@ async fn upload_one(
     total: usize,
     app: &AppHandle,
     creator_user_id: u64,
-) -> Result<u64> {
+) -> Result<String> {
     let size = std::fs::metadata(path)
         .map(|m| m.len())
-        .map_err(|e| AppError::Custom(format!("Could not read {}: {e}", name)))?;
+        .map_err(|e| AppError::Custom(format!("Could not read {name}: {e}")))?;
 
     if size > MAX_UPLOAD_BYTES {
         return Err(AppError::Custom(format!(
-            "\"{name}\" is {:.1} MB, over Roblox's 20 MB limit per upload.",
+            "{name:?} is {:.1} MB, over Roblox's 20 MB limit per upload.",
             size as f64 / (1024.0 * 1024.0)
         )));
     }
@@ -362,7 +525,7 @@ async fn upload_one(
 
     let file = tokio::fs::File::open(path)
         .await
-        .map_err(|e| AppError::Custom(format!("Could not open {}: {e}", name)))?;
+        .map_err(|e| AppError::Custom(format!("Could not open {name}: {e}")))?;
 
     let emitter = ProgressEmitter {
         app: app.clone(),
@@ -397,93 +560,209 @@ async fn upload_one(
 
     let parsed: serde_json::Value =
         serde_json::from_str(&body).map_err(|e| AppError::Custom(e.to_string()))?;
-    let operation_id = parsed
-        .get("operationId")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| {
-            AppError::Custom(format!("Roblox did not return an operation id for \"{name}\"."))
-        })?
-        .to_string();
 
-    wait_for_operation(client, key, &operation_id, name, index, total, app).await
+    parsed.get("operationId").and_then(|v| v.as_str()).map(str::to_string).ok_or_else(|| {
+        AppError::Custom(format!("Roblox did not return an operation id for {name:?}."))
+    })
 }
 
-/// Polls until Roblox finishes validating, then returns the asset id.
+/// Reads one poll of a create operation.
 ///
-/// There is no timeout. The previous version gave up after five minutes and
-/// returned `None`, which the view could only show as "still pending" — the user
-/// never learned whether the upload had actually worked. Now the loop only ends
-/// when Roblox says `succeeded`/`completed` (asset id returned) or
-/// `failed`/`error` (error returned), so the answer is always definitive.
+/// The asset id is returned as soon as the response carries one, whether or not
+/// the operation has finished. That is what puts a real id in the history while
+/// Roblox is still checking the audio, instead of making the user wait for the
+/// verdict to see it.
+fn read_operation_state(body: &serde_json::Value) -> (String, Option<u64>) {
+    let state = body.get("state").and_then(|v| v.as_str()).unwrap_or_default().to_ascii_lowercase();
+    let asset_id =
+        body.get("response").and_then(|r| r.get("assetId")).and_then(serde_json::Value::as_u64);
+    (state, asset_id)
+}
+
+/// Polls one piece until Roblox accepts or rejects it, updating the history as
+/// it learns things.
 ///
-/// Each poll emits a progress event carrying the elapsed seconds, so the view
-/// can show a live counter rather than a bar that appears to be stuck.
-async fn wait_for_operation(
-    client: &reqwest::Client,
-    key: &str,
-    operation_id: &str,
-    name: &str,
-    index: usize,
-    total: usize,
-    app: &AppHandle,
-) -> Result<u64> {
-    let started_at = std::time::Instant::now();
+/// This runs in the background and is the only thing that ever moves a piece out
+/// of [`status::VALIDATING`]. It is deliberately resumable: a piece with no
+/// operation id (the create call failed) is marked rejected straight away, so no
+/// row can get stuck.
+pub async fn follow_validation(app: &AppHandle, record_id: &str, index: usize) {
+    let Ok(key) = api_key() else {
+        mark_rejected(app, record_id, index, "The Open Cloud API key is no longer readable.").await;
+        return;
+    };
+    let client = crate::utils::get_http_client();
+
+    let Some(operation_id) = operation_id_of(app, record_id, index).await else {
+        // No operation means the create call never succeeded, so there is
+        // nothing to wait for. patch_piece already recorded the reason.
+        return;
+    };
 
     loop {
         tokio::time::sleep(std::time::Duration::from_millis(OPERATION_POLL_MS)).await;
 
-        let elapsed = started_at.elapsed().as_secs().min(u32::MAX as u64) as u32;
-        let _ = app.emit(
-            "music-upload-progress",
-            UploadProgress {
-                file: name.to_string(),
-                index: index as u32,
-                total: total as u32,
-                sent: 0,
-                bytes: 0,
-                stage: "processing".to_string(),
-                processing_elapsed_secs: elapsed,
-            },
-        );
-
-        let response = client
+        let response = match client
             .get(format!("{OPERATIONS}/{operation_id}"))
-            .header("x-api-key", key)
+            .header("x-api-key", &key)
             .send()
-            .await?;
+            .await
+        {
+            Ok(response) => response,
+            // A transport blip is not a verdict. Keep trying.
+            Err(err) => {
+                log::warn!("Could not read operation {operation_id}: {err}");
+                continue;
+            }
+        };
 
-        // A transient error here (rate limit, gateway blip) is not a verdict on
-        // the upload, so it is retried rather than surfaced.
         if !response.status().is_success() {
             continue;
         }
 
-        let parsed: serde_json::Value = response.json().await?;
-        let state =
-            parsed.get("state").and_then(|v| v.as_str()).unwrap_or_default().to_ascii_lowercase();
+        let Ok(parsed) = response.json::<serde_json::Value>().await else {
+            continue;
+        };
+
+        let (state, asset_id) = read_operation_state(&parsed);
+
+        // Take the id first, whatever the state. Roblox hands it over before it
+        // finishes checking, and the user asked to see it immediately.
+        if let Some(id) = asset_id {
+            let needs_id = asset_id_of_piece(app, record_id, index).await != Some(id);
+            let granted = grant_use_permission(&client, &key, id).await.is_ok();
+            let _ = patch_piece(app, record_id, index, |piece| {
+                if needs_id || piece.asset_id.is_none() {
+                    piece.asset_id = Some(id);
+                }
+            })
+            .await;
+            if granted {
+                // Permissions can only be set once there is an id, so a piece
+                // that revealed its id early gets them here rather than in the
+                // terminal branch below.
+                log::info!("Asset {id} ready and usable");
+            }
+        }
 
         match state.as_str() {
             "succeeded" | "completed" => {
-                return parsed
-                    .get("response")
-                    .and_then(|r| r.get("assetId"))
-                    .and_then(serde_json::Value::as_u64)
-                    .ok_or_else(|| {
-                        AppError::Custom(format!(
-                            "Roblox approved \"{name}\" but did not return an asset id."
-                        ))
-                    });
+                let _ = patch_piece(app, record_id, index, |piece| {
+                    piece.status = status::ACCEPTED.to_string();
+                })
+                .await;
+                return;
             }
             "failed" | "error" => {
                 let message =
                     parsed.get("error").and_then(|v| v.as_str()).unwrap_or("no reason given");
-                return Err(AppError::Custom(format!("Roblox rejected \"{name}\": {message}")));
+                let _ = patch_piece(app, record_id, index, |piece| {
+                    piece.status = status::REJECTED.to_string();
+                    piece.message = format!("Roblox rejected it: {message}");
+                })
+                .await;
+                return;
             }
-            // Anything else means Roblox is still working on it, so keep
-            // polling. This is the case the old timeout used to abandon.
             _ => {}
         }
     }
+}
+
+/// Marks a piece rejected with a reason, ignoring a record that has since been
+/// deleted by the user.
+async fn mark_rejected(app: &AppHandle, record_id: &str, index: usize, reason: &str) {
+    let _ = patch_piece(app, record_id, index, |piece| {
+        piece.status = status::REJECTED.to_string();
+        piece.message = reason.to_string();
+    })
+    .await;
+}
+
+/// The operation id stored for a piece, if the record is still there.
+async fn operation_id_of(app: &AppHandle, record_id: &str, index: usize) -> Option<String> {
+    let record = find_record(app, record_id).await?;
+    let operation = record.pieces.get(index)?.operation_id.clone();
+    (!operation.is_empty()).then_some(operation)
+}
+
+/// The asset id currently stored for a piece.
+async fn asset_id_of_piece(app: &AppHandle, record_id: &str, index: usize) -> Option<u64> {
+    let record = find_record(app, record_id).await?;
+    record.pieces.get(index)?.asset_id
+}
+
+/// Looks a record up without holding the lock across the caller's own work.
+async fn find_record(app: &AppHandle, record_id: &str) -> Option<UploadRecord> {
+    let _guard = history_mutex().lock().await;
+    load_records(app).await.into_iter().find(|record| record.id == record_id)
+}
+
+/// Picks up validation for anything left unfinished by a previous session.
+///
+/// Without this, closing the app mid-validation would leave a row frozen on
+/// "validating" forever, which is the exact ambiguity this flow exists to
+/// remove.
+#[tauri::command]
+#[specta::specta]
+pub async fn resume_pending_validations(app: AppHandle) -> Result<u32> {
+    let records = load_records(&app).await;
+
+    let mut resumed = 0;
+    for record in records {
+        for index in 0..record.pieces.len() {
+            let Some(piece) = record.pieces.get(index) else {
+                continue;
+            };
+            if !is_unfinished(piece) {
+                continue;
+            }
+
+            // A piece still marked uploading when the app died never finished
+            // sending, so there is no operation to poll and it cannot succeed.
+            if piece.operation_id.is_empty() {
+                if piece.status == status::UPLOADING {
+                    mark_rejected(
+                        &app,
+                        &record.id,
+                        index,
+                        "The upload was interrupted before Roblox received it.",
+                    )
+                    .await;
+                }
+                continue;
+            }
+
+            resumed += 1;
+            let app = app.clone();
+            let record_id = record.id.clone();
+            tauri::async_runtime::spawn(async move {
+                follow_validation(&app, &record_id, index).await;
+            });
+        }
+    }
+
+    Ok(resumed)
+}
+
+/// The `request` field of a Create Asset call.
+///
+/// The creator is not a top level attribute of the request: it belongs to
+/// `creationContext`. Roblox silently ignores a top level `creator` and then
+/// answers "Creator is required.", which is the only clue that the field was in
+/// the wrong place.
+///
+/// The name is also kept under Roblox's 100 character limit, and the creator has
+/// to be the uploader's own user id or the asset is rejected.
+fn create_asset_request(name: &str, creator_user_id: u64) -> serde_json::Value {
+    let display_name: String = name.chars().take(100).collect();
+    serde_json::json!({
+        "assetType": "Audio",
+        "displayName": display_name,
+        "description": display_name,
+        "creationContext": {
+            "creator": { "userId": creator_user_id },
+        },
+    })
 }
 
 /// Grants the uploader permission to use the asset in their own experience.
@@ -545,32 +824,10 @@ pub async fn audio_quota(client: &reqwest::Client, key: &str, user_id: u64) -> R
     Ok((remaining, limit))
 }
 
-/// Uploads one rendered piece and returns the new Roblox asset id.
-#[tauri::command]
-#[specta::specta]
-pub async fn upload_audio_piece(
-    app: AppHandle,
-    path: String,
-    name: String,
-    creator_user_id: f64,
-) -> Result<UploadedAsset> {
-    let file_path = PathBuf::from(path.trim());
-    if !file_path.is_file() {
-        return Err("The exported file could not be found. Export it again.".into());
-    }
-
-    let summary =
-        upload_pieces(&app, &[(name.clone(), file_path.clone())], creator_user_id as u64).await?;
-
-    summary.assets.into_iter().next().ok_or_else(|| {
-        AppError::Custom(
-            "Roblox accepted the file but is still validating it, so there is no asset id yet."
-                .into(),
-        )
-    })
-}
-
 /// Uploads every rendered piece, for a track that was split.
+///
+/// Returns as soon as the bytes are with Roblox. The asset ids live in the
+/// history row this creates, and fill in as Roblox reveals them.
 #[tauri::command]
 #[specta::specta]
 pub async fn upload_audio_parts(
@@ -643,7 +900,7 @@ fn describe(body: &str, status: u16) -> AppError {
 mod tests {
     use super::{content_type_for, create_asset_request, describe, MAX_UPLOAD_BYTES};
     use crate::error::AppError;
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
     #[test]
     fn the_creator_is_nested_inside_the_creation_context() {
@@ -774,47 +1031,110 @@ mod tests {
     }
 
     #[test]
-    fn records_are_keyed_so_reuploading_replaces_rather_than_duplicates() {
-        let summary = super::UploadSummary {
-            was_split: false,
-            pending: Vec::new(),
-            assets: vec![
-                super::UploadedAsset {
-                    name: "song.mp3".to_string(),
-                    asset_id: 12345,
-                    path: "/tmp/song.mp3".to_string(),
-                    bytes: 100,
-                },
-                super::UploadedAsset {
-                    name: "song (part 2).mp3".to_string(),
-                    asset_id: 12346,
-                    path: "/tmp/song2.mp3".to_string(),
-                    bytes: 90,
-                },
-            ],
-        };
-        // Two pieces of the same upload share a key even though ids differ.
-        assert_eq!(super::record_id(&summary), "12345:2");
+    fn a_split_row_is_only_accepted_once_every_part_is() {
+        // A track cut into parts reads as done when its last part lands, not when
+        // its first one does. Reading a half-validated track as accepted is how a
+        // user ends up wiring up a part that Roblox went on to refuse.
+        let mut record = record_with(&[super::status::ACCEPTED, super::status::VALIDATING]);
+        assert_eq!(super::record_status(&record), super::status::VALIDATING);
+
+        record.pieces[1].status = super::status::ACCEPTED.to_string();
+        assert_eq!(super::record_status(&record), super::status::ACCEPTED);
     }
 
     #[test]
-    fn a_confirmed_upload_is_always_recorded_in_history() {
-        // The old code skipped history whenever a piece was still pending, so a
-        // slow Roblox validation lost the upload from the record entirely. Now
-        // that uploads block until Roblox answers, the key always comes from a
-        // real asset id and the summary carries no pending names.
-        let summary = super::UploadSummary {
-            was_split: false,
-            pending: Vec::new(),
-            assets: vec![super::UploadedAsset {
-                name: "song".to_string(),
-                asset_id: 12_345,
-                path: "/tmp/song.mp3".to_string(),
-                bytes: 100,
-            }],
-        };
-        assert!(summary.pending.is_empty());
-        assert_eq!(super::record_id(&summary), "12345:1");
+    fn one_refused_part_makes_the_whole_row_refused() {
+        let mut record = record_with(&[super::status::ACCEPTED, super::status::VALIDATING]);
+        record.pieces[1].status = super::status::REJECTED.to_string();
+        assert_eq!(super::record_status(&record), super::status::REJECTED);
+    }
+
+    #[test]
+    fn a_part_still_uploading_is_unfinished() {
+        // An interrupted upload must be resumable, so it cannot read as settled.
+        let record = record_with(&[super::status::UPLOADING]);
+        assert!(super::is_unfinished(&record.pieces[0]));
+        assert_eq!(super::record_status(&record), super::status::VALIDATING);
+    }
+
+    #[test]
+    fn a_settled_part_is_not_resumable() {
+        let mut record = record_with(&[super::status::ACCEPTED]);
+        assert!(!super::is_unfinished(&record.pieces[0]));
+        record.pieces[0].status = super::status::REJECTED.to_string();
+        assert!(!super::is_unfinished(&record.pieces[0]));
+    }
+
+    #[test]
+    fn an_asset_id_is_read_before_the_operation_finishes() {
+        // This is the whole point of the flow: the id shows in the history while
+        // Roblox is still checking, so the user is not made to wait for a verdict
+        // to learn the id.
+        let body = serde_json::json!({ "state": "Running", "response": { "assetId": 987_654 } });
+        let (state, asset_id) = super::read_operation_state(&body);
+        assert_eq!(state, "running");
+        assert_eq!(asset_id, Some(987_654));
+    }
+
+    #[test]
+    fn an_operation_with_no_asset_id_yet_reports_none() {
+        let body = serde_json::json!({ "state": "Pending" });
+        let (state, asset_id) = super::read_operation_state(&body);
+        assert_eq!(state, "pending");
+        assert_eq!(asset_id, None, "an id must not be invented");
+    }
+
+    #[test]
+    fn a_split_tracks_title_drops_the_part_suffix() {
+        // The row heading is the name the user typed, not "song (part 1)".
+        let pieces = vec![
+            ("song (part 1)".to_string(), PathBuf::from("/tmp/a.mp3"), 10),
+            ("song (part 2)".to_string(), PathBuf::from("/tmp/b.mp3"), 10),
+        ];
+        assert_eq!(super::display_title(&pieces), "song");
+    }
+
+    #[test]
+    fn an_unsplit_title_keeps_dots_and_parentheses() {
+        // Only the part suffix is stripped, so a real title like
+        // "Mr. Blue Sky (remix)" survives intact.
+        let pieces = vec![("Mr. Blue Sky (remix)".to_string(), PathBuf::from("/tmp/a.mp3"), 10)];
+        assert_eq!(super::display_title(&pieces), "Mr. Blue Sky (remix)");
+    }
+
+    #[test]
+    fn an_empty_record_is_not_a_success() {
+        // `all` on an empty iterator is true, so without an explicit emptiness
+        // check a record with no pieces would read as accepted.
+        let mut empty = record_with(&[]);
+        assert!(!super::record_status(&empty).is_empty());
+        assert_ne!(super::record_status(&empty), super::status::ACCEPTED);
+        empty.pieces.clear();
+        assert_ne!(super::record_status(&empty), super::status::ACCEPTED);
+    }
+
+    /// A record whose pieces carry the given statuses.
+    fn record_with(statuses: &[&str]) -> super::UploadRecord {
+        super::UploadRecord {
+            id: "r1".to_string(),
+            title: "song".to_string(),
+            uploaded_at: super::chrono_like_now(),
+            was_split: statuses.len() > 1,
+            total_bytes: 10,
+            pieces: statuses
+                .iter()
+                .enumerate()
+                .map(|(index, status)| super::UploadPiece {
+                    name: format!("song (part {})", index + 1),
+                    path: format!("/tmp/{index}.mp3"),
+                    bytes: 10,
+                    operation_id: "op".to_string(),
+                    asset_id: None,
+                    status: (*status).to_string(),
+                    message: String::new(),
+                })
+                .collect(),
+        }
     }
 }
 

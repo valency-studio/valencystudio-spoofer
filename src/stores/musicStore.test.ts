@@ -213,47 +213,102 @@ describe('uploadTrack status', () => {
     useMusicStore.getState().refreshQuota = vi.fn().mockResolvedValue(undefined);
   });
 
-  it('reports acceptance only once Roblox has confirmed every piece', async () => {
-    mockedUpload.mockResolvedValue({
-      assets: [{ name: 'Original', assetId: 1, path: 'C:/media/a.mp3', bytes: 10 }],
-      pending: [],
-      wasSplit: false,
-    });
+  it('reports the upload as sent as soon as the bytes are with Roblox', async () => {
+    // Validation is deliberately not waited on here. The call returns once the
+    // bytes land, and the history row carries the verdict from then on.
+    mockedUpload.mockResolvedValue({ recordId: 'rec-1', accepted: [], wasSplit: false });
 
     await useMusicStore.getState().uploadTrack(id);
 
-    expect(useMusicStore.getState().status).toEqual({ kind: 'accepted', count: 1 });
+    expect(useMusicStore.getState().status).toEqual({ kind: 'sent', recordId: 'rec-1' });
   });
 
-  it('never reports pending, because the backend waits for a real verdict', async () => {
-    // The backend no longer times out, so a piece Roblox has not finished
-    // checking never comes back on its own. The confirmed assets are reported as
-    // accepted rather than held in a limbo the user cannot act on.
-    mockedUpload.mockResolvedValue({
-      assets: [{ name: 'Original', assetId: 1, path: 'C:/media/a.mp3', bytes: 10 }],
-      pending: [],
-      wasSplit: true,
-    });
+  it('leaves the track out of the queue even when no id exists yet', async () => {
+    // A split track has no ids at all by the time the call returns, because
+    // Roblox validates afterwards. The track still belongs in the history, so it
+    // still leaves the queue.
+    mockedUpload.mockResolvedValue({ recordId: 'rec-2', accepted: [], wasSplit: true });
 
     await useMusicStore.getState().uploadTrack(id);
 
-    expect(useMusicStore.getState().status).toEqual({ kind: 'accepted', count: 1 });
+    expect(useMusicStore.getState().status).toEqual({ kind: 'sent', recordId: 'rec-2' });
+    expect(useMusicStore.getState().tracks.some((track) => track.id === id)).toBe(false);
   });
 
   it('clears the track out of the queue so it cannot be uploaded twice', async () => {
     // The queue only holds tracks still waiting to be sent. Once the bytes are
     // gone the track belongs to the history section, and a second click on it
     // would spend quota re-uploading audio Roblox already has.
-    mockedUpload.mockResolvedValue({
-      assets: [{ name: 'Original', assetId: 1, path: 'C:/media/a.mp3', bytes: 10 }],
-      pending: [],
-      wasSplit: false,
-    });
+    mockedUpload.mockResolvedValue({ recordId: 'rec-3', accepted: [], wasSplit: false });
 
     expect(useMusicStore.getState().tracks.some((track) => track.id === id)).toBe(true);
     await useMusicStore.getState().uploadTrack(id);
 
     expect(useMusicStore.getState().tracks.some((track) => track.id === id)).toBe(false);
+  });
+
+  it('clears the progress bar once the upload settles', async () => {
+    // The reported bug: an upload Roblox had accepted still sat on a progress
+    // bar. The bar is scoped to `uploading`, which is cleared in a `finally`, so
+    // it cannot outlive the call it was measuring.
+    mockedUpload.mockResolvedValue({ recordId: 'rec-6', accepted: [], wasSplit: false });
+    useMusicStore.setState({
+      progress: {
+        file: 'Original',
+        index: 0,
+        total: 1,
+        sent: 10,
+        bytes: 10,
+        stage: 'uploading',
+        processingElapsedSecs: 0,
+      },
+    });
+
+    await useMusicStore.getState().uploadTrack(id);
+
+    expect(useMusicStore.getState().uploading).toBe(false);
+    expect(useMusicStore.getState().progress).toBeNull();
+  });
+
+  it('clears the progress bar when the upload fails too', async () => {
+    // A failed upload is the case that used to leave the bar up forever, because
+    // the clear only happened on the success path.
+    mockedUpload.mockRejectedValue('nope');
+    useMusicStore.setState({
+      progress: {
+        file: 'Original',
+        index: 0,
+        total: 1,
+        sent: 5,
+        bytes: 10,
+        stage: 'uploading',
+        processingElapsedSecs: 0,
+      },
+    });
+
+    await useMusicStore.getState().uploadTrack(id);
+
+    expect(useMusicStore.getState().uploading).toBe(false);
+    expect(useMusicStore.getState().progress).toBeNull();
+  });
+
+  it('refuses a second upload while one is already in flight', async () => {
+    // The queue row is disabled, but a second call can still arrive before React
+    // re-renders. Without this guard the user would spend quota twice.
+    let release: (() => void) | undefined;
+    mockedUpload.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve({ recordId: 'rec-7', accepted: [], wasSplit: false });
+        }),
+    );
+
+    const first = useMusicStore.getState().uploadTrack(id);
+    await useMusicStore.getState().uploadTrack(id);
+    release?.();
+    await first;
+
+    expect(mockedUpload).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the track in the queue when the upload fails', async () => {
@@ -269,11 +324,7 @@ describe('uploadTrack status', () => {
   it('refreshes history so the confirmed asset ids are findable', async () => {
     // A definitive result is only useful if the user can get back to the asset
     // id afterwards, which is what the history list is for.
-    mockedUpload.mockResolvedValue({
-      assets: [{ name: 'Original', assetId: 99, path: 'C:/media/a.mp3', bytes: 10 }],
-      pending: [],
-      wasSplit: false,
-    });
+    mockedUpload.mockResolvedValue({ recordId: 'rec-4', accepted: [], wasSplit: false });
 
     await useMusicStore.getState().uploadTrack(id);
 
@@ -294,7 +345,7 @@ describe('uploadTrack status', () => {
   });
 
   it('sends the name chosen in the editor, not the file name', async () => {
-    mockedUpload.mockResolvedValue({ assets: [], pending: [], wasSplit: false });
+    mockedUpload.mockResolvedValue({ recordId: 'rec-5', accepted: [], wasSplit: false });
 
     await useMusicStore.getState().uploadTrack(id);
 
@@ -302,12 +353,12 @@ describe('uploadTrack status', () => {
   });
 
   it('clears a previous outcome before starting again', async () => {
-    useMusicStore.setState({ status: { kind: 'accepted', count: 1 } });
+    useMusicStore.setState({ status: { kind: 'sent', recordId: 'old' } });
     let release: (() => void) | undefined;
     mockedUpload.mockImplementation(
       () =>
         new Promise((resolve) => {
-          release = () => resolve({ assets: [], pending: [], wasSplit: false });
+          release = () => resolve({ recordId: 'new', accepted: [], wasSplit: false });
         }),
     );
 
