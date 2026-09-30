@@ -7,12 +7,9 @@ pub fn find_studio_process() -> Option<u32> {
 
 #[derive(serde::Serialize, specta::Type)]
 pub struct MemoryInjectionResult {
-    #[specta(type = u32)]
-    pub utf8_replaced: usize,
-    #[specta(type = u32)]
-    pub utf16_replaced: usize,
-    #[specta(type = u32)]
-    pub total_replaced: usize,
+    pub utf8_replaced: u32,
+    pub utf16_replaced: u32,
+    pub total_replaced: u32,
 }
 
 #[tauri::command]

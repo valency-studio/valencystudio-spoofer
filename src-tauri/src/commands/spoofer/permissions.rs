@@ -192,8 +192,8 @@ pub async fn batch_grant_asset_permissions(
         "enableDeepAccessCheck": false
     });
 
-    let mut success_ids_set = std::collections::HashSet::new();
-    let mut failed_ids_set = std::collections::HashSet::new();
+    let mut success_ids_set: std::collections::HashSet<u64> = std::collections::HashSet::new();
+    let mut failed_ids_set: std::collections::HashSet<u64> = std::collections::HashSet::new();
     let mut errors = Vec::new();
 
     for (idx, asset_id) in req.asset_ids.iter().enumerate() {

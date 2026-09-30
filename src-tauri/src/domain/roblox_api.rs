@@ -118,10 +118,8 @@ pub struct ResolverAsset {
 
 #[derive(Serialize, Clone, specta::Type)]
 pub struct ResolverProgress {
-    #[specta(type = u32)]
-    pub resolved: usize,
-    #[specta(type = u32)]
-    pub total: usize,
+    pub resolved: u32,
+    pub total: u32,
     pub message: String,
     pub asset_id: String,
     pub success: Option<bool>,
@@ -295,8 +293,8 @@ where
     for (index, res) in results.into_iter().flatten().enumerate() {
         let (asset, msg, success) = res;
         on_progress(ResolverProgress {
-            resolved: index + 1,
-            total,
+            resolved: (index + 1) as u32,
+            total: total as u32,
             message: msg,
             asset_id: asset.asset_id.clone(),
             success: Some(success),
@@ -315,10 +313,8 @@ pub struct EconomyAssetDetails {
 
 #[derive(Serialize, Clone, specta::Type)]
 pub struct ScriptRefProgress {
-    #[specta(type = u32)]
-    pub resolved: usize,
-    #[specta(type = u32)]
-    pub total: usize,
+    pub resolved: u32,
+    pub total: u32,
     pub asset_id: String,
     pub resolved_category: Option<String>,
 }
@@ -344,8 +340,8 @@ where
     let mut resolved_count = total - remaining_ids.len();
 
     on_progress(ScriptRefProgress {
-        resolved: resolved_count,
-        total,
+        resolved: resolved_count as u32,
+        total: total as u32,
         asset_id: String::new(),
         resolved_category: None,
     });
@@ -423,8 +419,8 @@ where
 
                         resolved_count += 1;
                         on_progress(ScriptRefProgress {
-                            resolved: resolved_count,
-                            total,
+                            resolved: resolved_count as u32,
+                            total: total as u32,
                             asset_id: request_id.to_string(),
                             resolved_category: final_cat,
                         });

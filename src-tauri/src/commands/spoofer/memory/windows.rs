@@ -276,12 +276,9 @@ const fn is_bounded_numeric_match_utf16(buffer: &[u8], offset: usize, len: usize
 
 #[derive(serde::Serialize, specta::Type)]
 pub struct MemoryInjectionResult {
-    #[specta(type = u32)]
-    pub utf8_replaced: usize,
-    #[specta(type = u32)]
-    pub utf16_replaced: usize,
-    #[specta(type = u32)]
-    pub total_replaced: usize,
+    pub utf8_replaced: u32,
+    pub utf16_replaced: u32,
+    pub total_replaced: u32,
 }
 
 #[derive(Clone, serde::Serialize, specta::Type)]
@@ -620,8 +617,8 @@ pub async fn scan_and_replace_multiple_strings(
         );
 
         for item in data_items {
-            let u8_val = item.utf8_count.into_inner();
-            let u16_val = item.utf16_count.into_inner();
+            let u8_val = item.utf8_count.into_inner() as u32;
+            let u16_val = item.utf16_count.into_inner() as u32;
             results.insert(
                 item.target,
                 MemoryInjectionResult {
