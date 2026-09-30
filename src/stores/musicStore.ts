@@ -92,11 +92,25 @@ const RENDER_EDIT_KEYS: (keyof TrackEdit)[] = [
   'sampleRate',
 ];
 
+/**
+ * How far an upload has got.
+ *
+ * Sending the bytes and Roblox accepting the asset are two separate events, and
+ * Roblox validates asynchronously, so the states are modelled rather than
+ * collapsed into one success flag. `pending` is deliberately not a failure: the
+ * upload landed, Roblox just has not finished checking it.
+ */
+export type UploadStatus =
+  | { kind: 'accepted'; count: number }
+  | { kind: 'pending'; names: string[] }
+  | { kind: 'rejected'; reason: 'no-account' | 'failed'; message: string };
+
 interface MusicState {
   tools: MediaTools | null;
   tracks: MusicTrack[];
+  /** Import failures only. An upload that is refused is an `UploadStatus`. */
   error: string | null;
-  notice: string | null;
+  status: UploadStatus | null;
   toolError: string | null;
   quota: AudioQuota | null;
   history: UploadRecord[];
@@ -116,7 +130,7 @@ interface MusicState {
   update: (id: string, edit: TrackEdit) => void;
   rename: (id: string, title: string) => void;
   setError: (message: string | null) => void;
-  setNotice: (message: string | null) => void;
+  setStatus: (status: UploadStatus | null) => void;
 }
 
 let counter = 0;
@@ -162,7 +176,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   tools: null,
   tracks: [],
   error: null,
-  notice: null,
+  status: null,
   toolError: null,
   quota: null,
   history: [],
@@ -205,22 +219,32 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
     const userId = uploaderUserId();
     if (!userId) {
-      set({ error: 'no-uploader-account' });
+      set({ status: { kind: 'rejected', reason: 'no-account', message: '' } });
       return;
     }
 
-    set({ uploading: true, progress: null, error: null });
+    // The previous outcome is cleared so a second attempt cannot leave a stale
+    // "uploaded" line next to a progress bar.
+    set({ uploading: true, progress: null, error: null, status: null });
     try {
       const summary = await uploadAudioParts(
         track.exportedFiles.map((file) => file.path),
         track.exportedFiles.map((file) => file.displayName),
         userId,
       );
-      set({ notice: summary.wasSplit ? 'split' : 'single' });
+      // A piece Roblox has not finished checking is reported as pending, not as
+      // a success: there is no asset id for it yet, so the history cannot list
+      // it and the user should not be told it is done.
+      set({
+        status:
+          summary.pending.length > 0
+            ? { kind: 'pending', names: summary.pending }
+            : { kind: 'accepted', count: summary.assets.length },
+      });
       await get().refreshHistory();
       await get().refreshQuota();
     } catch (err) {
-      set({ error: String(err) });
+      set({ status: { kind: 'rejected', reason: 'failed', message: String(err) } });
     } finally {
       set({ uploading: false, progress: null });
     }
@@ -360,7 +384,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   setError: (message) => set({ error: message }),
-  setNotice: (message) => set({ notice: message }),
+  setStatus: (status) => set({ status }),
 }));
 
 /**

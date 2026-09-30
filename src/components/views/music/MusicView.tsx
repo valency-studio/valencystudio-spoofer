@@ -1,6 +1,7 @@
 import {
   Check,
   CircleAlert,
+  Clock,
   Copy,
   ExternalLink,
   FileAudio,
@@ -11,6 +12,7 @@ import {
   Square,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -19,6 +21,7 @@ import { Input } from '../../../components/ui/input';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { cn } from '../../../lib/utils';
 import type { MusicTrack } from '../../../stores/musicStore';
+import type { UploadStatus as UploadStatusState } from '../../../stores/musicStore';
 import { bindUploadProgress, useMusicStore } from '../../../stores/musicStore';
 import type { BakedMedia, UploadProgress } from '../../../utils/music';
 import {
@@ -43,7 +46,7 @@ export default function MusicView() {
     tools,
     tracks,
     error,
-    notice,
+    status,
     quota,
     history,
     progress,
@@ -58,8 +61,7 @@ export default function MusicView() {
     remove,
     update,
     rename,
-    setError,
-    setNotice,
+    setStatus,
   } = useMusicStore();
 
   const [url, setUrl] = useState('');
@@ -117,18 +119,11 @@ export default function MusicView() {
             </p>
           )}
 
-          {uploading && progress && <UploadBar progress={progress} />}
-
-          {notice && (
-            <p className="text-sm text-signal-live" role="status">
-              {notice === 'split' ? t('music.uploadedSplit') : t('music.uploaded')}
-            </p>
-          )}
-
-          {error === 'no-uploader-account' && (
-            <p className="text-sm text-danger" role="alert">
-              {t('music.noUploaderAccount')}
-            </p>
+          {/* One place for the whole upload lifecycle. It used to be split across
+              a bar, a success line and a second line inside the import section,
+              which showed the same outcome twice. */}
+          {(uploading || status) && (
+            <UploadStatus status={status} progress={uploading ? progress : null} busy={uploading} />
           )}
 
           <section className="flex flex-col gap-3">
@@ -170,17 +165,11 @@ export default function MusicView() {
               </Button>
             </div>
 
-            {error && error !== 'yt-dlp-unavailable' && (
+            {error && (
               <p className="text-sm text-danger" role="alert">
-                {error}
+                {error === 'yt-dlp-unavailable' ? t('music.ytdlpUnavailable') : error}
               </p>
             )}
-            {error === 'yt-dlp-unavailable' && (
-              <p className="text-sm text-danger" role="alert">
-                {t('music.ytdlpUnavailable')}
-              </p>
-            )}
-            {notice && <p className="text-sm text-signal-live">{notice}</p>}
           </section>
 
           <section className="flex flex-col gap-3">
@@ -210,13 +199,10 @@ export default function MusicView() {
                         exportedPath: result.files[0]?.path ?? null,
                         exportedFiles: result.files,
                       });
-                      setNotice(
-                        result.wasSplit
-                          ? t('music.uploadedSplit').replace('{count}', String(result.files.length))
-                          : t('music.uploaded'),
-                      );
                     }}
-                    onError={setError}
+                    onFailure={(message) =>
+                      setStatus({ kind: 'rejected', reason: 'failed', message })
+                    }
                   />
                 ))}
               </ul>
@@ -293,45 +279,152 @@ export default function MusicView() {
   );
 }
 
-/** Live bar for the piece currently being sent or approved. */
-function UploadBar({ progress }: { progress: UploadProgress }) {
+/**
+ * The one place an upload's state is shown.
+ *
+ * Sending the bytes, Roblox checking them and Roblox accepting the asset are
+ * three moments, and only the last one is a success. Rendering them separately
+ * is how the same outcome ended up on screen twice, so the whole lifecycle goes
+ * through this one component.
+ */
+function UploadStatus({
+  status,
+  progress,
+  busy,
+}: {
+  status: UploadStatusState | null;
+  progress: UploadProgress | null;
+  busy: boolean;
+}) {
   const { t } = useLanguage();
+  const [dismissed, setDismissed] = useState<UploadStatusState | null>(null);
 
-  const percent =
-    progress.stage === 'uploading' && progress.bytes > 0
-      ? Math.min(100, Math.round((progress.sent / progress.bytes) * 100))
-      : null;
+  // A dismissal belongs to one outcome. The next upload produces a new object,
+  // which clears it, so the panel reappears instead of staying hidden.
+  useEffect(() => {
+    if (status && status !== dismissed) setDismissed(null);
+  }, [status, dismissed]);
 
-  const label =
-    progress.total > 1
-      ? t('music.uploadingPiece')
-          .replace('{index}', String(progress.index + 1))
-          .replace('{total}', String(progress.total))
-      : t('music.uploading');
+  if (busy) {
+    return (
+      <div className="flex flex-col gap-1.5 rounded-lg border border-border-subtle bg-card p-3">
+        <div className="flex items-baseline justify-between gap-3 text-xs">
+          <span className="truncate text-text-secondary">
+            {progress && progress.total > 1
+              ? t('music.uploadingPiece')
+                  .replace('{index}', String(progress.index + 1))
+                  .replace('{total}', String(progress.total))
+              : t('music.uploading')}
+          </span>
+          <span className="shrink-0 text-text-muted tabular-nums">
+            {progress?.stage === 'processing' ? t('music.validating') : percentOf(progress)}
+          </span>
+        </div>
+        <div className="h-1 overflow-hidden rounded-full bg-bg-elevated">
+          <div
+            className={cn(
+              'h-full transition-all duration-200',
+              progress?.stage === 'processing' ? 'w-1/3 animate-pulse bg-primary' : 'bg-primary',
+            )}
+            style={
+              progress?.stage === 'processing'
+                ? undefined
+                : { width: `${percentOf(progress) || 0}%` }
+            }
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (!status || status === dismissed) return null;
+
+  if (status.kind === 'accepted') {
+    return (
+      <Outcome
+        tone="live"
+        icon={<Check size={15} />}
+        title={
+          status.count > 1
+            ? t('music.uploadedSplit').replace('{count}', String(status.count))
+            : t('music.uploaded')
+        }
+        onDismiss={() => setDismissed(status)}
+      />
+    );
+  }
+
+  if (status.kind === 'pending') {
+    return (
+      <Outcome
+        tone="warn"
+        icon={<Clock size={15} />}
+        title={t('music.pendingTitle')}
+        detail={t('music.pendingNote').replace('{names}', status.names.join(', '))}
+        onDismiss={() => setDismissed(status)}
+      />
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-1.5 rounded-lg border border-border-subtle bg-card p-3">
-      <div className="flex items-baseline justify-between gap-3 text-xs">
-        <span className="truncate text-text-secondary">{label}</span>
-        <span className="shrink-0 text-text-muted tabular-nums">
-          {progress.stage === 'processing'
-            ? t('music.processing')
-            : percent !== null
-              ? `${percent}%`
-              : ''}
-        </span>
+    <Outcome
+      tone="danger"
+      icon={<CircleAlert size={15} />}
+      title={
+        status.reason === 'no-account' ? t('music.noUploaderAccount') : t('music.rejectedTitle')
+      }
+      detail={status.reason === 'no-account' ? undefined : status.message}
+      onDismiss={() => setDismissed(status)}
+    />
+  );
+}
+
+function Outcome({
+  tone,
+  icon,
+  title,
+  detail,
+  onDismiss,
+}: {
+  tone: 'live' | 'warn' | 'danger';
+  icon: React.ReactNode;
+  title: string;
+  detail?: string;
+  onDismiss: () => void;
+}) {
+  const { t } = useLanguage();
+  const tones = {
+    live: 'border-signal-live/30 bg-signal-live/10 text-signal-live',
+    warn: 'border-signal-warn/30 bg-signal-warn/10 text-signal-warn',
+    danger: 'border-danger/30 bg-danger/10 text-danger',
+  } as const;
+
+  return (
+    <div
+      className={cn('flex items-start gap-2 rounded-lg border p-3', tones[tone])}
+      role={tone === 'danger' ? 'alert' : 'status'}
+    >
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">{title}</p>
+        {detail && <p className="mt-0.5 break-words text-xs opacity-90">{detail}</p>}
       </div>
-      <div className="h-1 overflow-hidden rounded-full bg-bg-elevated">
-        <div
-          className={cn(
-            'h-full transition-all duration-200',
-            progress.stage === 'processing' ? 'w-1/3 animate-pulse bg-primary' : 'bg-primary',
-          )}
-          style={progress.stage === 'processing' ? undefined : { width: `${percent ?? 0}%` }}
-        />
-      </div>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={onDismiss}
+        aria-label={t('music.dismiss')}
+        className="shrink-0 text-current hover:bg-current/10"
+      >
+        <X size={15} />
+      </Button>
     </div>
   );
+}
+
+function percentOf(progress: UploadProgress | null) {
+  if (!progress || progress.stage !== 'uploading' || progress.bytes <= 0) return 0;
+  return Math.min(100, Math.round((progress.sent / progress.bytes) * 100));
 }
 
 function TrackEditor({
@@ -341,7 +434,7 @@ function TrackEditor({
   onRename,
   onUpload,
   onExported,
-  onError,
+  onFailure,
 }: {
   track: MusicTrack;
   onRemove: () => void;
@@ -349,12 +442,15 @@ function TrackEditor({
   onRename: (title: string) => void;
   onUpload: () => void;
   onExported: (result: BakedMedia) => void;
-  onError: (message: string) => void;
+  onFailure: (message: string) => void;
 }) {
   const { t } = useLanguage();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  // Rendering with ffmpeg and sending the result are separate steps, and only
+  // the second one is an upload, so the button says which one is happening.
+  const [baking, setBaking] = useState(false);
+  const [sending, setSending] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [draftTitle, setDraftTitle] = useState(track.title);
 
@@ -412,10 +508,10 @@ function TrackEditor({
   };
 
   const handleUpload = async () => {
-    setExporting(true);
-    onError('');
+    onFailure('');
     try {
       if (track.exportedFiles.length === 0) {
+        setBaking(true);
         const result = await bakeMedia({
           path: track.path,
           title: track.title,
@@ -428,12 +524,15 @@ function TrackEditor({
           sourceDuration: track.info?.duration ?? undefined,
         });
         onExported(result);
+        setBaking(false);
       }
+      setSending(true);
       await onUpload();
     } catch (err) {
-      onError(String(err));
+      onFailure(String(err));
     } finally {
-      setExporting(false);
+      setBaking(false);
+      setSending(false);
     }
   };
 
@@ -608,16 +707,20 @@ function TrackEditor({
       />
 
       <div className="mt-4 flex items-center justify-between gap-3">
+        {/* Rendering with ffmpeg is not an upload, so it says so here rather
+            than borrowing the upload wording. */}
         <p className="text-xs text-text-muted">
-          {track.split?.needsSplit
-            ? t('music.willSplit').replace('{count}', String(track.split.parts.length))
-            : isEdited
-              ? t('music.editedNote')
-              : t('music.untouchedNote')}
+          {baking
+            ? t('music.rendering')
+            : track.split?.needsSplit
+              ? t('music.willSplit').replace('{count}', String(track.split.parts.length))
+              : isEdited
+                ? t('music.editedNote')
+                : t('music.untouchedNote')}
         </p>
-        <Button onClick={() => void handleUpload()} disabled={exporting || !track.info}>
+        <Button onClick={() => void handleUpload()} disabled={baking || sending || !track.info}>
           <Upload size={15} />
-          {exporting ? t('music.uploading') : t('music.upload')}
+          {baking ? t('music.rendering') : sending ? t('music.uploading') : t('music.upload')}
         </Button>
       </div>
 

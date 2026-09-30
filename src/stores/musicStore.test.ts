@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   activeSpeedPreset,
@@ -7,8 +7,17 @@ import {
   DEFAULT_SPEED,
   qualityBitrateKbps,
   robloxPlaybackSpeed,
+  uploadAudioParts,
 } from '../utils/music';
+import { useConfigStore } from './configStore';
 import { useMusicStore } from './musicStore';
+
+vi.mock('../utils/music', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../utils/music')>();
+  return { ...actual, uploadAudioParts: vi.fn() };
+});
+
+const mockedUpload = vi.mocked(uploadAudioParts);
 
 /** Puts one track in the store and returns its id. */
 const seedTrack = () => {
@@ -188,5 +197,98 @@ describe('activeSpeedPreset', () => {
     // One slider step away from a preset is a custom speed in its own right.
     expect(activeSpeedPreset(2.31)).toBeUndefined();
     expect(activeSpeedPreset(1.77)).toBeUndefined();
+  });
+});
+
+describe('uploadTrack status', () => {
+  let id: string;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    id = seedTrack();
+    useConfigStore.setState((state) => ({
+      config: { ...state.config, spoofing: { ...state.config.spoofing, selectedUser: '12345' } },
+    }));
+    useMusicStore.setState({ status: null, uploading: false, error: null });
+    useMusicStore.getState().refreshHistory = vi.fn().mockResolvedValue(undefined);
+    useMusicStore.getState().refreshQuota = vi.fn().mockResolvedValue(undefined);
+  });
+
+  it('reports acceptance only once Roblox has confirmed every piece', async () => {
+    mockedUpload.mockResolvedValue({
+      assets: [{ name: 'Original', assetId: 1, path: 'C:/media/a.mp3', bytes: 10 }],
+      pending: [],
+      wasSplit: false,
+    });
+
+    await useMusicStore.getState().uploadTrack(id);
+
+    expect(useMusicStore.getState().status).toEqual({ kind: 'accepted', count: 1 });
+  });
+
+  it('reports a piece Roblox has not finished checking as pending, not as success', async () => {
+    // The bytes landed, so telling the user it failed would push them to send
+    // the same file again.
+    mockedUpload.mockResolvedValue({
+      assets: [{ name: 'Original', assetId: 1, path: 'C:/media/a.mp3', bytes: 10 }],
+      pending: ['Original (part 2)'],
+      wasSplit: true,
+    });
+
+    await useMusicStore.getState().uploadTrack(id);
+
+    expect(useMusicStore.getState().status).toEqual({
+      kind: 'pending',
+      names: ['Original (part 2)'],
+    });
+  });
+
+  it('reports a refused upload as rejected', async () => {
+    mockedUpload.mockRejectedValue('Roblox rejected the upload (HTTP 400): nope');
+
+    await useMusicStore.getState().uploadTrack(id);
+
+    expect(useMusicStore.getState().status).toEqual({
+      kind: 'rejected',
+      reason: 'failed',
+      message: 'Roblox rejected the upload (HTTP 400): nope',
+    });
+  });
+
+  it('sends the name chosen in the editor, not the file name', async () => {
+    mockedUpload.mockResolvedValue({ assets: [], pending: [], wasSplit: false });
+
+    await useMusicStore.getState().uploadTrack(id);
+
+    expect(mockedUpload).toHaveBeenCalledWith(['C:/media/original.mp3'], ['Original'], 12345);
+  });
+
+  it('clears a previous outcome before starting again', async () => {
+    useMusicStore.setState({ status: { kind: 'accepted', count: 1 } });
+    let release: (() => void) | undefined;
+    mockedUpload.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve({ assets: [], pending: [], wasSplit: false });
+        }),
+    );
+
+    const pending = useMusicStore.getState().uploadTrack(id);
+    expect(useMusicStore.getState().status).toBeNull();
+    release?.();
+    await pending;
+  });
+
+  it('does not call Roblox without an account', async () => {
+    useConfigStore.setState((state) => ({
+      config: { ...state.config, spoofing: { ...state.config.spoofing, selectedUser: 'none' } },
+    }));
+
+    await useMusicStore.getState().uploadTrack(id);
+
+    expect(mockedUpload).not.toHaveBeenCalled();
+    expect(useMusicStore.getState().status).toMatchObject({
+      kind: 'rejected',
+      reason: 'no-account',
+    });
   });
 });

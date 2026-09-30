@@ -210,7 +210,10 @@ export interface UploadedAsset {
 }
 
 export interface UploadSummary {
+  /** Pieces Roblox has finished validating. */
   assets: UploadedAsset[];
+  /** Accepted by Roblox but still being validated, so no asset id yet. */
+  pending: string[];
   wasSplit: boolean;
 }
 

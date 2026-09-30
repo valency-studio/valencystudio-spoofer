@@ -14,8 +14,9 @@ const CREATE_ASSET: &str = "https://apis.roblox.com/assets/v1/assets";
 const OPERATIONS: &str = "https://apis.roblox.com/assets/v1/operations";
 const QUOTAS: &str = "https://apis.roblox.com/cloud/v2/users";
 
-/// How long to wait for Roblox to finish processing an upload.
-const OPERATION_TIMEOUT_SECS: u64 = 180;
+/// How long to wait for Roblox to finish validating an upload before reporting
+/// it as pending rather than waiting indefinitely.
+const OPERATION_TIMEOUT_SECS: u64 = 300;
 const OPERATION_POLL_MS: u64 = 1500;
 
 /// Roblox rejects audio over 7 minutes and anything over 20 MB.
@@ -48,7 +49,11 @@ pub struct UploadedAsset {
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct UploadSummary {
+    /// Pieces Roblox has finished validating.
     pub assets: Vec<UploadedAsset>,
+    /// Names of pieces that were accepted but are still being validated, so they
+    /// have no asset id to report yet.
+    pub pending: Vec<String>,
     pub was_split: bool,
 }
 
@@ -272,9 +277,18 @@ pub async fn upload_pieces(
     let total = files.len();
 
     let mut assets = Vec::with_capacity(total);
+    let mut pending = Vec::new();
     for (index, (name, path)) in files.iter().enumerate() {
-        let asset_id =
-            upload_one(&client, &key, name, path, index, total, app, creator_user_id).await?;
+        // A piece that is still being checked has been accepted for processing
+        // but has no asset id yet. That is not a failure: the bytes are already
+        // with Roblox, and reporting an error would tell the user to send them
+        // all over again.
+        let Some(asset_id) =
+            upload_one(&client, &key, name, path, index, total, app, creator_user_id).await?
+        else {
+            pending.push(name.clone());
+            continue;
+        };
 
         assets.push(UploadedAsset {
             name: name.clone(),
@@ -290,11 +304,14 @@ pub async fn upload_pieces(
         grant_use_permission(&client, &key, asset.asset_id).await?;
     }
 
-    let summary = UploadSummary { assets, was_split: total > 1 };
+    let summary = UploadSummary { assets, pending, was_split: total > 1 };
 
     // History is written only after every asset and permission succeeded, so it
-    // never lists an upload that Roblox rejected.
-    record_upload(app, &summary).await?;
+    // never lists an upload that Roblox rejected. A piece still being validated
+    // has no id to record yet either.
+    if summary.pending.is_empty() {
+        record_upload(app, &summary).await?;
+    }
 
     Ok(summary)
 }
@@ -330,7 +347,7 @@ async fn upload_one(
     total: usize,
     app: &AppHandle,
     creator_user_id: u64,
-) -> Result<u64> {
+) -> Result<Option<u64>> {
     let size = std::fs::metadata(path)
         .map(|m| m.len())
         .map_err(|e| AppError::Custom(format!("Could not read {}: {e}", name)))?;
@@ -393,7 +410,11 @@ async fn upload_one(
     wait_for_operation(client, key, &operation_id, name, index, total, app).await
 }
 
-/// Polls until Roblox finishes processing, then returns the asset id.
+/// Polls until Roblox finishes validating, then returns the asset id.
+///
+/// `Ok(None)` means the deadline passed while Roblox was still working. The
+/// upload itself succeeded, so this is reported as pending rather than as a
+/// failure: an error here would push the user to send the same bytes again.
 async fn wait_for_operation(
     client: &reqwest::Client,
     key: &str,
@@ -402,15 +423,16 @@ async fn wait_for_operation(
     index: usize,
     total: usize,
     app: &AppHandle,
-) -> Result<u64> {
+) -> Result<Option<u64>> {
     let deadline =
         std::time::Instant::now() + std::time::Duration::from_secs(OPERATION_TIMEOUT_SECS);
 
     loop {
         if std::time::Instant::now() > deadline {
-            return Err(AppError::Custom(format!(
-                "Roblox is still processing \"{name}\". Check your Creator Dashboard in a few minutes."
-            )));
+            // Still queued on Roblox's side. Reported as pending so the view can
+            // say the upload landed and is being checked, rather than claiming
+            // the send failed.
+            return Ok(None);
         }
 
         tokio::time::sleep(std::time::Duration::from_millis(OPERATION_POLL_MS)).await;
@@ -447,6 +469,7 @@ async fn wait_for_operation(
                     .get("response")
                     .and_then(|r| r.get("assetId"))
                     .and_then(serde_json::Value::as_u64)
+                    .map(Some)
                     .ok_or_else(|| {
                         AppError::Custom(format!(
                             "Roblox approved \"{name}\" but did not return an asset id."
@@ -539,11 +562,12 @@ pub async fn upload_audio_piece(
     let summary =
         upload_pieces(&app, &[(name.clone(), file_path.clone())], creator_user_id as u64).await?;
 
-    summary
-        .assets
-        .into_iter()
-        .next()
-        .ok_or_else(|| AppError::Custom("Roblox did not return an asset for that file.".into()))
+    summary.assets.into_iter().next().ok_or_else(|| {
+        AppError::Custom(
+            "Roblox accepted the file but is still validating it, so there is no asset id yet."
+                .into(),
+        )
+    })
 }
 
 /// Uploads every rendered piece, for a track that was split.
@@ -753,6 +777,7 @@ mod tests {
     fn records_are_keyed_so_reuploading_replaces_rather_than_duplicates() {
         let summary = super::UploadSummary {
             was_split: false,
+            pending: Vec::new(),
             assets: vec![
                 super::UploadedAsset {
                     name: "song.mp3".to_string(),
@@ -770,6 +795,18 @@ mod tests {
         };
         // Two pieces of the same upload share a key even though ids differ.
         assert_eq!(super::record_id(&summary), "12345:2");
+    }
+
+    #[test]
+    fn an_upload_nothing_confirmed_has_no_history_key() {
+        // A piece still being validated has no asset id, so there is nothing to
+        // key a history row on. The caller skips recording in that case.
+        let summary = super::UploadSummary {
+            was_split: false,
+            pending: vec!["song".to_string()],
+            assets: Vec::new(),
+        };
+        assert_eq!(super::record_id(&summary), "empty");
     }
 }
 

@@ -586,7 +586,13 @@ export type UploadRecord = {
 };
 
 export type UploadSummary = {
+  /**  Pieces Roblox has finished validating. */
   assets: UploadedAsset[];
+  /**
+   *  Names of pieces that were accepted but are still being validated, so they
+   *  have no asset id to report yet.
+   */
+  pending: string[];
   wasSplit: boolean;
 };
 
