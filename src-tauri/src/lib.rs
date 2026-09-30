@@ -14,6 +14,7 @@ macro_rules! specta_commands {
             crate::commands::media::check_media_tools,
             crate::commands::media::ensure_media_tools,
             crate::commands::media::ensure_ytdlp,
+            crate::commands::media::probe_media,
             crate::commands::roblox_upload::upload_audio_piece,
             crate::commands::roblox_upload::upload_audio_parts,
             crate::commands::roblox_upload::fetch_open_cloud_audio_quota,
