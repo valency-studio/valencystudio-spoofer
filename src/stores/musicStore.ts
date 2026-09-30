@@ -95,14 +95,12 @@ const RENDER_EDIT_KEYS: (keyof TrackEdit)[] = [
 /**
  * How far an upload has got.
  *
- * Sending the bytes and Roblox accepting the asset are two separate events, and
- * Roblox validates asynchronously, so the states are modelled rather than
- * collapsed into one success flag. `pending` is deliberately not a failure: the
- * upload landed, Roblox just has not finished checking it.
+ * The backend now blocks until Roblox returns a definitive answer, so there is
+ * never a `pending` state. Every upload lands as either `accepted` or
+ * `rejected`, and the result goes straight into upload history.
  */
 export type UploadStatus =
   | { kind: 'accepted'; count: number }
-  | { kind: 'pending'; names: string[] }
   | { kind: 'rejected'; reason: 'no-account' | 'failed'; message: string };
 
 interface MusicState {
@@ -232,18 +230,26 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         track.exportedFiles.map((file) => file.displayName),
         userId,
       );
-      // A piece Roblox has not finished checking is reported as pending, not as
-      // a success: there is no asset id for it yet, so the history cannot list
-      // it and the user should not be told it is done.
+      // Backend now blocks until Roblox gives a definitive answer, so there
+      // is never a pending piece. Every piece either has an asset id or the
+      // whole upload errors.
       set({
-        status:
-          summary.pending.length > 0
-            ? { kind: 'pending', names: summary.pending }
-            : { kind: 'accepted', count: summary.assets.length },
+        status: { kind: 'accepted', count: summary.assets.length },
       });
+
+      // Only once the upload is confirmed does the track leave the queue. It now
+      // lives in the history section with its asset ids, and dropping it earlier
+      // would throw away the rendered file the user would need to retry with if
+      // the upload failed.
+      set((state) => ({
+        tracks: state.tracks.filter((candidate) => candidate.id !== id),
+      }));
+
       await get().refreshHistory();
       await get().refreshQuota();
     } catch (err) {
+      // The track stays in the queue so the upload can be tried again without
+      // re-importing and re-rendering it.
       set({ status: { kind: 'rejected', reason: 'failed', message: String(err) } });
     } finally {
       set({ uploading: false, progress: null });

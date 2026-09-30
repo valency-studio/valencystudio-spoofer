@@ -225,21 +225,60 @@ describe('uploadTrack status', () => {
     expect(useMusicStore.getState().status).toEqual({ kind: 'accepted', count: 1 });
   });
 
-  it('reports a piece Roblox has not finished checking as pending, not as success', async () => {
-    // The bytes landed, so telling the user it failed would push them to send
-    // the same file again.
+  it('never reports pending, because the backend waits for a real verdict', async () => {
+    // The backend no longer times out, so a piece Roblox has not finished
+    // checking never comes back on its own. The confirmed assets are reported as
+    // accepted rather than held in a limbo the user cannot act on.
     mockedUpload.mockResolvedValue({
       assets: [{ name: 'Original', assetId: 1, path: 'C:/media/a.mp3', bytes: 10 }],
-      pending: ['Original (part 2)'],
+      pending: [],
       wasSplit: true,
     });
 
     await useMusicStore.getState().uploadTrack(id);
 
-    expect(useMusicStore.getState().status).toEqual({
-      kind: 'pending',
-      names: ['Original (part 2)'],
+    expect(useMusicStore.getState().status).toEqual({ kind: 'accepted', count: 1 });
+  });
+
+  it('clears the track out of the queue so it cannot be uploaded twice', async () => {
+    // The queue only holds tracks still waiting to be sent. Once the bytes are
+    // gone the track belongs to the history section, and a second click on it
+    // would spend quota re-uploading audio Roblox already has.
+    mockedUpload.mockResolvedValue({
+      assets: [{ name: 'Original', assetId: 1, path: 'C:/media/a.mp3', bytes: 10 }],
+      pending: [],
+      wasSplit: false,
     });
+
+    expect(useMusicStore.getState().tracks.some((track) => track.id === id)).toBe(true);
+    await useMusicStore.getState().uploadTrack(id);
+
+    expect(useMusicStore.getState().tracks.some((track) => track.id === id)).toBe(false);
+  });
+
+  it('keeps the track in the queue when the upload fails', async () => {
+    // Removing the track on failure would throw away the rendered file the user
+    // needs to retry with, forcing a re-import and a re-render.
+    mockedUpload.mockRejectedValue('Roblox rejected the upload (HTTP 400): nope');
+
+    await useMusicStore.getState().uploadTrack(id);
+
+    expect(useMusicStore.getState().tracks.some((track) => track.id === id)).toBe(true);
+  });
+
+  it('refreshes history so the confirmed asset ids are findable', async () => {
+    // A definitive result is only useful if the user can get back to the asset
+    // id afterwards, which is what the history list is for.
+    mockedUpload.mockResolvedValue({
+      assets: [{ name: 'Original', assetId: 99, path: 'C:/media/a.mp3', bytes: 10 }],
+      pending: [],
+      wasSplit: false,
+    });
+
+    await useMusicStore.getState().uploadTrack(id);
+
+    expect(useMusicStore.getState().refreshHistory).toHaveBeenCalled();
+    expect(useMusicStore.getState().refreshQuota).toHaveBeenCalled();
   });
 
   it('reports a refused upload as rejected', async () => {
