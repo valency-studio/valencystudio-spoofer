@@ -96,3 +96,9 @@ desktop.ini
 # Some other junk
 *.log
 /.agents
+
+# Agent Manager / Kilo worktrees: full copies of this repo, kept out of the way
+# of git, eslint and prettier. Also listed in .git/info/exclude, but that file is
+# local only, so the pattern has to live here to protect other checkouts too.
+/.kilo
+/.kilocode

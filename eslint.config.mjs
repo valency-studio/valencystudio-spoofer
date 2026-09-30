@@ -7,7 +7,18 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/dist-plugin/**', '**/src-tauri/**', '**/src/bindings.ts'],
+    // `.kilo/worktrees/` holds full copies of this repo from Agent Manager
+    // sessions. They are not part of the build, and linting them breaks
+    // typescript-eslint: two tsconfig roots with no `tsconfigRootDir` to pick
+    // between them, which fails every file with a parse error.
+    ignores: [
+      '**/dist/**',
+      '**/dist-plugin/**',
+      '**/src-tauri/**',
+      '**/.kilo/**',
+      '**/.kilocode/**',
+      '**/src/bindings.ts',
+    ],
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],

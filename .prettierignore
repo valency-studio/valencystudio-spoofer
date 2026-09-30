@@ -6,4 +6,9 @@ src-tauri/gen
 build
 .git
 
+# Agent Manager worktrees: full copies of this repo, formatted by a different
+# checkout's config. Running `bun run format` must not rewrite them.
+.kilo
+.kilocode
+
 ISM-Library
