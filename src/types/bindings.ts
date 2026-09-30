@@ -340,10 +340,9 @@ export type AudioQuota = {
 };
 
 export type BakedFile = {
+  /**  File name on disk, reduced to characters a path can hold. */
   name: string;
-  /**
-   * The name Roblox should show for this piece, exactly as the user typed it.
-   */
+  /**  The name Roblox should show for this piece, exactly as the user typed it. */
   displayName: string;
   path: string;
   bytes: number;
