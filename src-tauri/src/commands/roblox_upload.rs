@@ -14,10 +14,12 @@ const CREATE_ASSET: &str = "https://apis.roblox.com/assets/v1/assets";
 const OPERATIONS: &str = "https://apis.roblox.com/assets/v1/operations";
 const QUOTAS: &str = "https://apis.roblox.com/cloud/v2/users";
 
-/// How long to wait for Roblox to finish validating an upload before reporting
-/// it as pending rather than waiting indefinitely.
-const OPERATION_TIMEOUT_SECS: u64 = 300;
-const OPERATION_POLL_MS: u64 = 1500;
+/// How long to wait between operation status polls.
+///
+/// There is no overall deadline: `wait_for_operation` keeps polling until Roblox
+/// answers with a real state, so the user always gets a definitive result rather
+/// than a "still pending" guess.
+const OPERATION_POLL_MS: u64 = 2000;
 
 /// Roblox rejects audio over 7 minutes and anything over 20 MB.
 pub const MAX_AUDIO_SECS: f64 = 7.0 * 60.0;
@@ -34,6 +36,9 @@ pub struct UploadProgress {
     pub bytes: u32,
     /// "uploading" while bytes move, "processing" while Roblox approves.
     pub stage: String,
+    /// Seconds spent waiting on Roblox's validation, so the view can show a live
+    /// counter instead of a frozen bar. Always 0 while uploading.
+    pub processing_elapsed_secs: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -277,18 +282,13 @@ pub async fn upload_pieces(
     let total = files.len();
 
     let mut assets = Vec::with_capacity(total);
-    let mut pending = Vec::new();
     for (index, (name, path)) in files.iter().enumerate() {
-        // A piece that is still being checked has been accepted for processing
-        // but has no asset id yet. That is not a failure: the bytes are already
-        // with Roblox, and reporting an error would tell the user to send them
-        // all over again.
-        let Some(asset_id) =
-            upload_one(&client, &key, name, path, index, total, app, creator_user_id).await?
-        else {
-            pending.push(name.clone());
-            continue;
-        };
+        // `upload_one` does not return until Roblox has approved or rejected the
+        // piece, so every entry here has a real asset id. There is no longer a
+        // third "pending" outcome to report: an upload is either recorded in
+        // full or the whole call errors out.
+        let asset_id =
+            upload_one(&client, &key, name, path, index, total, app, creator_user_id).await?;
 
         assets.push(UploadedAsset {
             name: name.clone(),
@@ -304,14 +304,12 @@ pub async fn upload_pieces(
         grant_use_permission(&client, &key, asset.asset_id).await?;
     }
 
-    let summary = UploadSummary { assets, pending, was_split: total > 1 };
+    let summary = UploadSummary { assets, pending: Vec::new(), was_split: total > 1 };
 
-    // History is written only after every asset and permission succeeded, so it
-    // never lists an upload that Roblox rejected. A piece still being validated
-    // has no id to record yet either.
-    if summary.pending.is_empty() {
-        record_upload(app, &summary).await?;
-    }
+    // Every piece has a real asset id by this point, so the upload is always
+    // worth recording. The old code skipped history whenever anything was still
+    // pending, which meant a slow Roblox validation lost the upload entirely.
+    record_upload(app, &summary).await?;
 
     Ok(summary)
 }
@@ -347,7 +345,7 @@ async fn upload_one(
     total: usize,
     app: &AppHandle,
     creator_user_id: u64,
-) -> Result<Option<u64>> {
+) -> Result<u64> {
     let size = std::fs::metadata(path)
         .map(|m| m.len())
         .map_err(|e| AppError::Custom(format!("Could not read {}: {e}", name)))?;
@@ -412,9 +410,14 @@ async fn upload_one(
 
 /// Polls until Roblox finishes validating, then returns the asset id.
 ///
-/// `Ok(None)` means the deadline passed while Roblox was still working. The
-/// upload itself succeeded, so this is reported as pending rather than as a
-/// failure: an error here would push the user to send the same bytes again.
+/// There is no timeout. The previous version gave up after five minutes and
+/// returned `None`, which the view could only show as "still pending" — the user
+/// never learned whether the upload had actually worked. Now the loop only ends
+/// when Roblox says `succeeded`/`completed` (asset id returned) or
+/// `failed`/`error` (error returned), so the answer is always definitive.
+///
+/// Each poll emits a progress event carrying the elapsed seconds, so the view
+/// can show a live counter rather than a bar that appears to be stuck.
 async fn wait_for_operation(
     client: &reqwest::Client,
     key: &str,
@@ -423,20 +426,13 @@ async fn wait_for_operation(
     index: usize,
     total: usize,
     app: &AppHandle,
-) -> Result<Option<u64>> {
-    let deadline =
-        std::time::Instant::now() + std::time::Duration::from_secs(OPERATION_TIMEOUT_SECS);
+) -> Result<u64> {
+    let started_at = std::time::Instant::now();
 
     loop {
-        if std::time::Instant::now() > deadline {
-            // Still queued on Roblox's side. Reported as pending so the view can
-            // say the upload landed and is being checked, rather than claiming
-            // the send failed.
-            return Ok(None);
-        }
-
         tokio::time::sleep(std::time::Duration::from_millis(OPERATION_POLL_MS)).await;
 
+        let elapsed = started_at.elapsed().as_secs().min(u32::MAX as u64) as u32;
         let _ = app.emit(
             "music-upload-progress",
             UploadProgress {
@@ -446,6 +442,7 @@ async fn wait_for_operation(
                 sent: 0,
                 bytes: 0,
                 stage: "processing".to_string(),
+                processing_elapsed_secs: elapsed,
             },
         );
 
@@ -455,6 +452,8 @@ async fn wait_for_operation(
             .send()
             .await?;
 
+        // A transient error here (rate limit, gateway blip) is not a verdict on
+        // the upload, so it is retried rather than surfaced.
         if !response.status().is_success() {
             continue;
         }
@@ -469,7 +468,6 @@ async fn wait_for_operation(
                     .get("response")
                     .and_then(|r| r.get("assetId"))
                     .and_then(serde_json::Value::as_u64)
-                    .map(Some)
                     .ok_or_else(|| {
                         AppError::Custom(format!(
                             "Roblox approved \"{name}\" but did not return an asset id."
@@ -481,6 +479,8 @@ async fn wait_for_operation(
                     parsed.get("error").and_then(|v| v.as_str()).unwrap_or("no reason given");
                 return Err(AppError::Custom(format!("Roblox rejected \"{name}\": {message}")));
             }
+            // Anything else means Roblox is still working on it, so keep
+            // polling. This is the case the old timeout used to abandon.
             _ => {}
         }
     }
@@ -798,15 +798,23 @@ mod tests {
     }
 
     #[test]
-    fn an_upload_nothing_confirmed_has_no_history_key() {
-        // A piece still being validated has no asset id, so there is nothing to
-        // key a history row on. The caller skips recording in that case.
+    fn a_confirmed_upload_is_always_recorded_in_history() {
+        // The old code skipped history whenever a piece was still pending, so a
+        // slow Roblox validation lost the upload from the record entirely. Now
+        // that uploads block until Roblox answers, the key always comes from a
+        // real asset id and the summary carries no pending names.
         let summary = super::UploadSummary {
             was_split: false,
-            pending: vec!["song".to_string()],
-            assets: Vec::new(),
+            pending: Vec::new(),
+            assets: vec![super::UploadedAsset {
+                name: "song".to_string(),
+                asset_id: 12_345,
+                path: "/tmp/song.mp3".to_string(),
+                bytes: 100,
+            }],
         };
-        assert_eq!(super::record_id(&summary), "empty");
+        assert!(summary.pending.is_empty());
+        assert_eq!(super::record_id(&summary), "12345:1");
     }
 }
 
@@ -832,6 +840,7 @@ impl ProgressEmitter {
                 sent,
                 bytes: self.bytes,
                 stage: "uploading".to_string(),
+                processing_elapsed_secs: 0,
             },
         );
     }

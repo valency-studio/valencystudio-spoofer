@@ -224,6 +224,9 @@ export interface UploadProgress {
   sent: number;
   bytes: number;
   stage: string;
+  /** Seconds the operation has been processing, so the UI can show a live
+   *  elapsed counter instead of a frozen spinner. */
+  processingElapsedSecs: number;
 }
 
 export interface AudioQuota {

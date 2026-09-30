@@ -1,7 +1,6 @@
 import {
   Check,
   CircleAlert,
-  Clock,
   Copy,
   ExternalLink,
   FileAudio,
@@ -298,12 +297,27 @@ function UploadStatus({
 }) {
   const { t } = useLanguage();
   const [dismissed, setDismissed] = useState<UploadStatusState | null>(null);
+  const [elapsed, setElapsed] = useState(0);
 
   // A dismissal belongs to one outcome. The next upload produces a new object,
   // which clears it, so the panel reappears instead of staying hidden.
   useEffect(() => {
     if (status && status !== dismissed) setDismissed(null);
   }, [status, dismissed]);
+
+  // Live elapsed counter during the processing phase.
+  useEffect(() => {
+    if (!progress || progress.stage !== 'processing') {
+      setElapsed(0);
+      return;
+    }
+    const base = progress.processingElapsedSecs;
+    setElapsed(base);
+    const id = setInterval(() => {
+      setElapsed((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [progress?.stage, progress?.processingElapsedSecs]);
 
   if (busy) {
     return (
@@ -317,18 +331,20 @@ function UploadStatus({
               : t('music.uploading')}
           </span>
           <span className="shrink-0 text-text-muted tabular-nums">
-            {progress?.stage === 'processing' ? t('music.validating') : percentOf(progress)}
+            {progress?.stage === 'processing'
+              ? `${t('music.validating')} (${formatDuration(elapsed)})`
+              : percentOf(progress)}
           </span>
         </div>
         <div className="h-1 overflow-hidden rounded-full bg-bg-elevated">
           <div
             className={cn(
               'h-full transition-all duration-200',
-              progress?.stage === 'processing' ? 'w-1/3 animate-pulse bg-primary' : 'bg-primary',
+              progress?.stage === 'processing' ? 'animate-pulse bg-primary' : 'bg-primary',
             )}
             style={
               progress?.stage === 'processing'
-                ? undefined
+                ? { width: `${Math.min(100, (elapsed / 120) * 100)}%` }
                 : { width: `${percentOf(progress) || 0}%` }
             }
           />
@@ -349,18 +365,7 @@ function UploadStatus({
             ? t('music.uploadedSplit').replace('{count}', String(status.count))
             : t('music.uploaded')
         }
-        onDismiss={() => setDismissed(status)}
-      />
-    );
-  }
-
-  if (status.kind === 'pending') {
-    return (
-      <Outcome
-        tone="warn"
-        icon={<Clock size={15} />}
-        title={t('music.pendingTitle')}
-        detail={t('music.pendingNote').replace('{names}', status.names.join(', '))}
+        detail={t('music.historyAutoNote')}
         onDismiss={() => setDismissed(status)}
       />
     );
