@@ -28,6 +28,7 @@ describe('Sidebar', () => {
   const mockT = vi.fn((key) => {
     const map: Record<string, string> = {
       'nav.spoofing': 'Spoofing',
+      'nav.music': 'Music',
       'nav.activity': 'Activity',
       'nav.settings': 'Settings',
     };
@@ -52,6 +53,28 @@ describe('Sidebar', () => {
 
     fireEvent.click(screen.getByText('Settings'));
     expect(handleTabChange).toHaveBeenCalledWith('settings');
+  });
+
+  it('renders Music as a top-level tab, not nested under Spoofing', () => {
+    render(<Sidebar activeTab="spoofing" onTabChange={() => {}} />);
+
+    // The nested-sub-item rail is gone, so every tab sits in the same flat list.
+    expect(screen.getByRole('button', { name: 'Music' }).parentElement).toHaveAttribute(
+      'data-tutorial-target',
+      'music-tab',
+    );
+    expect(screen.getByRole('button', { name: 'Spoofing' }).parentElement).toHaveAttribute(
+      'data-tutorial-target',
+      'spoofing-tab',
+    );
+  });
+
+  it('switches to Music when its tab is clicked', () => {
+    const handleTabChange = vi.fn();
+    render(<Sidebar activeTab="spoofing" onTabChange={handleTabChange} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Music' }));
+    expect(handleTabChange).toHaveBeenCalledWith('music');
   });
 
   it('applies active styling to the active tab', () => {
