@@ -15,11 +15,28 @@ const OPERATIONS: &str = "https://apis.roblox.com/assets/v1/operations";
 const QUOTAS: &str = "https://apis.roblox.com/cloud/v2/users";
 
 /// How long to wait between operation status polls.
-///
-/// There is no overall deadline: `wait_for_operation` keeps polling until Roblox
-/// answers with a real state, so the user always gets a definitive result rather
-/// than a "still pending" guess.
 const OPERATION_POLL_MS: u64 = 2000;
+
+/// How often to re-read an asset's moderation result.
+///
+/// Moderation is a separate queue from the upload, so it is asked about on its
+/// own slower cadence rather than on the operation's.
+const MODERATION_POLL_MS: u64 = 5000;
+
+/// How long to wait for Roblox to hand back an asset id for a create operation.
+///
+/// The id normally turns up within a couple of seconds, well before Roblox has
+/// finished checking the audio. This is only the backstop for an operation that
+/// never answers, so no row can be polled forever.
+const OPERATION_DEADLINE_SECS: u64 = 120;
+
+/// How long to keep re-reading moderation.
+///
+/// A track still in the review queue is not a failure, so this is deliberately
+/// generous: the piece keeps saying "validating", which is the truth, instead of
+/// being called rejected. One that outlives the deadline is picked back up by
+/// [`resume_pending_validations`] on the next launch.
+const MODERATION_DEADLINE_SECS: u64 = 30 * 60;
 
 /// Roblox rejects audio over 7 minutes and anything over 20 MB.
 pub const MAX_AUDIO_SECS: f64 = 7.0 * 60.0;
@@ -579,13 +596,110 @@ fn read_operation_state(body: &serde_json::Value) -> (String, Option<u64>) {
     (state, asset_id)
 }
 
+/// What Roblox decided about an asset it has already taken the bytes for.
+///
+/// This, and not the create operation's state, is the verdict. The operation
+/// reports that the upload finished, which is a separate question.
+pub mod moderation {
+    /// Roblox approved it. The asset is real and usable.
+    pub const APPROVED: &str = "approved";
+    /// Roblox has it and has not looked yet. Waiting, not failing.
+    pub const REVIEWING: &str = "reviewing";
+    /// Roblox refused it.
+    pub const REJECTED: &str = "rejected";
+    /// Roblox answered, but not with a state this build knows.
+    pub const UNKNOWN: &str = "unknown";
+}
+
+/// The moderation verdict in one asset response.
+///
+/// Roblox nests the state under `moderationResult` when the read mask asks for
+/// it and puts it at the top level when it does not, so both shapes are read.
+/// The raw state comes back alongside the verdict so the history can show what
+/// Roblox actually said instead of an unexplained spinner.
+///
+/// An answer in neither shape is [`moderation::UNKNOWN`] rather than a guess. A
+/// missing verdict must never be read as an approval, or a quiet change in
+/// Roblox's response shape would silently mark every upload as accepted.
+pub fn read_moderation_state(body: &serde_json::Value) -> (&'static str, String) {
+    let raw = body
+        .get("moderationResult")
+        .and_then(|result| result.get("moderationState"))
+        .or_else(|| body.get("moderationState"))
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default()
+        .trim()
+        .to_ascii_lowercase();
+
+    let verdict = match raw.as_str() {
+        "approved" => moderation::APPROVED,
+        "reviewing" => moderation::REVIEWING,
+        "rejected" => moderation::REJECTED,
+        _ => moderation::UNKNOWN,
+    };
+
+    (verdict, raw)
+}
+
+/// Asks Roblox what it decided about an asset.
+///
+/// The read mask is a preference, not a requirement: a Roblox build that does not
+/// know the field answers 400, and the same question without the mask still
+/// returns the moderation state. That retry is why a masked failure is never
+/// mistaken for a verdict.
+async fn fetch_moderation(
+    client: &reqwest::Client,
+    key: &str,
+    asset_id: u64,
+) -> Result<(&'static str, String)> {
+    let plain = format!("{ASSETS_BASE}/assets/v1/assets/{asset_id}");
+    let masked = format!("{plain}?readMask=moderationResult,displayName,description");
+
+    let response = client.get(&masked).header("x-api-key", key).send().await?;
+
+    // A 400 here means the read mask was refused, not that the asset is bad, so
+    // the identical question is asked again without it.
+    if response.status().as_u16() != 400 {
+        return read_moderation_response(response).await;
+    }
+
+    read_moderation_response(client.get(&plain).header("x-api-key", key).send().await?).await
+}
+
+/// Turns one asset response into a verdict.
+async fn read_moderation_response(response: reqwest::Response) -> Result<(&'static str, String)> {
+    let status = response.status();
+    let body = response.text().await.unwrap_or_default();
+
+    if !status.is_success() {
+        return Err(describe(&body, status.as_u16()));
+    }
+
+    let parsed: serde_json::Value =
+        serde_json::from_str(&body).map_err(|e| AppError::Custom(e.to_string()))?;
+
+    Ok(read_moderation_state(&parsed))
+}
+
 /// Polls one piece until Roblox accepts or rejects it, updating the history as
 /// it learns things.
 ///
 /// This runs in the background and is the only thing that ever moves a piece out
-/// of [`status::VALIDATING`]. It is deliberately resumable: a piece with no
-/// operation id (the create call failed) is marked rejected straight away, so no
-/// row can get stuck.
+/// of [`status::VALIDATING`]. It works in two steps, because Roblox answers two
+/// different questions here and only the second one is a verdict:
+///
+/// 1. The create operation, polled until it hands over an asset id. The id is
+///    written to the history the moment it appears, so the row is copyable long
+///    before anything is judged.
+/// 2. The asset's own moderation result, polled until Roblox approves or rejects
+///    it.
+///
+/// Step two starts as soon as there is an id, deliberately *not* when the
+/// operation reaches a terminal state. The operation answers "did the bytes
+/// land", which is a different question, and it can sit on `Running` for minutes
+/// after moderation has already approved the track. Waiting on it instead left
+/// finished uploads frozen on "validating" with a live asset id sitting right
+/// there in the row.
 pub async fn follow_validation(app: &AppHandle, record_id: &str, index: usize) {
     let Ok(key) = api_key() else {
         mark_rejected(app, record_id, index, "The Open Cloud API key is no longer readable.").await;
@@ -599,21 +713,60 @@ pub async fn follow_validation(app: &AppHandle, record_id: &str, index: usize) {
         return;
     };
 
+    let Some(asset_id) = await_asset_id(&client, &key, app, record_id, index, &operation_id).await
+    else {
+        // Already written to the history as rejected, with the reason.
+        return;
+    };
+
+    await_moderation(&client, &key, app, record_id, index, asset_id).await;
+}
+
+/// Polls a create operation until Roblox reveals the piece's asset id.
+///
+/// Returns `None` when the piece can never have one, which always comes with the
+/// reason already written to the history.
+async fn await_asset_id(
+    client: &reqwest::Client,
+    key: &str,
+    app: &AppHandle,
+    record_id: &str,
+    index: usize,
+    operation_id: &str,
+) -> Option<u64> {
+    let deadline =
+        std::time::Instant::now() + std::time::Duration::from_secs(OPERATION_DEADLINE_SECS);
+
     loop {
+        // An id recorded by an earlier session means there is nothing to wait
+        // for. This is what makes a resumed piece go straight to moderation.
+        if let Some(existing) = asset_id_of_piece(app, record_id, index).await {
+            adopt_asset_id(client, key, app, record_id, index, existing).await;
+            return Some(existing);
+        }
+
+        if std::time::Instant::now() >= deadline {
+            mark_rejected(
+                app,
+                record_id,
+                index,
+                "Roblox took the upload but never reported an asset id for it.",
+            )
+            .await;
+            return None;
+        }
+
         tokio::time::sleep(std::time::Duration::from_millis(OPERATION_POLL_MS)).await;
 
-        let response = match client
+        let Ok(response) = client
             .get(format!("{OPERATIONS}/{operation_id}"))
-            .header("x-api-key", &key)
+            .header("x-api-key", key)
             .send()
             .await
-        {
-            Ok(response) => response,
+        else {
             // A transport blip is not a verdict. Keep trying.
-            Err(err) => {
-                log::warn!("Could not read operation {operation_id}: {err}");
-                continue;
-            }
+            log::warn!("Could not reach Roblox about operation {operation_id}");
+            continue;
         };
 
         if !response.status().is_success() {
@@ -624,46 +777,129 @@ pub async fn follow_validation(app: &AppHandle, record_id: &str, index: usize) {
             continue;
         };
 
-        let (state, asset_id) = read_operation_state(&parsed);
+        let (state, revealed) = read_operation_state(&parsed);
 
-        // Take the id first, whatever the state. Roblox hands it over before it
-        // finishes checking, and the user asked to see it immediately.
-        if let Some(id) = asset_id {
-            let needs_id = asset_id_of_piece(app, record_id, index).await != Some(id);
-            let granted = grant_use_permission(&client, &key, id).await.is_ok();
-            let _ = patch_piece(app, record_id, index, |piece| {
-                if needs_id || piece.asset_id.is_none() {
-                    piece.asset_id = Some(id);
-                }
-            })
-            .await;
-            if granted {
-                // Permissions can only be set once there is an id, so a piece
-                // that revealed its id early gets them here rather than in the
-                // terminal branch below.
-                log::info!("Asset {id} ready and usable");
-            }
+        // The id is taken whatever the state is, because Roblox reveals it long
+        // before it has finished judging the audio.
+        if let Some(id) = revealed {
+            adopt_asset_id(client, key, app, record_id, index, id).await;
+            return Some(id);
         }
 
         match state.as_str() {
-            "succeeded" | "completed" => {
-                let _ = patch_piece(app, record_id, index, |piece| {
-                    piece.status = status::ACCEPTED.to_string();
-                })
-                .await;
-                return;
-            }
             "failed" | "error" => {
                 let message =
                     parsed.get("error").and_then(|v| v.as_str()).unwrap_or("no reason given");
+                mark_rejected(app, record_id, index, &format!("Roblox rejected it: {message}"))
+                    .await;
+                return None;
+            }
+            // A terminal success with no id anywhere is a dead end, and waiting
+            // cannot change that.
+            "succeeded" | "completed" => {
+                mark_rejected(
+                    app,
+                    record_id,
+                    index,
+                    "Roblox finished the upload but never reported an asset id for it.",
+                )
+                .await;
+                return None;
+            }
+            _ => {}
+        }
+    }
+}
+
+/// Records the asset id on the piece and makes the asset usable.
+///
+/// Both halves are safe to repeat, and repeating the permission call matters: a
+/// piece resumed from a previous session already knows its id, and audio cannot
+/// be updated in place on Roblox, so without the grant the asset lands
+/// owned-but-unusable and no place can load it.
+async fn adopt_asset_id(
+    client: &reqwest::Client,
+    key: &str,
+    app: &AppHandle,
+    record_id: &str,
+    index: usize,
+    asset_id: u64,
+) {
+    if asset_id_of_piece(app, record_id, index).await != Some(asset_id) {
+        let _ = patch_piece(app, record_id, index, |piece| piece.asset_id = Some(asset_id)).await;
+    }
+
+    if grant_use_permission(client, key, asset_id).await.is_ok() {
+        log::info!("Asset {asset_id} is usable");
+    }
+}
+
+/// Polls an asset's moderation result until Roblox gives a real verdict.
+///
+/// Only an approval or a rejection ends the wait. A track still queued for review
+/// keeps saying so, because Roblox genuinely has not decided yet and calling
+/// that a failure would be a lie the user has to argue with.
+async fn await_moderation(
+    client: &reqwest::Client,
+    key: &str,
+    app: &AppHandle,
+    record_id: &str,
+    index: usize,
+    asset_id: u64,
+) {
+    let deadline =
+        std::time::Instant::now() + std::time::Duration::from_secs(MODERATION_DEADLINE_SECS);
+    let mut last_detail = String::new();
+
+    loop {
+        if std::time::Instant::now() >= deadline {
+            // Roblox is still deciding and the deadline has passed. `validating`
+            // is the truth, so it stays, with the last state it did report kept
+            // on the piece as the explanation. The next launch picks it up again.
+            let detail = if last_detail.is_empty() {
+                "Roblox has not decided yet.".to_string()
+            } else {
+                format!("Roblox has not decided yet. Its last state was: {last_detail}")
+            };
+            let _ = patch_piece(app, record_id, index, |piece| piece.message = detail).await;
+            return;
+        }
+
+        tokio::time::sleep(std::time::Duration::from_millis(MODERATION_POLL_MS)).await;
+
+        let (verdict, raw) = match fetch_moderation(client, key, asset_id).await {
+            Ok(answer) => answer,
+            // A failed lookup is not a rejection. Roblox answers 5xx and the
+            // network blips while the asset is perfectly fine.
+            Err(err) => {
+                log::warn!("Could not read moderation for asset {asset_id}: {err}");
+                continue;
+            }
+        };
+
+        match verdict {
+            moderation::APPROVED => {
                 let _ = patch_piece(app, record_id, index, |piece| {
-                    piece.status = status::REJECTED.to_string();
-                    piece.message = format!("Roblox rejected it: {message}");
+                    piece.status = status::ACCEPTED.to_string();
+                    piece.message = String::new();
                 })
                 .await;
                 return;
             }
-            _ => {}
+            moderation::REJECTED => {
+                mark_rejected(app, record_id, index, &format!("Roblox rejected it: {raw}")).await;
+                return;
+            }
+            // Still queued for review, or an answer this build does not recognise.
+            // Neither is a verdict, so neither may end the wait.
+            _ => {
+                if !raw.is_empty() && raw != last_detail {
+                    let detail = format!("Waiting on Roblox moderation. Its state is: {raw}");
+                    last_detail = raw;
+                    let _ =
+                        patch_piece(app, record_id, index, |piece| piece.message = detail).await;
+                }
+            }
         }
     }
 }
@@ -1063,6 +1299,54 @@ mod tests {
         assert!(!super::is_unfinished(&record.pieces[0]));
         record.pieces[0].status = super::status::REJECTED.to_string();
         assert!(!super::is_unfinished(&record.pieces[0]));
+    }
+
+    /// The shape the poller asks for: the state nested under `moderationResult`.
+    #[test]
+    fn a_masked_response_reports_approval() {
+        let body = serde_json::json!({
+            "moderationResult": { "moderationState": "Approved" },
+            "displayName": "track",
+        });
+        let (verdict, raw) = super::read_moderation_state(&body);
+        assert_eq!(verdict, super::moderation::APPROVED);
+        assert_eq!(raw, "approved");
+    }
+
+    /// The same answer without the read mask arrives at the top level instead.
+    #[test]
+    fn an_unmasked_response_reports_the_same_verdict() {
+        let body = serde_json::json!({ "moderationState": "Rejected" });
+        assert_eq!(super::read_moderation_state(&body).0, super::moderation::REJECTED);
+    }
+
+    /// Reviewing is a real answer and must never be read as a failure.
+    #[test]
+    fn a_queued_asset_reads_as_reviewing_not_rejected() {
+        let body = serde_json::json!({ "moderationResult": { "moderationState": "Reviewing" } });
+        assert_eq!(super::read_moderation_state(&body).0, super::moderation::REVIEWING);
+    }
+
+    /// An answer in neither shape must not be mistaken for an approval, or a
+    /// quiet change in Roblox's response would mark every upload accepted.
+    #[test]
+    fn an_unrecognised_response_is_unknown_rather_than_approved() {
+        let empty = serde_json::json!({});
+        assert_eq!(super::read_moderation_state(&empty).0, super::moderation::UNKNOWN);
+
+        let renamed = serde_json::json!({ "moderationResult": { "moderationState": "Escalated" } });
+        let (verdict, raw) = super::read_moderation_state(&renamed);
+        assert_eq!(verdict, super::moderation::UNKNOWN);
+        // The raw state is kept so the row can explain itself instead of
+        // spinning without a reason.
+        assert_eq!(raw, "escalated");
+    }
+
+    /// Whitespace and casing in the state must not cost us the verdict.
+    #[test]
+    fn a_padded_state_is_still_read() {
+        let body = serde_json::json!({ "moderationState": "  APPROVED  " });
+        assert_eq!(super::read_moderation_state(&body).0, super::moderation::APPROVED);
     }
 
     #[test]
