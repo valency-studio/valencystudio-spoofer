@@ -573,6 +573,10 @@ function TrackEditor({
   // The uploaded/baked copy is produced separately by bakeMedia.
   useEffect(() => {
     const audio = new Audio(src);
+    // The render shifts pitch with speed (asetrate), so the preview must let
+    // pitch follow playbackRate too — otherwise it sounds nothing like the
+    // file that gets uploaded.
+    audio.preservesPitch = false;
     audioRef.current = audio;
 
     const stop = () => setPlaying(false);

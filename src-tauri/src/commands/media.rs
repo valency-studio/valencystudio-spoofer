@@ -585,14 +585,17 @@ fn newest_audio_file(dir: &Path) -> Option<PathBuf> {
 
 /// Builds the ffmpeg filter chain for a speed and pitch change.
 ///
-/// The pitch stage is `asetrate=SR*r, aresample=SR`, which shifts pitch up by r
-/// while shortening the audio by the same factor. `atempo` then corrects the
-/// tempo back to the requested speed, so the two controls stay independent.
-/// r = 2^(semitones/12), equal temperament.
+/// Speed shifts pitch, matching the reference bypass recipe: the resample stage
+/// is `asetrate=SR*speed*r, aresample=SR`, which shortens the audio by the same
+/// factor it raises the pitch, and `atempo` then stretches the duration back to
+/// source/speed. r = 2^(semitones/12), equal temperament, so the pitch slider
+/// offsets from the speed-shifted base: at the default (semitones 0) the render
+/// is the same recipe as `asetrate=SR*speed, volume=X` and plays back correctly
+/// at `Sound.PlaybackSpeed = 1/speed`.
 ///
-/// `atempo` only accepts factors in the range 0.5-100. For extreme combinations
-/// of speed and pitch the required factor can fall outside that window, so the
-/// tempo change is split across several chained `atempo` stages.
+/// `atempo` only accepts factors in the range 0.5-100. For extreme semitone
+/// offsets the correction can fall outside that window, so it is split across
+/// several chained `atempo` stages.
 fn build_filter(speed: f64, semitones: f64, gain_db: f64, target_sample_rate: u32) -> String {
     let mut filters: Vec<String> = Vec::new();
 
@@ -609,13 +612,17 @@ fn build_filter(speed: f64, semitones: f64, gain_db: f64, target_sample_rate: u3
         filters.push(format!("atempo={tempo:.8}"));
     }
 
-    if semitones.abs() > f64::EPSILON {
-        let ratio = 2.0f64.powf(semitones / SEMITONES_PER_OCTAVE);
+    // Total resample ratio: speed sets tempo and pitch together, semitones add
+    // an offset on top. The atempo correction only restores duration, so it
+    // depends on the semitone offset alone.
+    let ratio = speed * 2.0f64.powf(semitones / SEMITONES_PER_OCTAVE);
+    if (ratio - 1.0).abs() > f64::EPSILON {
         filters.push(format!("asetrate={target_sample_rate}*{ratio:.8}"));
         filters.push(format!("aresample={target_sample_rate}"));
-        push_tempo(&mut filters, speed / ratio);
-    } else if (speed - 1.0).abs() > f64::EPSILON {
-        push_tempo(&mut filters, speed);
+        let correction = speed / ratio;
+        if (correction - 1.0).abs() > f64::EPSILON {
+            push_tempo(&mut filters, correction);
+        }
     }
 
     // Gain sits after the tempo stages so it is a straight level change and does
@@ -1625,8 +1632,8 @@ mod tests {
             44_100,
             5,
         );
-        let filter = args.iter().find(|a| a.contains("atempo")).expect("edit applied");
-        assert!(filter.contains("asetrate=44100*1.18920712"), "pitch stage: {filter}");
+        let filter = args.iter().find(|a| a.contains("asetrate")).expect("edit applied");
+        assert!(filter.contains("asetrate=44100*2.37841423"), "pitch stage: {filter}");
         assert!(filter.contains("atempo="), "tempo stage: {filter}");
     }
 
@@ -1645,11 +1652,22 @@ mod tests {
     }
 
     #[test]
-    fn speed_alone_never_touches_pitch() {
-        // Without the asetrate stage there is nothing to shift pitch.
+    fn speed_alone_shifts_pitch_like_the_reference_flow() {
+        // The bypass recipe raises pitch with speed (asetrate), it never
+        // stretches tempo while holding pitch.
         let filter = build_filter(1.5, 0.0, 0.0, 44_100);
-        assert!(filter.contains("atempo=1.50000000"));
-        assert!(!filter.contains("asetrate"));
+        assert!(filter.contains("asetrate=44100*1.50000000"), "pitch stage: {filter}");
+        assert!(!filter.contains("atempo"), "no tempo correction needed: {filter}");
+    }
+
+    #[test]
+    fn bebef_default_settings_render_the_reference_recipe() {
+        // Default preset: 2.3x, -4 dB. The render must be asetrate + gain, so it
+        // plays back correctly at Sound.PlaybackSpeed 0.435.
+        let filter = build_filter(2.3, 0.0, -4.0, 44_100);
+        assert!(filter.contains("asetrate=44100*2.30000000"), "pitch stage: {filter}");
+        assert!(!filter.contains("atempo"), "no tempo correction needed: {filter}");
+        assert!(filter.contains("volume=-4.00dB"), "gain stage: {filter}");
     }
 
     #[test]
@@ -1661,10 +1679,12 @@ mod tests {
     }
 
     #[test]
-    fn pitch_and_speed_combine_into_one_tempo_factor() {
-        // +12 semitones at 2x speed still needs atempo 1.0 overall.
+    fn pitch_and_speed_combine_into_one_resample_ratio() {
+        // +12 semitones at 2x speed: pitch rises 4x total, duration is still
+        // source/2 after the tempo correction halves it back.
         let filter = build_filter(2.0, 12.0, 0.0, 44_100);
-        assert!(filter.contains("atempo=1.00000000"));
+        assert!(filter.contains("asetrate=44100*4.00000000"), "pitch stage: {filter}");
+        assert!(filter.contains("atempo=0.50000000"), "tempo stage: {filter}");
     }
 
     #[test]

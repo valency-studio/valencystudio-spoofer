@@ -149,6 +149,11 @@ pub struct UploadRecord {
     pub uploaded_at: String,
     pub was_split: bool,
     pub total_bytes: u32,
+    /// Who the asset was created against. Needed to (re)grant the Use
+    /// permission on later launches; older rows predate the field and read as
+    /// 0, which skips the grant rather than granting to the wrong account.
+    #[serde(default)]
+    pub creator_user_id: u64,
     pub pieces: Vec<UploadPiece>,
 }
 
@@ -257,6 +262,7 @@ pub async fn begin_record(
     title: &str,
     pieces: &[(String, PathBuf, u32)],
     was_split: bool,
+    creator_user_id: u64,
 ) -> Result<UploadRecord> {
     let record = UploadRecord {
         id: new_record_id(),
@@ -264,6 +270,7 @@ pub async fn begin_record(
         uploaded_at: chrono_like_now(),
         was_split,
         total_bytes: pieces.iter().map(|(_, _, bytes)| *bytes).sum(),
+        creator_user_id,
         pieces: pieces
             .iter()
             .map(|(name, path, bytes)| UploadPiece {
@@ -461,7 +468,7 @@ pub async fn upload_pieces(
     }
 
     let title = display_title(&sized);
-    let record = begin_record(app, &title, &sized, total > 1).await?;
+    let record = begin_record(app, &title, &sized, total > 1, creator_user_id).await?;
 
     for (index, (name, path, _)) in sized.iter().enumerate() {
         match send_piece(&client, &key, name, path, index, total, app, creator_user_id).await {
@@ -713,13 +720,18 @@ pub async fn follow_validation(app: &AppHandle, record_id: &str, index: usize) {
         return;
     };
 
-    let Some(asset_id) = await_asset_id(&client, &key, app, record_id, index, &operation_id).await
+    // Rows written before the creator was recorded cannot be granted to anyone
+    // safely, so the grant is skipped for them rather than guessed.
+    let creator_user_id = find_record(app, record_id).await.map(|r| r.creator_user_id).unwrap_or(0);
+
+    let Some(asset_id) =
+        await_asset_id(&client, &key, app, record_id, index, &operation_id, creator_user_id).await
     else {
         // Already written to the history as rejected, with the reason.
         return;
     };
 
-    await_moderation(&client, &key, app, record_id, index, asset_id).await;
+    await_moderation(&client, &key, app, record_id, index, asset_id, creator_user_id).await;
 }
 
 /// Polls a create operation until Roblox reveals the piece's asset id.
@@ -733,6 +745,7 @@ async fn await_asset_id(
     record_id: &str,
     index: usize,
     operation_id: &str,
+    creator_user_id: u64,
 ) -> Option<u64> {
     let deadline =
         std::time::Instant::now() + std::time::Duration::from_secs(OPERATION_DEADLINE_SECS);
@@ -741,7 +754,7 @@ async fn await_asset_id(
         // An id recorded by an earlier session means there is nothing to wait
         // for. This is what makes a resumed piece go straight to moderation.
         if let Some(existing) = asset_id_of_piece(app, record_id, index).await {
-            adopt_asset_id(client, key, app, record_id, index, existing).await;
+            adopt_asset_id(client, key, app, record_id, index, existing, creator_user_id).await;
             return Some(existing);
         }
 
@@ -782,7 +795,7 @@ async fn await_asset_id(
         // The id is taken whatever the state is, because Roblox reveals it long
         // before it has finished judging the audio.
         if let Some(id) = revealed {
-            adopt_asset_id(client, key, app, record_id, index, id).await;
+            adopt_asset_id(client, key, app, record_id, index, id, creator_user_id).await;
             return Some(id);
         }
 
@@ -824,12 +837,18 @@ async fn adopt_asset_id(
     record_id: &str,
     index: usize,
     asset_id: u64,
+    creator_user_id: u64,
 ) {
     if asset_id_of_piece(app, record_id, index).await != Some(asset_id) {
         let _ = patch_piece(app, record_id, index, |piece| piece.asset_id = Some(asset_id)).await;
     }
 
-    if grant_use_permission(client, key, asset_id).await.is_ok() {
+    // A failed grant is logged loudly but does not fail the piece: the asset
+    // id is real and moderation still runs. The grant is retried when the
+    // verdict lands, and a failure there is shown on the row itself.
+    if let Err(err) = grant_use_permission(client, key, asset_id, creator_user_id).await {
+        log::warn!("Could not grant Use permission for asset {asset_id}: {err}");
+    } else {
         log::info!("Asset {asset_id} is usable");
     }
 }
@@ -846,6 +865,7 @@ async fn await_moderation(
     record_id: &str,
     index: usize,
     asset_id: u64,
+    creator_user_id: u64,
 ) {
     let deadline =
         std::time::Instant::now() + std::time::Duration::from_secs(MODERATION_DEADLINE_SECS);
@@ -879,11 +899,29 @@ async fn await_moderation(
 
         match verdict {
             moderation::APPROVED => {
-                let _ = patch_piece(app, record_id, index, |piece| {
-                    piece.status = status::ACCEPTED.to_string();
-                    piece.message = String::new();
-                })
-                .await;
+                // The grant is retried here because the earlier attempt may
+                // have raced the asset into existence. An approved asset the
+                // app cannot grant is still unusable in experiences, so that
+                // outcome is written on the row instead of a bare success.
+                match grant_use_permission(client, key, asset_id, creator_user_id).await {
+                    Ok(()) => {
+                        let _ = patch_piece(app, record_id, index, |piece| {
+                            piece.status = status::ACCEPTED.to_string();
+                            piece.message = String::new();
+                        })
+                        .await;
+                    }
+                    Err(err) => {
+                        log::warn!("Asset {asset_id} approved but not usable: {err}");
+                        let _ = patch_piece(app, record_id, index, |piece| {
+                            piece.status = status::ACCEPTED.to_string();
+                            piece.message = format!(
+                                "Approved, but Roblox would not grant Use permission ({err}). Grant access in Creator Dashboard or no experience can load it."
+                            );
+                        })
+                        .await;
+                    }
+                }
                 return;
             }
             moderation::REJECTED => {
@@ -1006,24 +1044,58 @@ fn create_asset_request(name: &str, creator_user_id: u64) -> serde_json::Value {
 /// Audio cannot be updated in place on Roblox, so a new asset is created
 /// without a universe attached. Without this the asset stays owned-but-unusable
 /// and a place cannot load it.
-async fn grant_use_permission(client: &reqwest::Client, key: &str, asset_id: u64) -> Result<()> {
+///
+/// The body follows the documented `BatchGrantPermissionsRequest` shape
+/// (`subjectType`/`subjectId`/`action`/`requests`); anything else is answered
+/// 400. A 200 can still carry per-asset entries in `errors`, so those are
+/// checked too. The key needs the `asset-permissions:write` scope.
+///
+/// A creator id of 0 means the row predates the field, and the grant is skipped
+/// rather than sent to a nonsense subject.
+async fn grant_use_permission(
+    client: &reqwest::Client,
+    key: &str,
+    asset_id: u64,
+    creator_user_id: u64,
+) -> Result<()> {
+    if creator_user_id == 0 {
+        return Err("The upload predates permission grants, so no creator is recorded.".into());
+    }
+
     let response = client
         .patch(format!("{ASSETS_BASE}/asset-permissions-api/v1/assets/permissions"))
         .header("x-api-key", key)
-        .json(&serde_json::json!({
-            "assetId": asset_id,
-            "permission": { "type": "Use", "subject": { "type": "Creator" } }
-        }))
+        .json(&grant_permission_request(asset_id, creator_user_id))
         .send()
         .await?;
 
-    if response.status().is_success() {
-        return Ok(());
+    let status = response.status();
+    let body = response.text().await.unwrap_or_default();
+    if !status.is_success() {
+        return Err(describe(&body, status.as_u16()));
     }
 
-    let status = response.status().as_u16();
-    let body = response.text().await.unwrap_or_default();
-    Err(describe(&body, status))
+    let parsed: serde_json::Value =
+        serde_json::from_str(&body).map_err(|e| AppError::Custom(e.to_string()))?;
+    if let Some(errors) = parsed.get("errors").and_then(|value| value.as_array()) {
+        if let Some(first) = errors.first() {
+            let code = first.get("code").and_then(|c| c.as_str()).unwrap_or("unknown");
+            return Err(AppError::Custom(format!(
+                "Roblox refused the Use permission for asset {asset_id}: {code}."
+            )));
+        }
+    }
+    Ok(())
+}
+
+/// The documented grant body: one `Use` action for one user subject.
+fn grant_permission_request(asset_id: u64, creator_user_id: u64) -> serde_json::Value {
+    serde_json::json!({
+        "subjectType": "User",
+        "subjectId": creator_user_id.to_string(),
+        "action": "Use",
+        "requests": [{ "assetId": asset_id }]
+    })
 }
 
 /// Remaining uploads allowed this month, from Roblox's own quota endpoint.
@@ -1137,6 +1209,25 @@ mod tests {
     use super::{content_type_for, create_asset_request, describe, MAX_UPLOAD_BYTES};
     use crate::error::AppError;
     use std::path::{Path, PathBuf};
+
+    #[test]
+    fn the_permission_grant_matches_robloxs_documented_shape() {
+        // BatchGrantPermissionsRequest: subjectType/subjectId/action/requests.
+        // Anything else is answered 400, which used to leave every asset
+        // approved-but-unusable with no word on the row.
+        let body = super::grant_permission_request(123, 456);
+        assert_eq!(body.get("subjectType").and_then(|v| v.as_str()), Some("User"));
+        assert_eq!(body.get("subjectId").and_then(|v| v.as_str()), Some("456"));
+        assert_eq!(body.get("action").and_then(|v| v.as_str()), Some("Use"));
+        let asset = body
+            .get("requests")
+            .and_then(|r| r.as_array())
+            .and_then(|r| r.first())
+            .and_then(|r| r.get("assetId"))
+            .and_then(serde_json::Value::as_u64);
+        assert_eq!(asset, Some(123));
+        assert!(body.get("permission").is_none(), "old guessed shape must be gone");
+    }
 
     #[test]
     fn the_creator_is_nested_inside_the_creation_context() {
@@ -1405,6 +1496,7 @@ mod tests {
             uploaded_at: super::chrono_like_now(),
             was_split: statuses.len() > 1,
             total_bytes: 10,
+            creator_user_id: 0,
             pieces: statuses
                 .iter()
                 .enumerate()
