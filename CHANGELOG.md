@@ -4,6 +4,22 @@ All notable changes to ValencyStudio - Spoofer are documented here. Versions
 follow [Semantic Versioning](https://semver.org/); release tags are derived
 from `package.json` by CI.
 
+## [3.0.2] - 2026-10-14
+
+### Fixed
+
+- **Studio bridge back on the 14285–14289 default.** The 14320 fallback
+  range is removed on both ends: the backend binds the default range only
+  and fails loudly when it is occupied, and the plugin probes the default
+  range only.
+- **Stale Studio plugin detection.** The app exposes its version on
+  `/health` and logs when a polling plugin reports a different major
+  version; the plugin checks at discovery, warns loudly, and tells the user
+  to restart Roblox Studio.
+- **PlaybackSpeed hint kept on upload history rows.** A track baked at 2.3x
+  is source/speed seconds long by design (2:55 becomes 1:16); every history
+  row now shows which `Sound.PlaybackSpeed` restores the original tempo.
+
 ## [3.0.1] - 2026-10-13
 
 ### Fixed
@@ -71,5 +87,6 @@ from `package.json` by CI.
   IPC, and `https:` entries remain. No code path fetches remote plain-HTTP
   or remote WebSockets.
 
+[3.0.2]: https://github.com/valency-studio/valencystudio-spoofer/releases/tag/v3.0.2
 [3.0.1]: https://github.com/valency-studio/valencystudio-spoofer/releases/tag/v3.0.1
 [3.0.0]: https://github.com/valency-studio/valencystudio-spoofer/releases/tag/v3.0.0
