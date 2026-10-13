@@ -38,7 +38,6 @@ use server::{
 const PLUGIN_PORT_START: u16 = 14285;
 const PLUGIN_PORT_END: u16 = 14289;
 
-const PLUGIN_PORT_FALLBACK_END: u16 = 14320;
 const STUDIO_PROTOCOL_VERSION: u8 = 3;
 const MAX_STUDIO_RECORDS: usize = 2_000_000;
 const MAX_SCRIPT_SOURCE_BYTES: usize = 8_000_000;
@@ -121,7 +120,7 @@ pub async fn start_server(app_handle: AppHandle) {
             "Could not start plugin HTTP server: all ports {}-{} are occupied. \
              Close other ValencyStudio - Spoofer instances or programs using these ports.",
             PLUGIN_PORT_START,
-            PLUGIN_PORT_FALLBACK_END
+            PLUGIN_PORT_END
         );
         *port_diagnostic().write().await = json!({
             "boundPort": null,
@@ -132,23 +131,12 @@ pub async fn start_server(app_handle: AppHandle) {
         return;
     };
     let bound_port = addr.port();
-    let extended = bound_port > PLUGIN_PORT_END;
     let defaults_occupied = detect_occupied_ports(&occupied_defaults).await;
-    if extended {
-        let names: Vec<String> =
-            defaults_occupied.iter().map(|o| format!("{}:{}", o.exe, o.port)).collect();
-        log::warn!(
-            "Plugin server moved past the default ports to {bound_port}: ports \
-             14285-14289 occupied by [{}]. The Studio plugin scans 14285-14320 \
-             automatically, so it will reconnect on its next retry.",
-            names.join(", ")
-        );
-    }
     let occupied_value = serde_json::to_value(&defaults_occupied).unwrap_or(Value::Null);
     *port_diagnostic().write().await = json!({
         "boundPort": bound_port,
         "defaultsOccupied": occupied_value,
-        "extended": extended,
+        "extended": false,
         "failed": false
     });
     let state = AppState {
@@ -410,14 +398,12 @@ fn extract_listen_port(line: &str) -> Option<u16> {
 
 async fn bind_available_listener() -> Option<(tokio::net::TcpListener, SocketAddr, Vec<u16>)> {
     let mut occupied_defaults: Vec<u16> = Vec::new();
-    for port in PLUGIN_PORT_START..=PLUGIN_PORT_FALLBACK_END {
+    for port in PLUGIN_PORT_START..=PLUGIN_PORT_END {
         let addr = SocketAddr::from(([127, 0, 0, 1], port));
         match tokio::net::TcpListener::bind(addr).await {
             Ok(listener) => return Some((listener, addr, occupied_defaults)),
             Err(_) => {
-                if port <= PLUGIN_PORT_END {
-                    occupied_defaults.push(port);
-                }
+                occupied_defaults.push(port);
             }
         }
     }

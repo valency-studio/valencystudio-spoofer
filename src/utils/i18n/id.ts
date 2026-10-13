@@ -35,9 +35,9 @@ export const id: TranslationTree = {
     robloxApiDown:
       'Server Roblox sedang mengalami masalah koneksi. Beberapa unggahan atau unduhan mungkin tidak tersedia untuk sementara.',
     portDiagnosticFailed:
-      'Tidak dapat memulai koneksi plugin Studio: port 14285–14320 sedang dipakai program lain. Tutup instance aplikasi duplikat atau aplikasi yang bertabrakan, lalu mulai ulang ValencyStudio - Spoofer.',
+      'Tidak dapat memulai koneksi plugin Studio: port 14285–14289 sedang dipakai program lain. Tutup instance aplikasi duplikat atau aplikasi yang bertabrakan, lalu mulai ulang ValencyStudio - Spoofer.',
     portDiagnosticExtended:
-      'Jembatan plugin berjalan di port {port} karena port standar (14285–14289) sudah terisi. Plugin Studio memindai port 14285–14320 secara otomatis, jadi akan terhubung pada percobaan berikutnya.',
+      'Jembatan plugin berjalan di port non-standar ({port}). Mulai ulang aplikasi dan Roblox Studio agar keduanya memakai port standar 14285–14289.',
     portDiagnosticOccupied: 'Proses yang bertabrakan memakai port ini: {processes}',
     animationLoadFailed:
       'Tidak dapat memuat animasi ini. Animasi mungkin sudah dihapus, privat, atau menggunakan format yang tidak didukung.',

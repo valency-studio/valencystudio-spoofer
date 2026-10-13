@@ -35,9 +35,9 @@ export const en: TranslationTree = {
     robloxApiDown:
       'Roblox servers are currently having connection issues. Some uploads or downloads may be temporarily unavailable.',
     portDiagnosticFailed:
-      'Could not start the Studio plugin connection: ports 14285–14320 are currently in use by other programs. Close any duplicate app instances or conflicting apps, then restart ValencyStudio - Spoofer.',
+      'Could not start the Studio plugin connection: ports 14285–14289 are currently in use by other programs. Close any duplicate app instances or conflicting apps, then restart ValencyStudio - Spoofer.',
     portDiagnosticExtended:
-      'The plugin bridge is running on port {port} because the standard ports (14285–14289) were occupied. The Studio plugin scans ports 14285–14320 automatically, so it will connect on its next retry.',
+      'The plugin bridge is running on a non-standard port ({port}). Restart the app and Roblox Studio so both use the standard ports 14285–14289.',
     portDiagnosticOccupied: 'Conflicting processes using these ports: {processes}',
     animationLoadFailed:
       'Could not load this animation. It may be deleted, private, or using an unsupported format.',

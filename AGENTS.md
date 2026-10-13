@@ -47,7 +47,7 @@ Run these separately when you touch the relevant code.
 
 ## Invariants that are duplicated, not shared
 
-- **Studio bridge port range `14285-14320`** is probed by the plugin (`plugin/src/config/runtime.luau:23-24`) while the backend binds `14285-14320` with fallback (`src-tauri/src/studio_bridge/mod.rs:38-41`). Change all copies or the plugin silently never connects. `src/utils/pluginBridge.ts` has `DEFAULT_PLUGIN_PORT = '14285'` as a third copy.
+- **Studio bridge port range `14285-14289`** is hardcoded in `src-tauri/src/studio_bridge/mod.rs:38-39` _and_ `plugin/src/config/runtime.luau:23-24`. Change both or the plugin silently never connects. `src/utils/pluginBridge.ts` has `DEFAULT_PLUGIN_PORT = '14285'` as a third copy.
 - **Version** lives in `package.json`, `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json` and `src-tauri/tauri.dev.conf.json`. CI derives the release tag from `package.json` alone.
 - `plugin/plugin.luau` and `plugin/tests/run_tests.luau` opt out of analysis with `--!nocheck` / `--!nolint`. Treat them as unlinted.
 
