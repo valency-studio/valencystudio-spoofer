@@ -166,6 +166,38 @@ export const ru: TranslationTree = {
     fetchingChangelogs: 'Загрузка changelogs...',
     noUpdates: 'Последние обновления не найдены или ошибка загрузки.',
   },
+  about: {
+    title: 'О программе',
+    subtitle: 'Что это за приложение и где нас найти.',
+    blurb:
+      'Десктопный инструмент для замены ассетов в Roblox Studio. Просматривайте, заменяйте и загружайте ассеты по всему месту, не редактируя файлы вручную.',
+    highlights: 'Возможности',
+    highlightSpoofer:
+      'Подмена анимаций, звуков, декалей, мешей и видео по полному сканированию места.',
+    highlightMusic:
+      'Рендер аудио в обход ограничений Roblox — предпросмотр и загрузка за один шаг.',
+    highlightPrivacy: 'Cookie и API-ключи хранятся в системном хранилище, а не в обычных файлах.',
+    highlightFree: 'Бесплатно, без аккаунтов и без телеметрии, которую вы не запрашивали.',
+    details: 'Подробности',
+    version: 'Версия',
+    platform: 'Платформа',
+    architecture: 'Архитектура',
+    runtime: 'Среда',
+    community: 'Сообщество',
+    website: 'Сайт',
+    websiteHint: 'Руководства, журнал изменений и загрузки.',
+    github: 'GitHub',
+    githubHint: 'Исходный код, проблемы и pull request-ы.',
+    discord: 'Discord',
+    discordHint: 'Задавайте вопросы и получайте помощь.',
+    openSource: 'Открытый исходный код',
+    openSourceNote:
+      'ValencyStudio - Spoofer распространяется по лицензии GPL-3.0-or-later. Вы можете прочитать каждую строку.',
+    viewSource: 'Исходники',
+    changelog: 'Изменения',
+    license: 'GPL-3.0-or-later',
+    madeWith: 'Сделано с любовью {team}.',
+  },
   spoof: {
     title: 'Обозреватель',
     resolvingScriptRefs: 'Разрешение ссылок на скрипты',

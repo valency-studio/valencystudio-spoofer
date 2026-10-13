@@ -146,10 +146,44 @@ export const id: TranslationTree = {
     accounts: 'Akun',
     console: 'Konsol',
     music: 'Musik',
+    about: 'Tentang',
     collapseSidebar: 'Ciutkan bilah sisi',
     expandSidebar: 'Perluas bilah sisi',
   },
 
+  about: {
+    title: 'Tentang',
+    subtitle: 'Apa aplikasi ini, dan di mana menemukan kami.',
+    blurb:
+      'Alat pengganti aset desktop untuk Roblox Studio. Pratinjau, ganti, dan kirim aset di seluruh place tanpa mengedit file place secara manual.',
+    highlights: 'Sorotan',
+    highlightSpoofer:
+      'Spoof animasi, suara, decal, mesh, dan video di seluruh hasil pindaian place.',
+    highlightMusic:
+      'Bakar audio untuk melewati batasan Roblox, pratinjau, lalu unggah dalam satu langkah.',
+    highlightPrivacy:
+      'Cookie dan API key disimpan di keychain sistem operasi Anda, bukan di file biasa.',
+    highlightFree: 'Gratis digunakan, tanpa akun dan tanpa telemetri yang tidak Anda minta.',
+    details: 'Detail',
+    version: 'Versi',
+    platform: 'Platform',
+    architecture: 'Arsitektur',
+    runtime: 'Runtime',
+    community: 'Komunitas',
+    website: 'Situs web',
+    websiteHint: 'Panduan, changelog, dan unduhan rilis.',
+    github: 'GitHub',
+    githubHint: 'Kode sumber, isu, dan pull request.',
+    discord: 'Discord',
+    discordHint: 'Bertanya dan mendapatkan bantuan dari pengguna lain.',
+    openSource: 'Sumber terbuka',
+    openSourceNote:
+      'ValencyStudio - Spoofer dilisensikan dengan GPL-3.0-or-later. Anda bisa membaca semua barisnya.',
+    viewSource: 'Lihat kode',
+    changelog: 'Changelog',
+    license: 'GPL-3.0-or-later',
+    madeWith: 'Dibuat dengan hati oleh {team}.',
+  },
   spoof: {
     title: 'Asset Spoofer',
     targets: 'Target',

@@ -141,6 +141,7 @@ export const es: TranslationTree = {
     experimental: 'Experimental',
     supportMe: 'Apóyame',
     music: 'Música',
+    about: 'Acerca de',
     collapseSidebar: 'Contraer barra lateral',
     expandSidebar: 'Expandir barra lateral',
   },
@@ -161,6 +162,39 @@ export const es: TranslationTree = {
     recentUpdates: 'Actualizaciones Recientes',
     fetchingChangelogs: 'Cargando changelogs...',
     noUpdates: 'No se encontraron actualizaciones recientes.',
+  },
+  about: {
+    title: 'Acerca de',
+    subtitle: 'Qué es esta aplicación y dónde encontrarnos.',
+    blurb:
+      'Una herramienta de escritorio para reemplazar assets en Roblox Studio. Previsualiza, reemplaza y envía assets por toda una place sin editar archivos a mano.',
+    highlights: 'Aspectos destacados',
+    highlightSpoofer:
+      'Spoofea animaciones, sonidos, calcomanías, mallas y vídeos en todo el escaneo de la place.',
+    highlightMusic:
+      'Renderiza audio para saltar los límites de Roblox, previsualízalo y súbelo en un paso.',
+    highlightPrivacy:
+      'Las cookies y claves API se guardan en el llavero de tu sistema, nunca en archivos de texto.',
+    highlightFree: 'Gratis, sin cuentas y sin telemetría que no hayas pedido.',
+    details: 'Detalles',
+    version: 'Versión',
+    platform: 'Plataforma',
+    architecture: 'Arquitectura',
+    runtime: 'Entorno',
+    community: 'Comunidad',
+    website: 'Sitio web',
+    websiteHint: 'Guías, changelogs y descargas.',
+    github: 'GitHub',
+    githubHint: 'Código fuente, incidencias y pull requests.',
+    discord: 'Discord',
+    discordHint: 'Pregunta y recibe ayuda de otros usuarios.',
+    openSource: 'Código abierto',
+    openSourceNote:
+      'ValencyStudio - Spoofer está licenciado bajo GPL-3.0-or-later. Puedes leer cada línea.',
+    viewSource: 'Ver código',
+    changelog: 'Changelog',
+    license: 'GPL-3.0-or-later',
+    madeWith: 'Hecho con cariño por {team}.',
   },
   spoof: {
     title: 'Suplantador de Assets',

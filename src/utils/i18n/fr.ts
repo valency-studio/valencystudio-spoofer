@@ -143,6 +143,7 @@ export const fr: TranslationTree = {
     experimental: 'Expérimental',
     supportMe: 'Soutenez-moi',
     music: 'Musique',
+    about: 'À propos',
     collapseSidebar: 'Réduire la barre latérale',
     expandSidebar: 'Agrandir la barre latérale',
   },
@@ -162,6 +163,39 @@ export const fr: TranslationTree = {
     recentUpdates: 'Mises à Jour Récentes',
     fetchingChangelogs: 'Chargement des changelogs...',
     noUpdates: 'Aucune mise à jour récente trouvée.',
+  },
+  about: {
+    title: 'À propos',
+    subtitle: "Ce qu'est cette application, et où nous trouver.",
+    blurb:
+      'Un outil de bureau pour remplacer des assets dans Roblox Studio. Prévisualisez, remplacez et envoyez des assets dans toute une place sans éditer les fichiers à la main.',
+    highlights: 'Points forts',
+    highlightSpoofer:
+      'Spoofez animations, sons, décalcomanies, maillages et vidéos sur toute une analyse de place.',
+    highlightMusic:
+      'Convertissez votre audio pour contourner les limites Roblox, prévisualisez-le, puis téléversez-le en une étape.',
+    highlightPrivacy:
+      'Cookies et clés API sont stockés dans le trousseau de votre système, jamais en clair.',
+    highlightFree: "Gratuit, sans compte et sans télémétrie que vous n'avez pas demandée.",
+    details: 'Détails',
+    version: 'Version',
+    platform: 'Plateforme',
+    architecture: 'Architecture',
+    runtime: 'Exécution',
+    community: 'Communauté',
+    website: 'Site web',
+    websiteHint: 'Guides, changelogs et téléchargements.',
+    github: 'GitHub',
+    githubHint: 'Code source, signalements et pull requests.',
+    discord: 'Discord',
+    discordHint: 'Posez vos questions et obtenez de l’aide.',
+    openSource: 'Open source',
+    openSourceNote:
+      'ValencyStudio - Spoofer est sous licence GPL-3.0-or-later. Vous pouvez tout lire.',
+    viewSource: 'Voir le code',
+    changelog: 'Changelog',
+    license: 'GPL-3.0-or-later',
+    madeWith: 'Fait avec soin par {team}.',
   },
   spoof: {
     title: "Usurpation d'Assets",

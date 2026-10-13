@@ -10,6 +10,7 @@ import { useLanguage } from './contexts/LanguageContext';
 import { useAppInitialization } from './hooks/useAppInitialization';
 
 const ActivityView = lazy(() => import('./components/views/ActivityView'));
+const AboutView = lazy(() => import('./components/views/AboutView'));
 const AssetExplorer = lazy(() => import('./components/views/AssetExplorer'));
 const ConsoleView = lazy(() => import('./components/views/ConsoleView'));
 const MusicView = lazy(() => import('./components/views/music/MusicView'));
@@ -83,6 +84,7 @@ export default function App() {
               )}
               {activeTab === 'activity' && <ActivityView key="activity" />}
               {activeTab === 'music' && <MusicView key="music" />}
+              {activeTab === 'about' && <AboutView key="about" />}
               {activeTab === 'accounts' && <AccountsView key="accounts" />}
               {activeTab === 'settings' && <SettingsView key="settings" />}
               {activeTab === 'console' && <ConsoleView key="console" />}

@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   History,
+  Info,
   Music4,
   ScanLine,
   Settings,
@@ -43,6 +44,7 @@ export default function Sidebar({
     { id: 'music', label: t('nav.music'), icon: <Music4 size={18} /> },
     { id: 'activity', label: t('nav.activity'), icon: <History size={18} /> },
     { id: 'accounts', label: t('nav.accounts'), icon: <Users size={18} /> },
+    { id: 'about', label: t('nav.about'), icon: <Info size={18} /> },
     { id: 'settings', label: t('nav.settings'), icon: <Settings size={18} /> },
     { id: 'console', label: t('nav.console'), icon: <Terminal size={18} /> },
   ];

@@ -146,10 +146,43 @@ export const en: TranslationTree = {
     accounts: 'Accounts',
     console: 'Console',
     music: 'Music',
+    about: 'About',
     collapseSidebar: 'Collapse sidebar',
     expandSidebar: 'Expand sidebar',
   },
 
+  about: {
+    title: 'About',
+    subtitle: 'What this app is, and where to find us.',
+    blurb:
+      'A desktop asset replacement tool for Roblox Studio. Preview, replace and push assets across a whole place without editing place files by hand.',
+    highlights: 'Highlights',
+    highlightSpoofer:
+      'Spoof animations, sounds, decals, meshes and videos across a full place scan.',
+    highlightMusic: 'Bake audio to bypass Roblox limits, preview it, then upload it in one step.',
+    highlightPrivacy:
+      'Cookies and API keys are stored in your operating system keychain, never in plain files.',
+    highlightFree: 'Free to use, with no accounts and no telemetry you did not ask for.',
+    details: 'Details',
+    version: 'Version',
+    platform: 'Platform',
+    architecture: 'Architecture',
+    runtime: 'Runtime',
+    community: 'Community',
+    website: 'Website',
+    websiteHint: 'Guides, changelogs and release downloads.',
+    github: 'GitHub',
+    githubHint: 'Source code, issues and pull requests.',
+    discord: 'Discord',
+    discordHint: 'Ask questions and get help from other users.',
+    openSource: 'Open source',
+    openSourceNote:
+      'ValencyStudio - Spoofer is licensed under GPL-3.0-or-later. You can read every line of it.',
+    viewSource: 'View source',
+    changelog: 'Changelog',
+    license: 'GPL-3.0-or-later',
+    madeWith: 'Made with care by {team}.',
+  },
   spoof: {
     title: 'Asset Spoofer',
     targets: 'Targets',
