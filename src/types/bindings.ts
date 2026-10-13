@@ -35,9 +35,14 @@ export const commands = {
    *  Returns as soon as the bytes are with Roblox. The asset ids live in the
    *  history row this creates, and fill in as Roblox reveals them.
    */
-  uploadAudioParts: (paths: string[], names: string[], creatorUserId: number | null) =>
+  uploadAudioParts: (
+    paths: string[],
+    names: string[],
+    creatorUserId: number | null,
+    playbackSpeed: number | null,
+  ) =>
     typedError<UploadSummary, AppError>(
-      __TAURI_INVOKE('upload_audio_parts', { paths, names, creatorUserId }),
+      __TAURI_INVOKE('upload_audio_parts', { paths, names, creatorUserId, playbackSpeed }),
     ),
   /**
    *  Picks up validation for anything left unfinished by a previous session.
@@ -621,6 +626,18 @@ export type UploadRecord = {
   uploadedAt: string;
   wasSplit: boolean;
   totalBytes: number;
+  /**
+   *  Who the asset was created against. Needed to (re)grant the Use
+   *  permission on later launches; older rows predate the field and read as
+   *  0, which skips the grant rather than granting to the wrong account.
+   */
+  creatorUserId?: number;
+  /**
+   *  Speed the track was baked at. The render is source/speed seconds long,
+   *  so the row shows which PlaybackSpeed restores the original tempo.
+   *  Older rows predate the field and simply show no hint.
+   */
+  playbackSpeed?: number | null;
   pieces: UploadPiece[];
 };
 

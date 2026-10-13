@@ -240,6 +240,8 @@ export interface UploadRecord {
   uploadedAt: string;
   wasSplit: boolean;
   totalBytes: number;
+  /** Speed the track was baked at; tells which PlaybackSpeed restores tempo. */
+  playbackSpeed?: number | null;
   pieces: UploadPiece[];
 }
 
@@ -279,8 +281,18 @@ export interface AudioQuota {
  * Resolves once the bytes are with Roblox. Roblox validates afterwards, and
  * that result arrives on the history row rather than through this call.
  */
-export const uploadAudioParts = (paths: string[], names: string[], creatorUserId: number) =>
-  invoke<UploadSummary>('upload_audio_parts', { paths, names, creatorUserId });
+export const uploadAudioParts = (
+  paths: string[],
+  names: string[],
+  creatorUserId: number,
+  playbackSpeed?: number | null,
+) =>
+  invoke<UploadSummary>('upload_audio_parts', {
+    paths,
+    names,
+    creatorUserId,
+    playbackSpeed: playbackSpeed ?? null,
+  });
 
 /** Resumes validation for anything a previous session left unfinished. */
 export const resumePendingValidations = () => invoke<number>('resume_pending_validations');

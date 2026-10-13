@@ -154,6 +154,11 @@ pub struct UploadRecord {
     /// 0, which skips the grant rather than granting to the wrong account.
     #[serde(default)]
     pub creator_user_id: u64,
+    /// Speed the track was baked at. The render is source/speed seconds long,
+    /// so the row shows which PlaybackSpeed restores the original tempo.
+    /// Older rows predate the field and simply show no hint.
+    #[serde(default)]
+    pub playback_speed: Option<f64>,
     pub pieces: Vec<UploadPiece>,
 }
 
@@ -263,6 +268,7 @@ pub async fn begin_record(
     pieces: &[(String, PathBuf, u32)],
     was_split: bool,
     creator_user_id: u64,
+    playback_speed: Option<f64>,
 ) -> Result<UploadRecord> {
     let record = UploadRecord {
         id: new_record_id(),
@@ -271,6 +277,7 @@ pub async fn begin_record(
         was_split,
         total_bytes: pieces.iter().map(|(_, _, bytes)| *bytes).sum(),
         creator_user_id,
+        playback_speed,
         pieces: pieces
             .iter()
             .map(|(name, path, bytes)| UploadPiece {
@@ -447,6 +454,7 @@ pub async fn upload_pieces(
     app: &AppHandle,
     files: &[(String, PathBuf)],
     creator_user_id: u64,
+    playback_speed: Option<f64>,
 ) -> Result<UploadSummary> {
     if files.is_empty() {
         return Err("There is nothing to upload.".into());
@@ -468,7 +476,8 @@ pub async fn upload_pieces(
     }
 
     let title = display_title(&sized);
-    let record = begin_record(app, &title, &sized, total > 1, creator_user_id).await?;
+    let record =
+        begin_record(app, &title, &sized, total > 1, creator_user_id, playback_speed).await?;
 
     for (index, (name, path, _)) in sized.iter().enumerate() {
         match send_piece(&client, &key, name, path, index, total, app, creator_user_id).await {
@@ -1224,6 +1233,7 @@ pub async fn upload_audio_parts(
     paths: Vec<String>,
     names: Vec<String>,
     creator_user_id: f64,
+    playback_speed: Option<f64>,
 ) -> Result<UploadSummary> {
     if names.len() != paths.len() {
         return Err("Each rendered piece needs a name.".into());
@@ -1247,7 +1257,7 @@ pub async fn upload_audio_parts(
         files.push((name, file_path));
     }
 
-    upload_pieces(&app, &files, creator_user_id as u64).await
+    upload_pieces(&app, &files, creator_user_id as u64, playback_speed).await
 }
 
 /// Audio uploads left this month, according to Roblox.
@@ -1606,6 +1616,7 @@ mod tests {
             was_split: statuses.len() > 1,
             total_bytes: 10,
             creator_user_id: 0,
+            playback_speed: None,
             pieces: statuses
                 .iter()
                 .enumerate()

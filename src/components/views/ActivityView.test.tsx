@@ -78,6 +78,7 @@ describe('ActivityView', () => {
             uploadedAt: '2026-01-01T00:00:00Z',
             wasSplit: false,
             totalBytes: 1024,
+            playbackSpeed: 2.3,
             pieces: [{ name: 'My Song', path: '/tmp/a.mp3', bytes: 1024, status: 'accepted' }],
           },
         ]);
@@ -89,5 +90,7 @@ describe('ActivityView', () => {
 
     expect(await screen.findByText('My Song')).toBeInTheDocument();
     expect(screen.getByText('music.history')).toBeInTheDocument();
+    // The baked speed is on the row, so the PlaybackSpeed hint renders.
+    expect(screen.getByText('music.robloxSpeedSnippet')).toBeInTheDocument();
   });
 });

@@ -284,6 +284,12 @@ export function HistoryRow({
   // A single-piece upload has no parent row to hang parts off, so it renders as
   // one line rather than a header plus a child.
   const split = record.wasSplit && record.pieces.length > 1;
+  // The render is source/speed seconds long, so without this the row's id
+  // looks broken in Studio: played at 1.0 it ends early and chipmunked.
+  const playbackSpeed =
+    record.playbackSpeed && Number.isFinite(record.playbackSpeed) && record.playbackSpeed !== 1
+      ? robloxPlaybackSpeed(record.playbackSpeed)
+      : null;
 
   return (
     <li className="overflow-hidden rounded-lg border border-border-subtle bg-card">
@@ -309,6 +315,16 @@ export function HistoryRow({
           </Button>
         </div>
       </div>
+
+      {playbackSpeed && (
+        <div className="px-3 pb-2.5">
+          <RobloxHint
+            playbackSpeed={playbackSpeed}
+            hint={t('music.robloxSpeedHint').replace('{value}', playbackSpeed)}
+            snippet={t('music.robloxSpeedSnippet').replace('{value}', playbackSpeed)}
+          />
+        </div>
+      )}
 
       {split && (
         <ul className="border-t border-border-subtle">
@@ -884,7 +900,7 @@ function TrackEditor({
  * the one number a user has to copy by hand, so it is shown as a snippet and can
  * be copied in one click.
  */
-function RobloxHint({
+export function RobloxHint({
   playbackSpeed,
   hint,
   snippet,

@@ -349,7 +349,43 @@ describe('uploadTrack status', () => {
 
     await useMusicStore.getState().uploadTrack(id);
 
-    expect(mockedUpload).toHaveBeenCalledWith(['C:/media/original.mp3'], ['Original'], 12345);
+    expect(mockedUpload).toHaveBeenCalledWith(
+      ['C:/media/original.mp3'],
+      ['Original'],
+      12345,
+      DEFAULT_SPEED,
+    );
+  });
+
+  it('sends the baked speed so the history can show the playback hint', async () => {
+    // Without the speed the history row cannot tell the user which
+    // PlaybackSpeed restores the original tempo in Studio.
+    mockedUpload.mockResolvedValue({ recordId: 'rec-8', accepted: [], wasSplit: false });
+    // Changing speed drops the stale bake, so re-render at the new speed
+    // before uploading, like the view does.
+    useMusicStore.getState().update(id, { speed: 2.5 });
+    useMusicStore.setState((state) => ({
+      tracks: state.tracks.map((candidate) =>
+        candidate.id === id
+          ? {
+              ...candidate,
+              exportedFiles: [
+                {
+                  name: 'original',
+                  displayName: 'Original',
+                  path: 'C:/media/original.mp3',
+                  bytes: 1024,
+                  outputDuration: 120,
+                },
+              ],
+            }
+          : candidate,
+      ),
+    }));
+
+    await useMusicStore.getState().uploadTrack(id);
+
+    expect(mockedUpload).toHaveBeenCalledWith(['C:/media/original.mp3'], ['Original'], 12345, 2.5);
   });
 
   it('clears a previous outcome before starting again', async () => {

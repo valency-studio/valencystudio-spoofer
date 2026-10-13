@@ -256,6 +256,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         track.exportedFiles.map((file) => file.path),
         track.exportedFiles.map((file) => file.displayName),
         userId,
+        track.speed,
       );
 
       // The bytes are with Roblox. Validation continues in the background, so
