@@ -435,9 +435,89 @@ jobs:
           files: dist-plugin/ValencyStudioSpoofer.rbxmx
           fail_on_unmatched_files: true
 
+  upload-zipline:
+    name: Mirror Release to Zipline
+    needs: [prepare-release, build-and-release, plugin-release]
+    if: needs.prepare-release.outputs.SHOULD_RELEASE == 'true'
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ needs.prepare-release.outputs.RELEASE_TAG }}
+          ZIPLINE_TOKEN: ${{ secrets.ZIPLINE_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${ZIPLINE_TOKEN:-}" ]; then
+            echo "::error::Missing GitHub secret ZIPLINE_TOKEN. Add the Zipline authorization token as a repository secret."
+            exit 1
+          fi
+
+          mkdir -p mirror
+          gh release download "$TAG_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir mirror
+          ls -la mirror
+
+      - name: Rename bundles to Latest names and upload
+        env:
+          ZIPLINE_TOKEN: ${{ secrets.ZIPLINE_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          upload() {
+            local file="$1"
+            echo "Uploading $file ..."
+            local mime
+            mime=$(file --mime-type -b "$file")
+            local url
+            url=$(curl -sS -f \
+              -H "authorization: $ZIPLINE_TOKEN" \
+              -H 'content-type: multipart/form-data' \
+              -H 'x-zipline-format: name' \
+              -H 'x-zipline-original-name: true' \
+              -F "file=@${file};type=${mime}" \
+              https://files.valencystudio.dpdns.org/api/upload \
+              | jq -r '.files[0].url')
+            if [ -z "$url" ] || [ "$url" = "null" ]; then
+              echo "::error::Upload returned no URL for $file"
+              exit 1
+            fi
+            echo "$file -> $url"
+          }
+
+          # Versioned bundles become stable Latest names, e.g.
+          # "ValencyStudio - Spoofer_3.0.2_x64-setup.exe" ->
+          # "ValencyStudio - Spoofer_Latest_x64-setup.exe".
+          # The plugin has no version in its name and uploads as-is.
+          uploaded=0
+          for f in mirror/*.exe mirror/*.dmg mirror/*.AppImage mirror/*.rbxmx; do
+            base=$(basename "$f")
+            newbase=$(printf '%s' "$base" | sed -E 's/_[0-9]+\.[0-9]+\.[0-9]+_/_Latest_/')
+            if [ "$newbase" != "$base" ]; then
+              mv "$f" "mirror/$newbase"
+              f="mirror/$newbase"
+            fi
+            upload "$f"
+            uploaded=$((uploaded + 1))
+          done
+
+          if [ "$uploaded" -eq 0 ]; then
+            echo "::error::No bundles found to mirror."
+            exit 1
+          fi
+
   announce-release:
     name: Announce on Discord
-    needs: [prepare-release, build-and-release, plugin-release]
+    needs: [prepare-release, build-and-release, plugin-release, upload-zipline]
     if: >-
       needs.prepare-release.outputs.SHOULD_RELEASE == 'true'
       && (
@@ -457,9 +537,6 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           RELEASE_TAG: ${{ needs.prepare-release.outputs.RELEASE_TAG }}
           RELEASE_URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.prepare-release.outputs.RELEASE_TAG }}
-          RELEASE_PRERELEASE: false
-          RELEASE_EVENT_ACTION: published
-          DISCORD_RELEASE_ROLE_ID: ${{ secrets.DISCORD_RELEASE_ROLE_ID }}
           DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
 
         run: |
@@ -474,11 +551,16 @@ jobs:
           repo = os.environ.get("GITHUB_REPOSITORY", "").strip()
           release_tag = os.environ.get("RELEASE_TAG", "").strip()
           release_url = os.environ.get("RELEASE_URL", "").strip()
-          prerelease = os.environ.get("RELEASE_PRERELEASE") == "true"
-          event_action = os.environ.get("RELEASE_EVENT_ACTION", "").strip()
-          is_release_edit = event_action == "edited"
-          role_id = os.environ.get("DISCORD_RELEASE_ROLE_ID", "").strip()
           channel_id = os.environ.get("DISCORD_CHANNEL_ID", "").strip()
+
+          ICON_URL = "https://files.valencystudio.dpdns.org/raw/c1PUm0.png"
+          BANNER_URL = "https://files.valencystudio.dpdns.org/u/image.png"
+          DOWNLOADS = (
+              "- **Windows** [Download](https://files.valencystudio.dpdns.org/u/ValencyStudio.-.Spoofer_Latest_x64-setup.exe)\n"
+              "- **Mac** [Download](https://files.valencystudio.dpdns.org/u/ValencyStudio.-.Spoofer_Latest_universal.dmg)\n"
+              "- **Linux** [Download](https://files.valencystudio.dpdns.org/u/ValencyStudio.-.Spoofer_Latest_amd64.AppImage)\n"
+              "\n**Plugins Roblox** [Download Here](https://files.valencystudio.dpdns.org/u/ValencyStudioSpoofer.rbxmx)"
+          )
 
           release_record_cache = None
 
@@ -490,11 +572,6 @@ jobs:
           if not channel_id:
               raise RuntimeError(
                   "Missing GitHub Actions secret DISCORD_CHANNEL_ID."
-              )
-
-          if not role_id:
-              raise RuntimeError(
-                  "Missing GitHub Actions secret DISCORD_RELEASE_ROLE_ID."
               )
 
           if not release_tag:
@@ -588,49 +665,43 @@ jobs:
 
           release_notes = read_release_notes()
           author = get_commit_author()
-          release_notes_field = fit_embed_description(release_notes)
 
-          color = (
-              3447003
-              if is_release_edit
-              else (16753920 if prerelease else 5763719)
-          )
-
-          embed = {
-              "author": {
-                  "name": "ValencyStudio - Spoofer Updates",
-                  "icon_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-              },
-              "title": f"🚀 ValencyStudio - Spoofer {release_tag} is now available!",
-              "url": release_url,
-              "description": release_notes_field,
-              "color": color,
-              "fields": [
-                  {
-                      "name": "📥 Download",
-                      "value": f"**[Get it on GitHub]({release_url})**",
-                      "inline": False,
-                  },
-              ],
-              "footer": {
-                  "text": (
-                      f"Released by {author['name']} • "
-                      "The auto-updater will prompt you on next launch."
-                  ),
-                  "icon_url": author["avatar"] if author["avatar"] else None,
-              },
-          }
+          changelog_block = "```diff\n" + fit_embed_description(release_notes) + "\n```"
 
           payload = {
-              "content": (
-                  f"<@&{role_id}> ValencyStudio - Spoofer release notes were updated.\n\n"
-                  if is_release_edit
-                  else f"<@&{role_id}> ValencyStudio - Spoofer has updated!\n\n"
-              ),
+              "content": f"@everyone **ValencyStudio - Spoofer {release_tag} has updated!**",
+              "embeds": [
+                  {
+                      "title": "Downloads Available",
+                      "description": DOWNLOADS,
+                      "color": 4653311,
+                      "author": {
+                          "name": "ValencyStudio - Spoofer Updates",
+                          "icon_url": ICON_URL,
+                      },
+                      "image": {
+                          "url": BANNER_URL,
+                      },
+                  },
+                  {
+                      "title": "CHANGELOGS",
+                      "description": changelog_block,
+                      "color": 1949277,
+                      "footer": {
+                          "text": (
+                              f"Released by {author['name']} • "
+                              "The auto-updater will prompt you on next launch."
+                          ),
+                          "icon_url": author["avatar"] if author["avatar"] else None,
+                      },
+                  },
+              ],
+              "username": "ValencyStudio App",
+              "avatar_url": ICON_URL,
               "allowed_mentions": {
-                  "roles": [role_id],
+                  "parse": ["everyone"],
               },
-              "embeds": [embed],
+              "attachments": [],
           }
 
           request = urllib.request.Request(
