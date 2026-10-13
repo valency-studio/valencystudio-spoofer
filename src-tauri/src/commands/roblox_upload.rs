@@ -472,11 +472,20 @@ pub async fn upload_pieces(
 
     for (index, (name, path, _)) in sized.iter().enumerate() {
         match send_piece(&client, &key, name, path, index, total, app, creator_user_id).await {
-            Ok(operation_id) => {
+            Ok(SentPiece::Operation(operation_id)) => {
                 // The row is written before the poller starts, so a crash
                 // between the two still leaves a record to resume from.
                 patch_piece(app, &record.id, index, |piece| {
                     piece.operation_id = operation_id;
+                    piece.status = status::VALIDATING.to_string();
+                })
+                .await?;
+            }
+            Ok(SentPiece::Immediate(asset_id)) => {
+                // Roblox finished synchronously: the id is recorded straight
+                // away and validation takes over, with nothing to poll first.
+                patch_piece(app, &record.id, index, |piece| {
+                    piece.asset_id = Some(asset_id);
                     piece.status = status::VALIDATING.to_string();
                 })
                 .await?;
@@ -519,7 +528,15 @@ fn display_title(pieces: &[(String, PathBuf, u32)]) -> String {
     }
 }
 
-/// Sends one piece's bytes and returns Roblox's operation id.
+/// What a successful create call handed back: something to poll, or an asset id
+/// up front when Roblox finished synchronously.
+enum SentPiece {
+    Operation(String),
+    Immediate(u64),
+}
+
+/// Sends one piece's bytes and returns what Roblox handed back: an operation to
+/// poll, or an asset id when Roblox finished synchronously.
 ///
 /// Everything after this point is [`follow_validation`]'s problem. The only
 /// thing this function decides is whether Roblox accepted the bytes at all.
@@ -532,7 +549,7 @@ async fn send_piece(
     total: usize,
     app: &AppHandle,
     creator_user_id: u64,
-) -> Result<String> {
+) -> Result<SentPiece> {
     let size = std::fs::metadata(path)
         .map(|m| m.len())
         .map_err(|e| AppError::Custom(format!("Could not read {name}: {e}")))?;
@@ -585,9 +602,19 @@ async fn send_piece(
     let parsed: serde_json::Value =
         serde_json::from_str(&body).map_err(|e| AppError::Custom(e.to_string()))?;
 
-    parsed.get("operationId").and_then(|v| v.as_str()).map(str::to_string).ok_or_else(|| {
-        AppError::Custom(format!("Roblox did not return an operation id for {name:?}."))
-    })
+    // Small uploads can finish synchronously: no operation to poll, just an
+    // asset id. The Spoofer uploader treats that as final, so this does too.
+    if let Some(asset_id) = operation_asset_id(&parsed) {
+        return Ok(SentPiece::Immediate(asset_id));
+    }
+
+    parsed
+        .get("operationId")
+        .and_then(|v| v.as_str())
+        .map(|operation| SentPiece::Operation(operation.to_string()))
+        .ok_or_else(|| {
+            AppError::Custom(format!("Roblox did not return an operation id for {name:?}."))
+        })
 }
 
 /// Reads one poll of a create operation.
@@ -596,11 +623,56 @@ async fn send_piece(
 /// the operation has finished. That is what puts a real id in the history while
 /// Roblox is still checking the audio, instead of making the user wait for the
 /// verdict to see it.
+///
+/// Mirrors the Spoofer upload poller: Roblox answers the standard long-running
+/// operation shape (`done` boolean, optional `error`, id under
+/// `response.assetId`), and the id arrives as a string as often as a number, so
+/// both are accepted. Reading only one shape is what used to mark successful
+/// uploads rejected.
 fn read_operation_state(body: &serde_json::Value) -> (String, Option<u64>) {
-    let state = body.get("state").and_then(|v| v.as_str()).unwrap_or_default().to_ascii_lowercase();
-    let asset_id =
-        body.get("response").and_then(|r| r.get("assetId")).and_then(serde_json::Value::as_u64);
-    (state, asset_id)
+    let asset_id = operation_asset_id(body);
+    if body.get("error").is_some() {
+        return ("failed".to_string(), asset_id);
+    }
+    if operation_is_done(body) {
+        return ("done".to_string(), asset_id);
+    }
+    // Some pollers report a state string instead of (or alongside) `done`.
+    let state =
+        body.get("state").and_then(|value| value.as_str()).unwrap_or_default().to_ascii_lowercase();
+    if !state.is_empty() {
+        return (state, asset_id);
+    }
+    ("running".to_string(), asset_id)
+}
+
+/// The asset id in an operation response, as a string or a number, under
+/// `assetId` or `Id` — the same leniency the Spoofer poller uses.
+fn operation_asset_id(body: &serde_json::Value) -> Option<u64> {
+    let id = body.get("response")?.get("assetId").or_else(|| body.get("response")?.get("Id"))?;
+    id.as_u64().or_else(|| id.as_str()?.trim().parse::<u64>().ok())
+}
+
+/// True when the operation resource says it finished, as a boolean or string.
+fn operation_is_done(body: &serde_json::Value) -> bool {
+    body.get("done")
+        .map(|done| {
+            done.as_bool().unwrap_or_else(|| {
+                done.as_str().is_some_and(|text| text.eq_ignore_ascii_case("true"))
+            })
+        })
+        .unwrap_or(false)
+}
+
+/// A readable reason from an operation `error` payload, string or object.
+fn operation_error_message(body: &serde_json::Value) -> Option<String> {
+    let error = body.get("error")?;
+    if let Some(text) = error.as_str() {
+        if !text.trim().is_empty() {
+            return Some(text.trim().to_string());
+        }
+    }
+    Some(crate::utils::extract_human_error(error, None))
 }
 
 /// What Roblox decided about an asset it has already taken the bytes for.
@@ -714,15 +786,24 @@ pub async fn follow_validation(app: &AppHandle, record_id: &str, index: usize) {
     };
     let client = crate::utils::get_http_client();
 
-    let Some(operation_id) = operation_id_of(app, record_id, index).await else {
-        // No operation means the create call never succeeded, so there is
-        // nothing to wait for. patch_piece already recorded the reason.
-        return;
-    };
-
     // Rows written before the creator was recorded cannot be granted to anyone
     // safely, so the grant is skipped for them rather than guessed.
     let creator_user_id = find_record(app, record_id).await.map(|r| r.creator_user_id).unwrap_or(0);
+
+    // An id already on the piece — handed back synchronously by the create
+    // call, or left by an earlier session — goes straight to moderation with
+    // nothing to poll first.
+    if let Some(existing) = asset_id_of_piece(app, record_id, index).await {
+        adopt_asset_id(&client, &key, app, record_id, index, existing, creator_user_id).await;
+        await_moderation(&client, &key, app, record_id, index, existing, creator_user_id).await;
+        return;
+    }
+
+    let Some(operation_id) = operation_id_of(app, record_id, index).await else {
+        // No operation and no id means the create call never succeeded, so
+        // there is nothing to wait for. patch_piece already recorded the reason.
+        return;
+    };
 
     let Some(asset_id) =
         await_asset_id(&client, &key, app, record_id, index, &operation_id, creator_user_id).await
@@ -801,15 +882,15 @@ async fn await_asset_id(
 
         match state.as_str() {
             "failed" | "error" => {
-                let message =
-                    parsed.get("error").and_then(|v| v.as_str()).unwrap_or("no reason given");
+                let message = operation_error_message(&parsed)
+                    .unwrap_or_else(|| "no reason given".to_string());
                 mark_rejected(app, record_id, index, &format!("Roblox rejected it: {message}"))
                     .await;
                 return None;
             }
-            // A terminal success with no id anywhere is a dead end, and waiting
-            // cannot change that.
-            "succeeded" | "completed" => {
+            // A terminal operation with no id anywhere is a dead end, and
+            // waiting cannot change that.
+            "done" | "succeeded" | "completed" => {
                 mark_rejected(
                     app,
                     record_id,
@@ -1457,6 +1538,34 @@ mod tests {
         let (state, asset_id) = super::read_operation_state(&body);
         assert_eq!(state, "pending");
         assert_eq!(asset_id, None, "an id must not be invented");
+    }
+
+    #[test]
+    fn a_string_asset_id_is_read_like_the_spoofer_flow() {
+        // Roblox hands the id back as a string as often as a number; reading
+        // only numbers is what used to mark successful uploads rejected.
+        let body = serde_json::json!({ "done": false, "response": { "assetId": "112233" } });
+        let (state, asset_id) = super::read_operation_state(&body);
+        assert_eq!(asset_id, Some(112_233));
+        assert_eq!(state, "running");
+    }
+
+    #[test]
+    fn a_done_operation_without_a_state_string_is_terminal() {
+        // The standard operation shape carries `done`, not `state`.
+        let body = serde_json::json!({ "done": true });
+        let (state, asset_id) = super::read_operation_state(&body);
+        assert_eq!(state, "done");
+        assert_eq!(asset_id, None);
+    }
+
+    #[test]
+    fn an_operation_error_is_a_failure_with_a_reason() {
+        let body = serde_json::json!({ "done": true, "error": { "message": "Quota exceeded" } });
+        let (state, _) = super::read_operation_state(&body);
+        assert_eq!(state, "failed");
+        let reason = super::operation_error_message(&body).unwrap_or_default();
+        assert!(reason.contains("Quota exceeded"), "reason lost: {reason}");
     }
 
     #[test]
