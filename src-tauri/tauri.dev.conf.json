@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "ValencyStudio - Spoofer",
-  "version": "2.5.0",
+  "version": "3.0.0",
   "identifier": "com.valencystudio.spoofer",
   "build": {
     "frontendDist": "../dist",
@@ -44,7 +44,7 @@
           "$TEMP/**"
         ]
       },
-      "csp": "default-src 'self' ipc: ipc://localhost http://ipc.localhost; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src * 'self' asset: https: http: blob: data:; connect-src * 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https: ipc: ipc://localhost http://ipc.localhost tauri: asset:; media-src * 'self' asset: https: blob: data:; font-src 'self' data: https://fonts.gstatic.com"
+      "csp": "default-src 'self' ipc: ipc://localhost http://ipc.localhost; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src * 'self' asset: https: http: blob: data:; connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https: ipc: ipc://localhost http://ipc.localhost tauri: asset:; media-src * 'self' asset: https: blob: data:; font-src 'self' data: https://fonts.gstatic.com"
     }
   },
   "bundle": {
@@ -75,7 +75,7 @@
       "endpoints": [
         "https://github.com/valency-studio/valencystudio-spoofer/releases/latest/download/latest.json"
       ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZDQTY2NkEyMzZEN0QzQjAKUldTdzA5YzJvbWFtYkZwMXJhZGQwVjFqMDdTaE1XNXdhNTVWeVJmYWFLbW9WR29aMnhoSVpDZGwK"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZBODY4RjU5NzZERUFERkIKUldUN3JkNTJXWStHYXFjdGlHZWR3MmduWUt5ODNFK2lCSW1OSFhOam4rams2QVJRZUw4N041RjcK"
     }
   }
 }

@@ -8,7 +8,16 @@ const pluginRoot = join(root, 'plugin');
 
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const versionLuauPath = join(pluginRoot, 'src', 'version', 'version.luau');
-writeFileSync(versionLuauPath, `local PLUGIN_VERSION: string = "${packageJson.version}"\n`, 'utf8');
+const versionLuauContent = `local PLUGIN_VERSION: string = "${packageJson.version}"\n`;
+let existingVersionLuau = null;
+try {
+  existingVersionLuau = readFileSync(versionLuauPath, 'utf8');
+} catch {
+  existingVersionLuau = null;
+}
+if (existingVersionLuau !== versionLuauContent) {
+  writeFileSync(versionLuauPath, versionLuauContent, 'utf8');
+}
 
 function expandPluginIncludes(source, fromFile, stack = []) {
   return source.replace(/^--#include\s+"([^"]+)"\s*$/gm, (_match, includePath) => {

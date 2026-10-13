@@ -178,7 +178,7 @@ export default function SpoofingView() {
 
     let cancelled = false;
     setAudioQuota({ status: 'loading' });
-    invoke<unknown>('fetch_audio_quota', { cookie, autoDetect: false })
+    invoke<unknown>('fetch_audio_quota', { cookie, autoDetect: false, context: null })
       .then((payload) => {
         if (cancelled) return;
         setAudioQuota(parseAudioQuota(payload) || { status: 'unavailable' });

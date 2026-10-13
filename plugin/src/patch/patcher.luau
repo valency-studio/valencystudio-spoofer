@@ -433,7 +433,7 @@ local function applyPatch(patch: Patch): (boolean, string?)
 			source = current
 			for oldId, newId in pairs(patch.value) do
 				local oId, nId = tostring(oldId), tostring(newId)
-				local safePattern = "([=:{,]%s*)" .. oId .. "(%f[%D])"
+				local safePattern = "([=:{,%(%s\"']%s*)" .. oId .. "(%f[%D])"
 				source = string.gsub(source, safePattern, "%1" .. nId .. "%2")
 				source = string.gsub(source, "rbxassetid://" .. oId, "rbxassetid://" .. nId)
 				source =

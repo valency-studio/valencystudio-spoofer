@@ -37,7 +37,7 @@ export const id: TranslationTree = {
     portDiagnosticFailed:
       'Tidak dapat memulai koneksi plugin Studio: port 14285–14320 sedang dipakai program lain. Tutup instance aplikasi duplikat atau aplikasi yang bertabrakan, lalu mulai ulang ValencyStudio - Spoofer.',
     portDiagnosticExtended:
-      'Jembatan plugin berjalan di port {port} karena port standar (14285–14289) sudah terisi. Di Roblox Studio, naikkan rentang pemindaian port plugin hingga {port} agar terhubung.',
+      'Jembatan plugin berjalan di port {port} karena port standar (14285–14289) sudah terisi. Plugin Studio memindai port 14285–14320 secara otomatis, jadi akan terhubung pada percobaan berikutnya.',
     portDiagnosticOccupied: 'Proses yang bertabrakan memakai port ini: {processes}',
     animationLoadFailed:
       'Tidak dapat memuat animasi ini. Animasi mungkin sudah dihapus, privat, atau menggunakan format yang tidak didukung.',

@@ -37,7 +37,7 @@ export const en: TranslationTree = {
     portDiagnosticFailed:
       'Could not start the Studio plugin connection: ports 14285–14320 are currently in use by other programs. Close any duplicate app instances or conflicting apps, then restart ValencyStudio - Spoofer.',
     portDiagnosticExtended:
-      "The plugin bridge is running on port {port} because the standard ports (14285–14289) were occupied. In Roblox Studio, adjust the plugin's port scan range up to {port} to connect.",
+      'The plugin bridge is running on port {port} because the standard ports (14285–14289) were occupied. The Studio plugin scans ports 14285–14320 automatically, so it will connect on its next retry.',
     portDiagnosticOccupied: 'Conflicting processes using these ports: {processes}',
     animationLoadFailed:
       'Could not load this animation. It may be deleted, private, or using an unsupported format.',

@@ -139,8 +139,8 @@ pub async fn start_server(app_handle: AppHandle) {
             defaults_occupied.iter().map(|o| format!("{}:{}", o.exe, o.port)).collect();
         log::warn!(
             "Plugin server moved past the default ports to {bound_port}: ports \
-             14285-14289 occupied by [{}]. Set the Studio plugin's Daemon Port \
-             Scan Range to 14285-{bound_port} so it can find the app.",
+             14285-14289 occupied by [{}]. The Studio plugin scans 14285-14320 \
+             automatically, so it will reconnect on its next retry.",
             names.join(", ")
         );
     }

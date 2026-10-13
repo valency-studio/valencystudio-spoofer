@@ -211,6 +211,7 @@ local pollFailureStreak = 0
 local patchFailureStreak = 0
 local deferredScanRequest = nil
 local deferredPatchBatches = {}
+local mappingsWaitLogged = false
 
 local function operationBusy(): boolean
 	return scanRunning or patchRunning or manualReplaceRunning
@@ -408,13 +409,26 @@ function startPolling(): ()
 						local mappings = decoded.mappings
 
 						if type(patches) == "table" and #patches > 0 then
+							mappingsWaitLogged = false
 							if operationBusy() then
 								queuePatchBatch(patches)
 							else
 								startPatchBatch(patches)
 							end
 						elseif type(mappings) == "table" and #mappings > 0 then
-							local _wait = true
+							-- Server holds ID mappings but patches are not planned yet.
+							-- Stay idle and log once instead of dropping the state silently.
+							if not mappingsWaitLogged then
+								mappingsWaitLogged = true
+								logToPlugin(
+									string.format(
+										"[ValencyStudio - Spoofer] Received %d mapped ID(s); waiting for replacement patches...",
+										#mappings
+									)
+								)
+							end
+						else
+							mappingsWaitLogged = false
 						end
 					end
 				end

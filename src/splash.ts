@@ -42,8 +42,16 @@ async function runSplashFlow() {
       btnDownload.classList.remove('drag-region');
 
       const userChoice = await new Promise<'download' | 'skip'>((resolve) => {
-        btnSkip.onclick = () => resolve('skip');
-        btnDownload.onclick = () => resolve('download');
+        // Auto-skip if the user never chooses, so boot can never hang here.
+        const fallback = setTimeout(() => resolve('skip'), 120_000);
+        btnSkip.onclick = () => {
+          clearTimeout(fallback);
+          resolve('skip');
+        };
+        btnDownload.onclick = () => {
+          clearTimeout(fallback);
+          resolve('download');
+        };
       });
 
       updateActions.classList.add('hidden');

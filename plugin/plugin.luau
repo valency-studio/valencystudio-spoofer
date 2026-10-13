@@ -65,6 +65,17 @@ local function runManualReplacements(
 		return
 	end
 
+	if manualReplaceRunning then
+		warn(
+			"[ValencyStudio - Spoofer] Manual replacement already running; ignoring duplicate request."
+		)
+		if progressCallback then
+			progressCallback(0, 0, 0, true)
+		end
+		return
+	end
+	manualReplaceRunning = true
+
 	local resolvedBatchSize = customBatchSize
 	if not resolvedBatchSize then
 		pcall(function()
@@ -129,7 +140,17 @@ local function runManualReplacements(
 			return
 		end
 
-		local oldId = string.match(strVal, "%d+")
+		-- Find the longest mapped ID present in the value using frontier
+		-- boundaries, so values like "Version 2 ... 12345" key off the real
+		-- asset ID instead of the first unrelated digit run.
+		local oldId: string? = nil
+		for key, _ in pairs(mappings) do
+			if string.find(strVal, "%f[%d]" .. key .. "%f[%D]") then
+				if oldId == nil or #key > #oldId then
+					oldId = key
+				end
+			end
+		end
 		if not oldId or not mappings[oldId] then
 			return
 		end
@@ -181,10 +202,15 @@ local function runManualReplacements(
 			local createOk = false
 			local createdPart = nil
 
+			local meshContentOrUri: any = targetMeshUri
+			pcall(function()
+				meshContentOrUri = Content.fromUri(targetMeshUri)
+			end)
+
 			while attempt < maxAttempts do
 				attempt += 1
 				createOk, createdPart = pcall(function()
-					return AssetService:CreateMeshPartAsync(targetMeshUri, {
+					return AssetService:CreateMeshPartAsync(meshContentOrUri, {
 						CollisionFidelity = obj.CollisionFidelity,
 						RenderFidelity = obj.RenderFidelity,
 					})
@@ -352,15 +378,31 @@ local function runManualReplacements(
 				return (obj :: any).Source
 			end)
 			if ok and src and type(src) == "string" and #src > 0 then
-				local modified = false
-				local newSrc = string.gsub(src, "%d+", function(digitRun)
-					local mapped = mappings[digitRun]
-					if mapped then
-						modified = true
-						return mapped
+				-- Replace only mapped IDs on word boundaries. Keys shorter
+				-- than 7 digits are skipped so literals like wait(5) or
+				-- version numbers are never rewritten.
+				local orderedKeys: { string } = {}
+				for key, _ in pairs(mappings) do
+					if #key >= 7 then
+						table.insert(orderedKeys, key)
 					end
-					return nil
+				end
+				table.sort(orderedKeys, function(a, b)
+					return #a > #b
 				end)
+				local modified = false
+				local newSrc = src
+				for _, key in ipairs(orderedKeys) do
+					local mapped = mappings[key]
+					if mapped then
+						local pattern = "%f[%d]" .. key .. "%f[%D]"
+						local replaced
+						newSrc, replaced = string.gsub(newSrc, pattern, mapped)
+						if replaced > 0 then
+							modified = true
+						end
+					end
+				end
 
 				if modified then
 					local assignOk, _ = pcall(function()
@@ -395,6 +437,7 @@ local function runManualReplacements(
 		game:GetService("SoundService"),
 		game:GetService("Lighting"),
 		game:GetService("MaterialService"),
+		game:GetService("Teams"),
 	}
 
 	local allInstances: { Instance } = {}
@@ -470,6 +513,7 @@ local function runManualReplacements(
 	if not runOk then
 		warn("[ValencyStudio - Spoofer] Manual replacement error: " .. tostring(runErr))
 	end
+	manualReplaceRunning = false
 
 	local completionMsg = string.format(
 		"[ValencyStudio - Spoofer] Manual replacement complete! Modified %d properties across %d instances (batch: %d).",
@@ -490,7 +534,18 @@ local function runManualReplacementsAsync(
 	progressCallback: ((number, number, number, boolean) -> ())?,
 	customBatchSize: number?
 )
-	task.spawn(runManualReplacements, text, progressCallback, customBatchSize)
+	task.spawn(function()
+		if manualReplaceRunning then
+			warn(
+				"[ValencyStudio - Spoofer] Manual replacement already running; ignoring duplicate request."
+			)
+			if progressCallback then
+				progressCallback(0, 0, 0, true)
+			end
+			return
+		end
+		runManualReplacements(text, progressCallback, customBatchSize)
+	end)
 end
 
 _G.ValencyStudioSpooferPlugin = {

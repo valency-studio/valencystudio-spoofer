@@ -104,16 +104,19 @@ export function addDebugLog(
   }, 0);
 
   if (isTauriRuntime()) {
+    // Use the pre-patch console for failure paths: console.error is patched
+    // to call addDebugLog, so using it here would recurse on every failure.
+    const fallbackError = state.originals?.error ?? console.error.bind(console);
     try {
       invoke('append_debug_log', {
         level: entry.level,
         source: entry.source,
         message: entry.message,
       }).catch((err) => {
-        console.error('Failed to emit active debug logs update:', err);
+        fallbackError('Failed to emit active debug logs update:', err);
       });
     } catch (e) {
-      console.error('Synchronous emit failure:', e);
+      fallbackError('Synchronous emit failure:', e);
     }
   }
 
@@ -138,15 +141,19 @@ export function addDebugLog(
               : level === 'error'
                 ? 'ValencyStudio - Spoofer - Error'
                 : 'ValencyStudio - Spoofer - Warning';
+          const fallbackError = getState().originals?.error ?? console.error.bind(console);
           invoke('show_notification', {
             options: { title, body: entry.message },
           }).catch((err) => {
-            console.error('Failed to emit batch active debug logs update:', err);
+            fallbackError('Failed to emit batch active debug logs update:', err);
           });
         }
       }
     } catch (e) {
-      console.error('Synchronous batch emit failure:', e);
+      (getState().originals?.error ?? console.error.bind(console))(
+        'Synchronous batch emit failure:',
+        e,
+      );
     }
   }
 }

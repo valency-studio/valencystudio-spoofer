@@ -23,9 +23,6 @@ const MOCK_COMMANDS: Record<string, unknown> = {
   fetch_audio_quota: null,
   quit_app: null,
   scan_and_replace_multiple_strings: {},
-  get_studio_connection_state: null,
-  get_plugin_port: null,
-  read_clipboard_text: null,
 };
 
 let callbackId = 0;

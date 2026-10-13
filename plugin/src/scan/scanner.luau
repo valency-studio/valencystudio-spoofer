@@ -378,23 +378,21 @@ local function scanAssets(): ()
 	local totals = response and response.totals or {}
 
 	if response and response.recordsTruncated then
-		local truncatedCount = tonumber(response.truncatedCount) or 0
-		local keepCount = tonumber(response.keptCount) or 0
-		if truncatedCount > 0 then
-			logToPlugin(
-				"[Warning] "
-					.. string.format(
-						"[ValencyStudio - Spoofer] Scan hit the server record limit: %d records kept, %d dropped. Very large places may miss some assets - try splitting into separate places or filtering to specific services.",
-						keepCount,
-						truncatedCount
-					)
-			)
-		else
-			logToPlugin(
-				"[Warning] "
-					.. "[ValencyStudio - Spoofer] Scan hit the server record limit - some assets may be missing. Try splitting very large places or contact support."
-			)
-		end
+		logToPlugin(
+			"[Warning] "
+				.. "[ValencyStudio - Spoofer] Scan hit the server record limit - some assets may be missing. Try splitting very large places or contact support."
+		)
+	end
+
+	local keyframeWarnings = tonumber(response and response.keyframeWarningCount) or 0
+	if keyframeWarnings > 0 then
+		logToPlugin(
+			"[Warning] "
+				.. string.format(
+					"[ValencyStudio - Spoofer] %d script reference(s) use keyframe sequence data that cannot be fully verified.",
+					keyframeWarnings
+				)
+		)
 	end
 
 	logToPlugin(

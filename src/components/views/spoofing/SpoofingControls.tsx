@@ -79,20 +79,25 @@ export function SpoofingControls({
           className="h-11 px-6 font-semibold grow md:grow-0"
           onClick={async () => {
             const store = useSpooferStore.getState();
-            if (isJobPaused) {
-              await commands.spooferResume(activeSpooferJobId);
-              setIsJobPaused(false);
-              const pauseDuration = store.jobPauseStartTime
-                ? Date.now() - store.jobPauseStartTime
-                : 0;
-              if (store.spoofStartTime) {
-                store.setSpoofStartTime(store.spoofStartTime + pauseDuration);
+            try {
+              if (isJobPaused) {
+                await commands.spooferResume(activeSpooferJobId);
+                setIsJobPaused(false);
+                const pauseDuration = store.jobPauseStartTime
+                  ? Date.now() - store.jobPauseStartTime
+                  : 0;
+                if (store.spoofStartTime) {
+                  store.setSpoofStartTime(store.spoofStartTime + pauseDuration);
+                }
+                store.setJobPauseStartTime(null);
+              } else {
+                await commands.spooferPause(activeSpooferJobId);
+                setIsJobPaused(true);
+                store.setJobPauseStartTime(Date.now());
               }
-              store.setJobPauseStartTime(null);
-            } else {
-              await commands.spooferPause(activeSpooferJobId);
-              setIsJobPaused(true);
-              store.setJobPauseStartTime(Date.now());
+            } catch {
+              // Keep the toggle in sync with the backend: only flip state on success.
+              setIsJobPaused(store.jobPauseStartTime !== null);
             }
           }}
         >

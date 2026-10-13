@@ -121,7 +121,10 @@ export function useAppInitialization() {
     window.addEventListener('drop', preventDrag);
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // DevTools shortcut is development-only; never expose it in production builds.
+      if (!import.meta.env.DEV) return;
       if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i')) {
+        if (!isTauriRuntime()) return;
         invoke('open_frontend_devtools').catch(console.error);
       }
     };
