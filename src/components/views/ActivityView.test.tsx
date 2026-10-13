@@ -46,22 +46,48 @@ describe('ActivityView', () => {
   });
 
   it('renders history correctly', async () => {
-    vi.mocked(invoke).mockResolvedValue([
-      {
-        id: '1',
-        status: 'successful',
-        startTime: '12:00:00',
-        endTime: '12:01:00',
-        durationMs: 60000,
-        account: { id: '1', name: 'TestUser', avatarUrl: '' },
-        assetResults: [{ id: '123', name: 'TestFile.rbxlx', success: true }],
-        config: { assets: '[]', spoofSounds: false, downloadOnly: false },
-        logFilePath: '',
-      },
-    ]);
+    vi.mocked(invoke).mockImplementation((cmd) => {
+      if (cmd === 'get_upload_history') return Promise.resolve([]);
+      return Promise.resolve([
+        {
+          id: '1',
+          status: 'successful',
+          startTime: '12:00:00',
+          endTime: '12:01:00',
+          durationMs: 60000,
+          account: { id: '1', name: 'TestUser', avatarUrl: '' },
+          assetResults: [{ id: '123', name: 'TestFile.rbxlx', success: true }],
+          config: { assets: '[]', spoofSounds: false, downloadOnly: false },
+          logFilePath: '',
+        },
+      ]);
+    });
 
     render(<ActivityView />);
 
     expect(await screen.findByText('activity.spoofedTo')).toBeInTheDocument();
+  });
+
+  it('renders music upload history alongside jobs', async () => {
+    vi.mocked(invoke).mockImplementation((cmd) => {
+      if (cmd === 'get_upload_history') {
+        return Promise.resolve([
+          {
+            id: 'rec-1',
+            title: 'My Song',
+            uploadedAt: '2026-01-01T00:00:00Z',
+            wasSplit: false,
+            totalBytes: 1024,
+            pieces: [{ name: 'My Song', path: '/tmp/a.mp3', bytes: 1024, status: 'accepted' }],
+          },
+        ]);
+      }
+      return Promise.resolve([]);
+    });
+
+    render(<ActivityView />);
+
+    expect(await screen.findByText('My Song')).toBeInTheDocument();
+    expect(screen.getByText('music.history')).toBeInTheDocument();
   });
 });

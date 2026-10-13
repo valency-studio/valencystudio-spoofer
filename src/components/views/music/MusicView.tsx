@@ -272,7 +272,7 @@ export default function MusicView() {
  * That is the point of moving uploads here immediately: the id is the thing the
  * user came for, and making them wait for a verdict to see it was the problem.
  */
-function HistoryRow({
+export function HistoryRow({
   record,
   onDelete,
 }: {
