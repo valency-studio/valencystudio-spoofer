@@ -13,6 +13,12 @@ use super::{AppState, STUDIO_PROTOCOL_VERSION};
 pub struct PollQuery {
     pub place_id: Option<String>,
     pub place_name: Option<String>,
+    pub plugin_version: Option<String>,
+}
+
+/// Major version of `x.y.z`, for stale-plugin detection.
+fn major_of(version: &str) -> Option<u64> {
+    version.split('.').next()?.trim().parse().ok()
 }
 
 pub async fn handle_studio_health(State(state): State<AppState>) -> Json<Value> {
@@ -291,6 +297,30 @@ pub async fn handle_poll(
                 query.place_id.as_deref().filter(|i| !i.trim().is_empty() && *i != "0")
             {
                 guard.studio_place_id = Some(id.to_string());
+            }
+            // A stale plugin (Studio still running the pre-update copy) talks
+            // fine but misbehaves in subtle ways, so a version change is worth
+            // one loud line in the log rather than silence.
+            if let Some(plugin_version) =
+                query.plugin_version.as_deref().filter(|v| !v.trim().is_empty())
+            {
+                let changed = guard.last_seen_plugin_version.as_deref() != Some(plugin_version);
+                if changed {
+                    guard.last_seen_plugin_version = Some(plugin_version.to_string());
+                    let app_major = major_of(env!("CARGO_PKG_VERSION"));
+                    let plugin_major = major_of(plugin_version);
+                    match (app_major, plugin_major) {
+                        (Some(a), Some(p)) if a != p => {
+                            log::warn!(
+                                "Studio plugin reports version {plugin_version} but the app is {}. Restart Roblox Studio so it loads the updated plugin.",
+                                env!("CARGO_PKG_VERSION")
+                            );
+                        }
+                        _ => {
+                            log::info!("Studio plugin connected (version {plugin_version})");
+                        }
+                    }
+                }
             }
             let request_assets = guard.request_sounds
                 || guard.request_animations

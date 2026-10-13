@@ -61,6 +61,9 @@ pub struct AssetServerStateData {
     pub scan_types: Vec<String>,
     pub scan_path: Option<String>,
     pub batch_size: Option<u32>,
+    /// Last plugin version seen on `/poll`, to warn once about a stale
+    /// plugin instead of on every poll.
+    pub last_seen_plugin_version: Option<String>,
 }
 
 impl Default for AssetServerStateData {
@@ -97,6 +100,7 @@ impl Default for AssetServerStateData {
             ],
             scan_path: None,
             batch_size: None,
+            last_seen_plugin_version: None,
         }
     }
 }

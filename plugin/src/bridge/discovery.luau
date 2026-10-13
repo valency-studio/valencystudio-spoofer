@@ -139,6 +139,24 @@ local function discoverServer(): (boolean, boolean, string?)
 			end
 		end
 
+		-- Studio keeps the plugin copy it loaded at startup, so after an app
+		-- update this can be older than the app. That talks fine but
+		-- misbehaves subtly, so say so loudly instead of connecting quietly.
+		if changed and best.health and type(best.health.version) == "string" then
+			local appMajor = string.match(best.health.version, "^(%d+)")
+			local pluginMajor = string.match(tostring(PLUGIN_VERSION or ""), "^(%d+)")
+			if appMajor and pluginMajor and appMajor ~= pluginMajor then
+				logToPlugin(
+					"[Warning] [ValencyStudio - Spoofer] App is v"
+						.. best.health.version
+						.. " but this plugin is v"
+						.. tostring(PLUGIN_VERSION or "unknown")
+						.. ". Restart Roblox Studio so it loads the current plugin."
+				)
+				setPluginGuiStatus("Plugin outdated - restart Roblox Studio", true)
+			end
+		end
+
 		return true, changed
 	end
 
@@ -151,7 +169,7 @@ local function discoverServer(): (boolean, boolean, string?)
 		)
 	else
 		reason = string.format(
-			"No desktop app found on ports %d-%d. Make sure it's running. If it is, the app uses 14285-14320 by default -- check the Daemon Port range in Settings covers those.",
+			"No desktop app found on ports %d-%d. Make sure it's running. If it just updated, restart Roblox Studio so it loads the current plugin.",
 			portStart,
 			portEnd
 		)

@@ -193,6 +193,7 @@ pub async fn start_server(app_handle: AppHandle) {
                     "app": "ValencyStudio - Spoofer",
                     "port": port.unwrap_or(14285),
                     "startedAt": state.started_at,
+                    "version": env!("CARGO_PKG_VERSION"),
                     "allowStudioPairing": true
                 }))
             }),

@@ -276,9 +276,10 @@ local function getPollUrl(): string
 		end
 	end)
 	return string.format(
-		"/poll?place_id=%s&place_name=%s",
+		"/poll?place_id=%s&place_name=%s&plugin_version=%s",
 		tostring(pId),
-		HttpService:UrlEncode(pName)
+		HttpService:UrlEncode(pName),
+		HttpService:UrlEncode(tostring(PLUGIN_VERSION or "unknown"))
 	)
 end
 
