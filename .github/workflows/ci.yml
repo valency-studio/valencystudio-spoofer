@@ -14,226 +14,169 @@ on:
         required: true
         type: string
 
+# A release run must never be cancelled halfway through an upload, so only
+# ordinary CI runs (PRs, pushes to main) cancel each other.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' && !startsWith(github.ref, 'refs/tags/') }}
 
 permissions:
   contents: read
 
-defaults:
-  run:
-    shell: bash
-
 env:
-  # Keep only if your Actions runtime actually requires this opt-in.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   ZIPLINE_BASE_URL: https://files.valencystudio.dpdns.org
 
 jobs:
   js-lua-checks:
-    name: JS/TS/Lua checks
+    name: JS/TS/Lua Checks (Type & Lint)
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.14
 
-      - name: Cache Bun
+      - name: Cache bun modules
         uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile
 
-      - name: Check Prettier formatting
-        run: bun run format:prettier:check
-
-      - name: Check StyLua formatting
-        run: bun run format:stylua:check
-
-      - name: Typecheck
-        run: bun run typecheck
-
-      - name: Lint
-        run: bun run lint
-
-      - name: Test
-        run: bun run test
-
-      - name: Setup Rust for Selene
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Selene
-        id: cache-selene
-        uses: actions/cache@v6
-        with:
-          path: |
-            ~/.cargo/bin/selene
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-            ~/.cargo/.crates2.json
-          key: selene-${{ runner.os }}-0.31.0
-
-      - name: Install Selene
-        if: steps.cache-selene.outputs.cache-hit != 'true'
-        run: cargo install selene --version 0.31.0 --locked
-
-      - name: Add Cargo bin to PATH
-        run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-
-      - name: Lint Lua with Selene
-        working-directory: plugin
-        run: selene .
+      - name: Formatting
+        run: |
+          bun run format:prettier:check
+          bun run format:stylua:check
 
       - name: Build plugin
         run: bun run build:plugin
 
+      - name: Typecheck, lint and test
+        run: |
+          bun run typecheck
+          bun run lint
+          bun run test
+
       - name: Build app
         run: bun run build:app
 
+      # selene compiles from source in minutes, so keep the binary around.
+      - name: Cache Selene
+        id: selene-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cargo/bin/selene
+          key: selene-${{ runner.os }}-0.31.0
+
+      - name: Install Selene
+        if: steps.selene-cache.outputs.cache-hit != 'true'
+        run: cargo install selene --version 0.31.0 --locked
+
+      - name: Run Selene
+        working-directory: plugin
+        run: selene .
+
   rust-check:
-    name: Rust check & lint
+    name: Rust Check & Lint
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.14
 
-      - name: Cache Bun
-        uses: actions/cache@v6
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
           components: rustfmt, clippy
 
-      - name: Rust cache
+      - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
           cache-on-failure: true
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Build plugin
-        run: bun run build:plugin
-
-      - name: Rust check
-        run: bun run rust:check
-
-      - name: Rust lint
-        run: bun run rust:lint
-
-      - name: Rust test
-        run: bun run rust:test
+      - run: bun install --frozen-lockfile
+      - run: bun run build:plugin
+      - run: bun run rust:check
+      - run: bun run rust:lint
+      - run: bun run rust:test
 
   prepare-release:
-    name: Prepare release
+    name: Prepare Release
     needs: [js-lua-checks, rust-check]
-    if: >
-      (github.event_name == 'push' &&
-      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))) || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))) || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     outputs:
-      releaseTag: ${{ steps.resolve.outputs.releaseTag }}
-      shouldRelease: ${{ steps.exists.outputs.shouldRelease }}
+      RELEASE_TAG: ${{ steps.set_tag.outputs.RELEASE_TAG }}
+      SHOULD_RELEASE: ${{ steps.check_tag.outputs.SHOULD_RELEASE }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
       - name: Resolve release tag
-        id: resolve
+        id: set_tag
         env:
           EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
           REF: ${{ github.ref }}
           REF_NAME: ${{ github.ref_name }}
-          INPUT_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
 
-          tag=""
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            tag="$INPUT_TAG"
+          elif [[ "$REF" == refs/tags/v* ]]; then
+            tag="$REF_NAME"
+          else
+            tag="v$(jq -r .version package.json)"
+          fi
 
-          case "$EVENT_NAME" in
-            workflow_dispatch)
-              tag="$INPUT_TAG"
-              ;;
-            push)
-              if [[ "$REF" == refs/tags/v* ]]; then
-                tag="$REF_NAME"
-              else
-                version="$(jq -r '.version // empty' package.json)"
-                if [ -z "$version" ]; then
-                  echo "::error::package.json does not contain a version."
-                  exit 1
-                fi
-                tag="v$version"
-              fi
-              ;;
-          esac
-
-          re='^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?([+][0-9A-Za-z.-]+)?$'
-          if ! [[ "$tag" =~ $re ]]; then
-            echo "::error::Invalid release tag '$tag'. Expected semantic version like v1.2.3 or v1.2.3-beta.1."
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Release tag '$tag' is not a valid semver tag (expected e.g. v2.1.8)."
             exit 1
           fi
 
-          echo "releaseTag=$tag" >> "$GITHUB_OUTPUT"
+          echo "RELEASE_TAG=$tag" >> "$GITHUB_OUTPUT"
 
-      - name: Check whether release should run
-        id: exists
+      - name: Decide whether to (re)build the release
+        id: check_tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.resolve.outputs.releaseTag }}
           EVENT_NAME: ${{ github.event_name }}
           REF: ${{ github.ref }}
+          RELEASE_TAG: ${{ steps.set_tag.outputs.RELEASE_TAG }}
         run: |
           set -euo pipefail
 
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            if [ "$EVENT_NAME" = "push" ] && [ "$REF" = "refs/heads/main" ]; then
-              echo "Release $TAG already exists; skipping automatic main release."
-              echo "shouldRelease=false" >> "$GITHUB_OUTPUT"
-            else
-              echo "shouldRelease=true" >> "$GITHUB_OUTPUT"
-            fi
-          else
-            echo "shouldRelease=true" >> "$GITHUB_OUTPUT"
+          if gh release view "$RELEASE_TAG" > /dev/null 2>&1 &&
+             [ "$EVENT_NAME" = "push" ] && [ "$REF" = "refs/heads/main" ]; then
+            echo "Release $RELEASE_TAG already exists and this is a push to main. Skipping release build."
+            echo "SHOULD_RELEASE=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
+          echo "SHOULD_RELEASE=true" >> "$GITHUB_OUTPUT"
+
   create-release:
-    name: Create or update GitHub release
+    name: Create GitHub Release
     needs: prepare-release
-    if: needs.prepare-release.outputs.shouldRelease == 'true'
+    if: needs.prepare-release.outputs.SHOULD_RELEASE == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -241,28 +184,28 @@ jobs:
       contents: write
 
     steps:
-      - name: Upsert release
+      - uses: actions/checkout@v7
+
+      - name: Create or Update Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.prepare-release.outputs.releaseTag }}
+          TAG_NAME: ${{ needs.prepare-release.outputs.RELEASE_TAG }}
         run: |
           set -euo pipefail
 
-          title="ValencyStudio - Spoofer ${TAG}"
-
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "$title"
+          if gh release view "$TAG_NAME" > /dev/null 2>&1; then
+            gh release edit "$TAG_NAME" \
+              --title "ValencyStudio - Spoofer $TAG_NAME"
           else
-            gh release create "$TAG" \
-              --target "$GITHUB_SHA" \
-              --title "$title" \
-              --generate-notes
+            gh release create "$TAG_NAME" \
+              --generate-notes \
+              --title "ValencyStudio - Spoofer $TAG_NAME"
           fi
 
   build-and-release:
-    name: Build & release (${{ matrix.os }})
+    name: Build & Release (${{ matrix.os }})
     needs: [prepare-release, create-release]
-    if: needs.prepare-release.outputs.shouldRelease == 'true'
+    if: needs.prepare-release.outputs.SHOULD_RELEASE == 'true'
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 90
 
@@ -271,6 +214,9 @@ jobs:
 
     strategy:
       fail-fast: false
+      # tauri-action rewrites latest.json from whatever is already on the
+      # release. Parallel jobs would race that read-modify-write and one
+      # platform's updater entry would be lost, so the builds stay serial.
       max-parallel: 1
       matrix:
         include:
@@ -293,35 +239,31 @@ jobs:
             args: ''
 
     steps:
-      - name: Checkout release tag
+      - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          ref: ${{ needs.prepare-release.outputs.releaseTag }}
           submodules: recursive
-          fetch-depth: 0
 
-      - name: Setup environment
+      - name: Setup Environment
         uses: ./.github/actions/setup
         with:
           os: ${{ matrix.os }}
 
-      - name: Cache Bun
+      - name: Cache bun modules
         uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
 
-      - name: Rust cache
+      - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
           cache-on-failure: true
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
       - name: Normalize Tauri signing key
+        shell: bash
         env:
           RAW_TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           RAW_TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
@@ -329,49 +271,40 @@ jobs:
           node <<'NODE'
           const fs = require('node:fs');
 
-          const normalizeNewlines = (value) =>
-            value.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+          const normalize = (value) => value.replace(/\r\n?/g, '\n').trim();
 
           const fail = (message) => {
             console.error(`::error::${message}`);
             process.exit(1);
           };
 
-          const rawKey = normalizeNewlines(
-            process.env.RAW_TAURI_SIGNING_PRIVATE_KEY || ''
-          );
-
+          const rawKey = normalize(process.env.RAW_TAURI_SIGNING_PRIVATE_KEY || '');
           if (!rawKey) {
             fail(
               'Missing GitHub secret TAURI_PRIVATE_KEY. Set it to the full Tauri updater private key.'
             );
           }
 
-          const decodedKey = rawKey.startsWith('untrusted comment:')
+          // The secret is accepted either as the minisign key file itself or as
+          // that file base64 encoded, which is what tauri expects as input.
+          const isMinisignFile = rawKey.startsWith('untrusted comment:');
+          const decodedKey = isMinisignFile
             ? rawKey
-            : normalizeNewlines(
-                Buffer.from(rawKey, 'base64').toString('utf8')
-              );
+            : normalize(Buffer.from(rawKey, 'base64').toString('utf8'));
 
-          const keyForTauri = rawKey.startsWith('untrusted comment:')
+          const keyForTauri = isMinisignFile
             ? Buffer.from(`${decodedKey}\n`, 'utf8').toString('base64')
             : rawKey;
 
           const keyLines = decodedKey.split('\n').filter(Boolean);
 
-          if (
-            !keyLines[0]?.startsWith('untrusted comment:') ||
-            keyLines.length < 2
-          ) {
+          if (!keyLines[0]?.startsWith('untrusted comment:') || keyLines.length < 2) {
             fail(
-              'TAURI_PRIVATE_KEY must be the full base64 private key generated by "tauri signer generate". A raw full key with the first "untrusted comment:" line is also accepted.'
+              'TAURI_PRIVATE_KEY must be the full base64 private key generated by "tauri signer generate". A raw full key starting with the "untrusted comment:" line is also accepted.'
             );
           }
 
-          if (
-            !/secret key/i.test(keyLines[0]) ||
-            /public key/i.test(keyLines[0])
-          ) {
+          if (!/secret key/i.test(keyLines[0]) || /public key/i.test(keyLines[0])) {
             fail(
               'TAURI_PRIVATE_KEY contains a public key. Use the generated private key instead.'
             );
@@ -383,51 +316,40 @@ jobs:
             );
           }
 
-          const password = normalizeNewlines(
-            process.env.RAW_TAURI_SIGNING_PRIVATE_KEY_PASSWORD || ''
-          );
-
-          const keyDelimiter =
-            `TAURI_SIGNING_KEY_${Date.now()}_${Math.random()
-              .toString(36)
-              .slice(2)}`;
-
-          const passwordDelimiter =
-            `TAURI_SIGNING_PASSWORD_${Date.now()}_${Math.random()
-              .toString(36)
-              .slice(2)}`;
+          const password =
+            process.env.RAW_TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '';
+          const nonce = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
           fs.appendFileSync(
             process.env.GITHUB_ENV,
             [
-              `TAURI_SIGNING_PRIVATE_KEY<<${keyDelimiter}`,
+              `TAURI_SIGNING_PRIVATE_KEY<<KEY_${nonce}`,
               keyForTauri,
-              keyDelimiter,
-              `TAURI_SIGNING_PRIVATE_KEY_PASSWORD<<${passwordDelimiter}`,
+              `KEY_${nonce}`,
+              `TAURI_SIGNING_PRIVATE_KEY_PASSWORD<<PASS_${nonce}`,
               password,
-              passwordDelimiter,
+              `PASS_${nonce}`,
               '',
             ].join('\n')
           );
           NODE
 
-      - name: Build app and upload release artifacts
+      - name: Build app
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ needs.prepare-release.outputs.releaseTag }}
-          releaseName: ValencyStudio - Spoofer ${{ needs.prepare-release.outputs.releaseTag }}
           args: --bundles ${{ matrix.bundles }} ${{ matrix.args }}
+          tagName: ${{ needs.prepare-release.outputs.RELEASE_TAG }}
           uploadUpdaterJson: true
           uploadUpdaterSignatures: true
 
   verify-updater-release:
     name: Verify updater artifacts
     needs: [prepare-release, build-and-release]
-    if: needs.prepare-release.outputs.shouldRelease == 'true'
+    if: needs.prepare-release.outputs.SHOULD_RELEASE == 'true'
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     permissions:
       contents: read
@@ -436,45 +358,42 @@ jobs:
       - name: Verify release updater metadata and macOS signature
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.prepare-release.outputs.releaseTag }}
+          TAG_NAME: ${{ needs.prepare-release.outputs.RELEASE_TAG }}
+        shell: bash
         run: |
           set -euo pipefail
 
-          dir="$(mktemp -d)"
+          mkdir updater-check
 
-          gh release download "$TAG" \
+          gh release download "$TAG_NAME" \
             --repo "$GITHUB_REPOSITORY" \
-            --dir "$dir" \
+            --dir updater-check \
             --pattern latest.json
 
           gh api \
-            "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" \
-            --jq '.assets[].name' \
-            > "$dir/assets.txt"
-
-          gh api \
-            "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" \
+            "repos/$GITHUB_REPOSITORY/releases/tags/$TAG_NAME" \
             --jq '.assets' \
-            > "$dir/assets.json"
-
-          grep -Eq '\.app\.tar\.gz$' "$dir/assets.txt"
-          grep -Eq '\.app\.tar\.gz\.sig$' "$dir/assets.txt"
-
-          export UPDATER_DIR="$dir"
+            > updater-check/assets.json
 
           node <<'NODE'
           const fs = require('node:fs');
-          const path = require('node:path');
-
-          const dir = process.env.UPDATER_DIR;
 
           const latest = JSON.parse(
-            fs.readFileSync(path.join(dir, 'latest.json'), 'utf8')
+            fs.readFileSync('updater-check/latest.json', 'utf8')
           );
           const assets = JSON.parse(
-            fs.readFileSync(path.join(dir, 'assets.json'), 'utf8')
+            fs.readFileSync('updater-check/assets.json', 'utf8')
           );
 
+          for (const suffix of ['.app.tar.gz', '.app.tar.gz.sig']) {
+            if (!assets.some((asset) => asset.name.endsWith(suffix))) {
+              throw new Error(`the release has no ${suffix} asset`);
+            }
+          }
+
+          // tauri-action publishes GitHub API asset urls, which carry the asset
+          // id instead of the filename, so resolve the id back to a name.
+          // Any other host (S3, R2, ...) exposes the filename in the url itself.
           const assetNamesById = new Map(
             assets.map((asset) => [String(asset.id), asset.name])
           );
@@ -493,9 +412,6 @@ jobs:
               throw new Error(`latest.json macOS entry ${key} has no download url`);
             }
 
-            // tauri-action publishes GitHub API asset urls, which carry the asset
-            // id instead of the filename, so resolve the id back to a name.
-            // Any other host (S3, R2, ...) exposes the filename in the url itself.
             const id = value.url.match(/\/releases\/assets\/(\d+)/)?.[1];
             const name =
               (id && assetNamesById.get(id)) ||
@@ -507,14 +423,12 @@ jobs:
               );
             }
           }
-
-          console.log('Updater metadata verification passed.');
           NODE
 
   plugin-release:
-    name: Build & release plugin
+    name: Build & Release Plugin
     needs: [prepare-release, create-release]
-    if: needs.prepare-release.outputs.shouldRelease == 'true'
+    if: needs.prepare-release.outputs.SHOULD_RELEASE == 'true'
     runs-on: ubuntu-22.04
     timeout-minutes: 20
 
@@ -522,24 +436,20 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout release tag
+      - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          ref: ${{ needs.prepare-release.outputs.releaseTag }}
           submodules: recursive
 
-      - name: Setup environment
+      - name: Setup Environment
         uses: ./.github/actions/setup
 
-      - name: Cache Bun
+      - name: Cache bun modules
         uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
 
       - name: Build plugin
         run: bun run build:plugin
@@ -547,18 +457,16 @@ jobs:
       - name: Upload plugin to release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ needs.prepare-release.outputs.releaseTag }}
+          tag_name: ${{ needs.prepare-release.outputs.RELEASE_TAG }}
           files: dist-plugin/ValencyStudioSpoofer.rbxmx
           fail_on_unmatched_files: true
-          overwrite_files: true
-          token: ${{ secrets.GITHUB_TOKEN }}
 
   upload-zipline:
-    name: Mirror release to Zipline
+    name: Mirror Release to Zipline
     needs: [prepare-release, build-and-release, plugin-release]
-    if: needs.prepare-release.outputs.shouldRelease == 'true'
+    if: needs.prepare-release.outputs.SHOULD_RELEASE == 'true'
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     permissions:
       contents: read
@@ -570,8 +478,9 @@ jobs:
       - name: Download release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ needs.prepare-release.outputs.releaseTag }}
+          TAG_NAME: ${{ needs.prepare-release.outputs.RELEASE_TAG }}
           ZIPLINE_TOKEN: ${{ secrets.ZIPLINE_TOKEN }}
+        shell: bash
         run: |
           set -euo pipefail
 
@@ -584,48 +493,46 @@ jobs:
           gh release download "$TAG_NAME" \
             --repo "$GITHUB_REPOSITORY" \
             --dir mirror
-
           ls -la mirror
 
       - name: Upload bundles under Latest names, falling back to versioned
         id: mirror
         env:
           ZIPLINE_TOKEN: ${{ secrets.ZIPLINE_TOKEN }}
-          TAG_NAME: ${{ needs.prepare-release.outputs.releaseTag }}
+          TAG_NAME: ${{ needs.prepare-release.outputs.RELEASE_TAG }}
+        shell: bash
         run: |
           set -euo pipefail
           shopt -s nullglob
 
-          BASE_URL="${ZIPLINE_BASE_URL%/}"
-          UPLOAD_URL="$BASE_URL/api/upload"
-          RAW_URL="$BASE_URL/raw"
-
-          # Uploads one file, leaving the HTTP status and the raw body in
-          # UPLOAD_STATUS and UPLOAD_BODY.
-          #
-          # The status matters: the site sits behind Cloudflare, which answers
-          # a slow upload with an HTML error page instead of JSON. A body that
-          # is not JSON is therefore expected, not exceptional, so nothing here
-          # throws and every failure stays diagnosable from the log alone.
           UPLOAD_STATUS=""
           UPLOAD_BODY=""
 
+          # Uploads one file, leaving the HTTP status in UPLOAD_STATUS and the
+          # raw body in UPLOAD_BODY.
+          #
+          # The status matters: the site sits behind Cloudflare, which answers a
+          # slow upload with an HTML error page instead of JSON. A body that is
+          # not JSON is therefore expected rather than exceptional, so nothing
+          # here throws and every failure stays diagnosable from the log alone.
           upload() {
-            local file="$1"
-            local mime
+            local file="$1" mime body_file status
             mime=$(file --mime-type -b "$file")
-
-            local body_file
             body_file="$(mktemp)"
 
-            local status
-            if status=$(curl -sS --max-time 900 --retry 3 --retry-delay 10 \
-              -o "$body_file" -w '%{http_code}' \
-              -H "authorization: $ZIPLINE_TOKEN" \
-              -H "x-zipline-format: name" \
-              -H "x-zipline-original-name: true" \
-              -F "file=@${file};type=${mime}" \
-              "$UPLOAD_URL"); then
+            # curl generates the multipart boundary itself; setting a
+            # content-type header here would strip that boundary and make the
+            # body unparseable on the server side.
+            if status=$(curl -sS \
+                --connect-timeout 15 \
+                --max-time 300 \
+                --retry 3 --retry-delay 5 --retry-all-errors \
+                -o "$body_file" -w '%{http_code}' \
+                -H "authorization: $ZIPLINE_TOKEN" \
+                -H 'x-zipline-format: name' \
+                -H 'x-zipline-original-name: true' \
+                -F "file=@${file};type=${mime}" \
+                "${ZIPLINE_BASE_URL}/api/upload"); then
               UPLOAD_STATUS="$status"
             else
               UPLOAD_STATUS="curl-failed:$?"
@@ -636,22 +543,19 @@ jobs:
           }
 
           stored_url() {
-            jq -r '.files[0].url // .url // empty' <<<"$UPLOAD_BODY" 2>/dev/null || true
+            jq -r '.files[0].url // empty' <<<"$UPLOAD_BODY" 2>/dev/null || true
           }
 
           is_name_clash() {
-            [[ "$UPLOAD_STATUS" == "400" || "$UPLOAD_STATUS" == "409" ]] &&
-              jq -e '((.error.message // .error) | tostring) | test("E1009")' \
+            [ "$UPLOAD_STATUS" = "400" ] &&
+              jq -e '(.error // "") | tostring | test("E1009")' \
                 <<<"$UPLOAD_BODY" >/dev/null 2>&1
           }
 
           existing_url_for_name() {
-            local name="$1"
-            local encoded
-            encoded=$(jq -rn --arg v "$name" '$v|@uri')
-
-            curl -fsSL --max-time 60 -o /dev/null -w '%{url_effective}' \
-              "$RAW_URL/$encoded" 2>/dev/null || true
+            curl -fsSL -o /dev/null --connect-timeout 15 --max-time 60 \
+              -w '%{url_effective}' \
+              "${ZIPLINE_BASE_URL}/raw/$1" 2>/dev/null || true
           }
 
           version="${TAG_NAME#v}"
@@ -667,7 +571,7 @@ jobs:
             fi
 
             latest=$(printf '%s' "$versioned" |
-              sed -E 's/_[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?([._])/_Latest\2/')
+              sed -E 's/_[0-9]+\.[0-9]+\.[0-9]+([._])/_Latest\1/')
 
             if [ "$latest" != "$base" ]; then
               mv "$f" "mirror/$latest"
@@ -677,7 +581,9 @@ jobs:
             upload "$f"
             url="$(stored_url)"
 
-            if [ -z "$url" ] && is_name_clash && [ "$latest" != "$versioned" ]; then
+            # A "Latest" name is written once; on the next release the same name
+            # is refused, so fall back to the versioned name.
+            if [ -z "$url" ] && is_name_clash && [ "$versioned" != "$(basename "$f")" ]; then
               echo "::notice::$latest was refused, so the versioned name is used instead."
               mv "$f" "mirror/$versioned"
               f="mirror/$versioned"
@@ -685,11 +591,12 @@ jobs:
               url="$(stored_url)"
             fi
 
-            # If the file name still clashes, assume Zipline already stores it
-            # and reuse the existing public URL instead of failing the release.
+            # If even the versioned name is taken, the file is already on the
+            # server: reuse whatever is already published under that name rather
+            # than failing the whole run.
             if [ -z "$url" ] && is_name_clash; then
               echo "::notice::Zipline already has this file name; reusing the existing URL."
-              for cand in "$latest" "$versioned" "$(basename "$f")"; do
+              for cand in "$latest" "$versioned"; do
                 existing="$(existing_url_for_name "$cand")"
                 if [ -n "$existing" ]; then
                   url="$existing"
@@ -734,72 +641,59 @@ jobs:
           echo "Uploads this run: $downloads"
           echo "downloads=$downloads" >> "$GITHUB_OUTPUT"
 
-          {
-            echo "### Zipline mirrors"
-            echo '```json'
-            echo "$downloads"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
   announce-release:
     name: Announce on Discord
     needs: [prepare-release, build-and-release, plugin-release, upload-zipline]
-    if: needs.prepare-release.outputs.shouldRelease == 'true'
+    if: needs.prepare-release.outputs.SHOULD_RELEASE == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
+      - uses: actions/checkout@v7
+
       - name: Post to Discord
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
-          DISCORD_MENTION: ${{ secrets.DISCORD_MENTION }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_TAG: ${{ needs.prepare-release.outputs.releaseTag }}
+          RELEASE_TAG: ${{ needs.prepare-release.outputs.RELEASE_TAG }}
+          RELEASE_URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.prepare-release.outputs.RELEASE_TAG }}
           ZIPLINE_DOWNLOADS: ${{ needs.upload-zipline.outputs.downloads }}
+
         run: |
           python3 <<'PY'
           import json
           import os
-          import sys
           import time
           import urllib.error
           import urllib.request
 
-          def get_env(name, default=""):
-              return os.environ.get(name, default).strip()
+          def require_env(name):
+              value = os.environ.get(name, "").strip()
+              if not value:
+                  raise RuntimeError(f"Missing required environment variable {name}.")
+              return value
 
-          def fail(message):
-              print(f"::error::{message}", file=sys.stderr)
-              sys.exit(1)
+          bot_token = require_env("DISCORD_BOT_TOKEN")
+          channel_id = require_env("DISCORD_CHANNEL_ID")
+          release_tag = require_env("RELEASE_TAG")
 
-          bot_token = get_env("DISCORD_BOT_TOKEN")
-          channel_id = get_env("DISCORD_CHANNEL_ID")
-          github_token = get_env("GITHUB_TOKEN")
-          repo = get_env("GITHUB_REPOSITORY")
-          release_tag = get_env("RELEASE_TAG")
-          mention = get_env("DISCORD_MENTION", "@everyone")
-          raw_downloads = get_env("ZIPLINE_DOWNLOADS")
+          github_token = os.environ.get("GITHUB_TOKEN", "").strip()
+          repo = os.environ.get("GITHUB_REPOSITORY", "").strip()
+          release_url = os.environ.get("RELEASE_URL", "").strip()
+          raw_downloads = os.environ.get("ZIPLINE_DOWNLOADS", "").strip()
+          base_url = os.environ.get(
+              "ZIPLINE_BASE_URL", "https://files.valencystudio.dpdns.org"
+          ).rstrip("/")
 
-          ICON_URL = "https://files.valencystudio.dpdns.org/raw/c1PUm0.png"
-          BANNER_URL = "https://files.valencystudio.dpdns.org/u/image.png"
+          ICON_URL = f"{base_url}/raw/c1PUm0.png"
+          BANNER_URL = f"{base_url}/u/image.png"
 
-          if not bot_token:
-              fail("Missing GitHub Actions secret DISCORD_BOT_TOKEN.")
-
-          if not channel_id:
-              fail("Missing GitHub Actions secret DISCORD_CHANNEL_ID.")
-
-          if not release_tag:
-              fail("Missing release tag.")
-
-          release_url = (
-              f"https://github.com/{repo}/releases/tag/{release_tag}"
-              if repo
-              else get_env("RELEASE_URL")
-          )
-
+          # The mirror job reports the URL each file actually landed on. Using
+          # those instead of a hardcoded link is what keeps the announcement
+          # honest: a "Latest" name is only written once, so a later release
+          # falls back to a versioned name and the link follows it.
           try:
               downloads = json.loads(raw_downloads) if raw_downloads else {}
           except json.JSONDecodeError:
@@ -827,135 +721,73 @@ jobs:
               lines.append(f"**Plugins Roblox** [Download Here]({plugin_url})")
 
           if not lines:
-              fail(
+              raise RuntimeError(
                   "The mirror job reported no download URLs, so the announcement "
                   "would only contain dead links."
               )
 
-          lines.append("")
-          lines.append(f"[GitHub release]({release_url})")
-
           DOWNLOADS = "\n".join(lines)
 
-          def github_api(path, retries=3):
-              url = f"https://api.github.com{path}"
-              last_error = None
+          def github_api(path):
+              request = urllib.request.Request(
+                  f"https://api.github.com{path}",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {github_token}",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                      "User-Agent": "ValencyStudio-Spoofer-Release-Bot",
+                  },
+              )
+              with urllib.request.urlopen(request, timeout=15) as response:
+                  return json.loads(response.read().decode("utf-8"))
 
-              for attempt in range(retries):
-                  request = urllib.request.Request(
-                      url,
-                      headers={
-                          "Accept": "application/vnd.github+json",
-                          "Authorization": f"Bearer {github_token}",
-                          "X-GitHub-Api-Version": "2022-11-28",
-                          "User-Agent": "ValencyStudio - Spoofer-Release-Bot",
-                      },
+          release_record = {}
+          if repo and github_token:
+              try:
+                  release_record = github_api(
+                      f"/repos/{repo}/releases/tags/{release_tag}"
                   )
+              except Exception as error:
+                  print(f"::warning::Could not read the release record: {error}")
 
-                  try:
-                      with urllib.request.urlopen(request, timeout=30) as response:
-                          return json.loads(response.read().decode("utf-8"))
-                  except urllib.error.HTTPError as error:
-                      body = error.read().decode("utf-8", errors="replace")
-                      last_error = RuntimeError(
-                          f"GitHub API failed with status {error.code} for {path}: {body}"
-                      )
+          release_notes = (release_record.get("body") or "").strip() or (
+              "No release notes were provided for this version."
+          )
 
-                      if error.code in (429, 500, 502, 503, 504) and attempt < retries - 1:
-                          time.sleep(2 ** attempt)
-                          continue
+          # The changelog is rendered inside a fenced code block; a fence in the
+          # notes would end that block early and mangle the embed.
+          release_notes = release_notes.replace("```", "~~~")
 
-                      raise last_error
-                  except urllib.error.URLError as error:
-                      last_error = RuntimeError(
-                          f"GitHub API network error for {path}: {error}"
-                      )
-
-                      if attempt < retries - 1:
-                          time.sleep(2 ** attempt)
-                          continue
-
-                      raise last_error
-
-              raise last_error
-
-          def get_release():
-              if not repo or not github_token:
-                  return {}
-
-              try:
-                  return github_api(f"/repos/{repo}/releases/tags/{release_tag}")
-              except Exception:
-                  return {}
-
-          release = get_release()
-          release_notes = (release.get("body") or "").strip()
-          if not release_notes:
-              release_notes = "No release notes were provided for this version."
-
-          def get_commit_author():
-              fallback = {
-                  "name": "GitHub",
-                  "url": release_url,
-                  "avatar": None,
-              }
-
-              if not repo or not github_token:
-                  return fallback
-
-              commit = None
-
-              try:
-                  commit = github_api(f"/repos/{repo}/commits/{release_tag}")
-              except Exception:
-                  try:
-                      ref = github_api(f"/repos/{repo}/git/ref/tags/{release_tag}")
-                      obj = ref.get("object") or {}
-                      sha = obj.get("sha")
-
-                      if obj.get("type") == "tag" and sha:
-                          tag = github_api(f"/repos/{repo}/git/tags/{sha}")
-                          sha = (tag.get("object") or {}).get("sha")
-
-                      if sha:
-                          commit = github_api(f"/repos/{repo}/commits/{sha}")
-                  except Exception:
-                      return fallback
-
-              if not commit:
-                  return fallback
-
-              github_author = commit.get("author") or {}
-              commit_author = (commit.get("commit") or {}).get("author") or {}
-
-              return {
-                  "name": (
-                      github_author.get("login")
-                      or commit_author.get("name")
-                      or "GitHub"
-                  ),
-                  "url": github_author.get("html_url") or release_url,
-                  "avatar": github_author.get("avatar_url"),
-              }
-
-          author = get_commit_author()
-
-          def fit_embed_description(text, max_chars=3900):
+          def fit_embed_description(text, max_chars=3800):
               if len(text) <= max_chars:
                   return text
 
               suffix = f"\n\n[Read the full release notes]({release_url})"
-              available = max(0, max_chars - len(suffix) - 1)
+              available = max_chars - len(suffix) - 1
 
               clipped = (
                   text[:available].rsplit("\n", 1)[0].rstrip()
                   or text[:available].rstrip()
               )
-
               return f"{clipped}…{suffix}"
 
-          safe_notes = release_notes.replace("```", "'''")
-          changelog = fit_embed_description(safe_notes)
+          author = {"name": "GitHub", "url": release_url, "avatar": None}
+          if repo and github_token:
+              try:
+                  commit = github_api(f"/repos/{repo}/commits/{release_tag}")
+                  github_author = commit.get("author") or {}
+                  commit_author = (commit.get("commit") or {}).get("author") or {}
+                  author = {
+                      "name": (
+                          github_author.get("login")
+                          or commit_author.get("name")
+                          or "GitHub"
+                      ),
+                      "url": github_author.get("html_url") or release_url,
+                      "avatar": github_author.get("avatar_url"),
+                  }
+              except Exception as error:
+                  print(f"::warning::Could not resolve the release author: {error}")
 
           footer = {
               "text": (
@@ -963,20 +795,13 @@ jobs:
                   "The auto-updater will prompt you on next launch."
               )
           }
-
-          if author.get("avatar"):
+          if author["avatar"]:
               footer["icon_url"] = author["avatar"]
 
-          allowed_parse = []
-          if "@everyone" in mention or "@here" in mention:
-              allowed_parse.append("everyone")
-          if "<@" in mention:
-              allowed_parse.append("users")
-          if "<@&" in mention:
-              allowed_parse.append("roles")
-
           payload = {
-              "content": f"{mention} **ValencyStudio - Spoofer {release_tag} has updated!**".strip(),
+              "content": (
+                  f"@everyone **ValencyStudio - Spoofer {release_tag} has updated!**"
+              ),
               "embeds": [
                   {
                       "title": "Downloads Available",
@@ -986,77 +811,59 @@ jobs:
                           "name": "ValencyStudio - Spoofer Updates",
                           "icon_url": ICON_URL,
                       },
-                      "image": {
-                          "url": BANNER_URL,
-                      },
+                      "image": {"url": BANNER_URL},
                   },
                   {
                       "title": "CHANGELOGS",
-                      "description": f"```diff\n{changelog}\n```",
+                      "description": (
+                          "```diff\n"
+                          + fit_embed_description(release_notes)
+                          + "\n```"
+                      ),
                       "color": 1949277,
                       "footer": footer,
                   },
               ],
               "username": "ValencyStudio App",
               "avatar_url": ICON_URL,
-              "allowed_mentions": {
-                  "parse": allowed_parse,
-              },
+              "allowed_mentions": {"parse": ["everyone"]},
           }
 
-          def post_to_discord():
-              data = json.dumps(payload).encode("utf-8")
-              url = f"https://discord.com/api/v10/channels/{channel_id}/messages"
-              last_error = None
+          request = urllib.request.Request(
+              f"https://discord.com/api/v10/channels/{channel_id}/messages",
+              data=json.dumps(payload).encode("utf-8"),
+              headers={
+                  "Content-Type": "application/json",
+                  "Authorization": f"Bot {bot_token}",
+                  "User-Agent": "ValencyStudio-Spoofer-Discord-Release-Bot",
+              },
+              method="POST",
+          )
 
-              for attempt in range(3):
-                  request = urllib.request.Request(
-                      url,
-                      data=data,
-                      headers={
-                          "Content-Type": "application/json",
-                          "Authorization": f"Bot {bot_token}",
-                          "User-Agent": "ValencyStudio - Spoofer-Discord-Release-Bot",
-                      },
-                      method="POST",
-                  )
-
-                  try:
-                      with urllib.request.urlopen(request, timeout=30) as response:
-                          response.read()
-                          return
-                  except urllib.error.HTTPError as error:
-                      body = error.read().decode("utf-8", errors="replace")
-                      last_error = RuntimeError(
-                          f"Discord API failed with status {error.code}: {body}"
+          for attempt in range(1, 4):
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      print(f"Posted Discord release announcement for {release_tag}.")
+                      break
+              except urllib.error.HTTPError as error:
+                  body = error.read().decode("utf-8", errors="replace")
+                  retryable = error.code == 429 or error.code >= 500
+                  if retryable and attempt < 3:
+                      wait = int(error.headers.get("Retry-After", "5") or 5)
+                      print(
+                          f"::warning::Discord returned {error.code}; retrying in {wait}s."
                       )
-
-                      if error.code == 429:
-                          retry_after = 1.0
-                          try:
-                              retry_after = float(json.loads(body).get("retry_after", 1.0))
-                          except Exception:
-                              pass
-
-                          time.sleep(min(retry_after + 1.0, 60.0))
-                          continue
-
-                      if error.code in (500, 502, 503, 504) and attempt < 2:
-                          time.sleep(2 ** attempt)
-                          continue
-
-                      raise last_error
-                  except urllib.error.URLError as error:
-                      last_error = RuntimeError(f"Discord API network error: {error}")
-
-                      if attempt < 2:
-                          time.sleep(2 ** attempt)
-                          continue
-
-                      raise last_error
-
-              raise last_error
-
-          post_to_discord()
-          print(f"Posted Discord release announcement for {release_tag}.")
+                      time.sleep(wait)
+                      continue
+                  raise RuntimeError(
+                      f"Discord API failed with status {error.code}: {body}"
+                  ) from error
+              except urllib.error.URLError as error:
+                  if attempt < 3:
+                      print(f"::warning::Discord request failed ({error}); retrying.")
+                      time.sleep(5)
+                      continue
+                  raise RuntimeError(f"Discord request failed: {error}") from error
+          else:
+              raise RuntimeError("Discord announcement was not posted.")
           PY
