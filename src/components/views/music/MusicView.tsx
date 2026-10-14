@@ -1,3 +1,4 @@
+import { listen } from '@tauri-apps/api/event';
 import {
   Check,
   CircleAlert,
@@ -16,7 +17,16 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '../../../components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../../components/ui/dialog';
 import { Input } from '../../../components/ui/input';
+import { useConfig } from '../../../contexts/ConfigContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { cn } from '../../../lib/utils';
 import type { MusicTrack } from '../../../stores/musicStore';
@@ -30,6 +40,7 @@ import {
   formatDuration,
   formatUploadDate,
   GAIN_RANGE,
+  installFfmpeg,
   mediaSrc,
   PITCH_RANGE,
   QUALITY_RANGE,
@@ -42,6 +53,7 @@ import {
 
 export default function MusicView() {
   const { t } = useLanguage();
+  const { updateConfig } = useConfig();
   const {
     tools,
     tracks,
@@ -66,6 +78,10 @@ export default function MusicView() {
 
   const [url, setUrl] = useState('');
   const [importing, setImporting] = useState(false);
+  const [installingFfmpeg, setInstallingFfmpeg] = useState(false);
+  const [ffmpegInstallOutput, setFfmpegInstallOutput] = useState<string[]>([]);
+  const [ffmpegInstallError, setFfmpegInstallError] = useState<string | null>(null);
+  const [ffmpegInstalled, setFfmpegInstalled] = useState(false);
 
   useEffect(() => {
     void refreshTools();
@@ -101,8 +117,90 @@ export default function MusicView() {
       ].filter(Boolean)
     : [];
 
+  const returnToSpoofer = () => updateConfig('ui', 'activeTab', 'spoofing');
+
+  const handleInstallFfmpeg = async () => {
+    if (installingFfmpeg) return;
+
+    setInstallingFfmpeg(true);
+    setFfmpegInstallOutput([]);
+    setFfmpegInstallError(null);
+
+    let stopListening: (() => void) | undefined;
+    try {
+      stopListening = await listen<string>('ffmpeg-install-output', (event) => {
+        setFfmpegInstallOutput((lines) => [...lines, event.payload].slice(-100));
+      });
+      await installFfmpeg();
+      setFfmpegInstalled(true);
+    } catch (error) {
+      setFfmpegInstallError(String(error));
+    } finally {
+      stopListening?.();
+      setInstallingFfmpeg(false);
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col">
+      <Dialog
+        open={tools !== null && !tools.ffmpeg}
+        onOpenChange={(open) => {
+          if (!open && !installingFfmpeg) returnToSpoofer();
+        }}
+      >
+        <DialogContent showCloseButton={false} className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t('music.ffmpegRequiredTitle')}</DialogTitle>
+            <DialogDescription>{t('music.ffmpegRequiredDescription')}</DialogDescription>
+          </DialogHeader>
+
+          {ffmpegInstallOutput.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-text-secondary">
+                {t('music.ffmpegInstallOutput')}
+              </p>
+              <pre
+                role="log"
+                aria-live="polite"
+                className="max-h-48 overflow-auto rounded-md bg-background p-3 text-xs text-text-secondary"
+              >
+                {ffmpegInstallOutput.join('\n')}
+              </pre>
+            </div>
+          )}
+
+          {installingFfmpeg && (
+            <p role="status" className="text-sm text-text-secondary">
+              {t('music.ffmpegInstalling')}
+            </p>
+          )}
+
+          {ffmpegInstallError && (
+            <p role="alert" className="text-sm text-danger">
+              {t('music.ffmpegInstallFailed').replace('{error}', ffmpegInstallError)}
+            </p>
+          )}
+
+          {ffmpegInstalled && (
+            <p role="status" className="text-sm text-text-secondary">
+              {t('music.ffmpegInstallComplete')}
+            </p>
+          )}
+
+          <DialogFooter>
+            {!ffmpegInstalled && (
+              <Button onClick={() => void handleInstallFfmpeg()} disabled={installingFfmpeg}>
+                {installingFfmpeg ? t('music.ffmpegInstalling') : t('music.ffmpegInstall')}
+              </Button>
+            )}
+            <Button variant="outline" onClick={returnToSpoofer} disabled={installingFfmpeg}>
+              {t('music.ffmpegReturnToSpoofer')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <header className="shrink-0 border-b border-border-subtle px-6 py-4">
         <h1 className="text-lg font-semibold leading-snug text-text-primary">{t('music.title')}</h1>
         <p className="mt-1 text-sm text-text-secondary">{t('music.subtitle')}</p>

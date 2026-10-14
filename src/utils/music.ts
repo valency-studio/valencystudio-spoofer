@@ -1,8 +1,9 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { open as openFilePicker } from '@tauri-apps/plugin-dialog';
 
-// The command types come from the generated bindings so the two can never drift.
 import type { AudioFormat, ImportedMedia, MediaInfo, MediaTools } from '../types/bindings';
+// The command types come from the generated bindings so the two can never drift.
+import { commands } from '../types/bindings';
 
 export type { AudioFormat, ImportedMedia, MediaInfo, MediaTools };
 export const AUDIO_FORMATS: { value: AudioFormat; label: string }[] = [
@@ -73,6 +74,11 @@ export const qualityBitrateKbps = (quality: number) =>
 const AUDIO_EXTENSIONS = ['mp3', 'ogg', 'wav', 'm4a', 'aac', 'flac', 'webm', 'opus'];
 
 export const checkMediaTools = () => invoke<MediaTools>('check_media_tools');
+
+export const installFfmpeg = async () => {
+  const result = await commands.installFfmpeg();
+  if (result.status === 'error') throw new Error(result.error);
+};
 
 /**
  * Installs yt-dlp if it is missing and reports the final tool state.

@@ -133,6 +133,16 @@ export const id: TranslationTree = {
     retryInstall: 'Coba pasang lagi',
     missingFfmpeg:
       'ffmpeg tidak ada di PATH Anda, jadi unggah tidak tersedia. Pasang ffmpeg lalu buka ulang aplikasi.',
+    ffmpegRequiredTitle: 'FFmpeg belum terpasang',
+    ffmpegRequiredDescription:
+      'FFmpeg wajib dipasang untuk menggunakan menu Musik. Instal sekarang dengan Winget atau kembali ke Spoofer.',
+    ffmpegInstall: 'Install FFmpeg',
+    ffmpegReturnToSpoofer: 'Kembali ke Spoofer',
+    ffmpegInstalling: 'Sedang memasang FFmpeg melalui Winget...',
+    ffmpegInstallOutput: 'Keluaran Winget',
+    ffmpegInstallFailed: 'Winget gagal memasang FFmpeg: {error}',
+    ffmpegInstallComplete:
+      'FFmpeg berhasil dipasang. Buka ulang aplikasi agar PATH FFmpeg terbaca.',
     missingYtDlp:
       'yt-dlp tidak ada di PATH Anda, jadi impor dari tautan tidak tersedia. Pasang yt-dlp lalu buka ulang aplikasi.',
   },

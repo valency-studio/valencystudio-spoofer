@@ -128,6 +128,16 @@ export const fr: TranslationTree = {
     retryInstall: 'Réessayer l’installation',
     missingFfmpeg:
       "ffmpeg n'est pas dans votre PATH, l'envoi est donc indisponible. Installez ffmpeg puis rouvrez l'application.",
+    ffmpegRequiredTitle: "FFmpeg n'est pas installé",
+    ffmpegRequiredDescription:
+      'FFmpeg est requis pour utiliser Musique. Installez-le avec Winget ou retournez au Spoofer.',
+    ffmpegInstall: 'Installer FFmpeg',
+    ffmpegReturnToSpoofer: 'Retour au Spoofer',
+    ffmpegInstalling: 'Installation de FFmpeg avec Winget...',
+    ffmpegInstallOutput: 'Sortie de Winget',
+    ffmpegInstallFailed: "Winget n'a pas pu installer FFmpeg : {error}",
+    ffmpegInstallComplete:
+      "FFmpeg a été installé. Rouvrez l'application pour appliquer les changements du PATH.",
     missingYtDlp:
       "yt-dlp n'est pas dans votre PATH, l'import depuis un lien est donc indisponible. Installez yt-dlp puis rouvrez l'application.",
   },

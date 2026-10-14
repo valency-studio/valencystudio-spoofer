@@ -26,6 +26,8 @@ export const commands = {
    *  SHA2-256SUMS file published in the same release.
    */
   ensureYtdlp: () => typedError<boolean, AppError>(__TAURI_INVOKE('ensure_ytdlp')),
+  /**  Installs FFmpeg through Winget and streams the installer output to the Music view. */
+  installFfmpeg: () => typedError<null, AppError>(__TAURI_INVOKE('install_ffmpeg')),
   /**  Reads stream metadata with ffprobe. */
   probeMedia: (path: string) =>
     typedError<MediaInfo, AppError>(__TAURI_INVOKE('probe_media', { path })),

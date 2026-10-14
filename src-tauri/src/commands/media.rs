@@ -2,7 +2,8 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
+use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
 use tokio::process::Command;
 
 use crate::error::AppError;
@@ -63,6 +64,80 @@ struct ToolSpec {
 const FFMPEG: ToolSpec = ToolSpec { program: "ffmpeg", version_arg: "-version" };
 const FFPROBE: ToolSpec = ToolSpec { program: "ffprobe", version_arg: "-version" };
 const YTDLP: ToolSpec = ToolSpec { program: "yt-dlp", version_arg: "--version" };
+const WINGET_INSTALL_FFMPEG_ARGS: [&str; 5] = [
+    "install",
+    "ffmpeg",
+    "--accept-source-agreements",
+    "--accept-package-agreements",
+    "--disable-interactivity",
+];
+
+async fn forward_install_output<R>(app: AppHandle, output: R) -> std::io::Result<()>
+where
+    R: AsyncRead + Unpin,
+{
+    let mut lines = BufReader::new(output).lines();
+    while let Some(line) = lines.next_line().await? {
+        if let Err(error) = app.emit("ffmpeg-install-output", line) {
+            log::warn!("Could not send FFmpeg installation output to the UI: {error}");
+        }
+    }
+    Ok(())
+}
+
+/// Installs FFmpeg through Winget and streams the installer output to the Music view.
+#[tauri::command]
+#[specta::specta]
+pub async fn install_ffmpeg(app: AppHandle) -> Result<()> {
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        return Err(AppError::Custom(
+            "FFmpeg installation through Winget is only supported on Windows.".into(),
+        ));
+    }
+
+    #[cfg(windows)]
+    {
+        let mut command = Command::new("winget");
+        no_console(&mut command);
+        let mut child = command
+            .args(WINGET_INSTALL_FFMPEG_ARGS)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()?;
+
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| AppError::Custom("Could not read Winget output.".into()))?;
+        let stderr = child
+            .stderr
+            .take()
+            .ok_or_else(|| AppError::Custom("Could not read Winget errors.".into()))?;
+        let stdout_task = tokio::spawn(forward_install_output(app.clone(), stdout));
+        let stderr_task = tokio::spawn(forward_install_output(app, stderr));
+
+        let status = child.wait().await?;
+        let stdout_result = stdout_task
+            .await
+            .map_err(|error| AppError::Custom(format!("Could not read Winget output: {error}")))?;
+        stdout_result?;
+        let stderr_result = stderr_task
+            .await
+            .map_err(|error| AppError::Custom(format!("Could not read Winget errors: {error}")))?;
+        stderr_result?;
+
+        if !status.success() {
+            let code = status.code().map_or_else(|| "unknown".to_string(), |code| code.to_string());
+            return Err(AppError::Custom(format!(
+                "Winget could not install FFmpeg (exit code {code})."
+            )));
+        }
+
+        Ok(())
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -1190,9 +1265,17 @@ mod tests {
         any_part_too_large, bits_per_second, build_filter, clamp_quality, estimate_part_bytes,
         final_output_path, max_output_secs, paths_match, plan_split, sanitize_stem, segment_args,
         staging_path, strip_audio_extension, AudioFormat, SplitPlan, ROBLOX_MAX_DURATION_SECS,
-        ROBLOX_MAX_UPLOAD_BYTES, SEMITONES_PER_OCTAVE,
+        ROBLOX_MAX_UPLOAD_BYTES, SEMITONES_PER_OCTAVE, WINGET_INSTALL_FFMPEG_ARGS,
     };
     use std::path::Path;
+
+    #[test]
+    fn winget_install_targets_ffmpeg_without_interactive_prompts() {
+        assert_eq!(WINGET_INSTALL_FFMPEG_ARGS[0..2], ["install", "ffmpeg"]);
+        assert!(WINGET_INSTALL_FFMPEG_ARGS.contains(&"--accept-source-agreements"));
+        assert!(WINGET_INSTALL_FFMPEG_ARGS.contains(&"--accept-package-agreements"));
+        assert!(WINGET_INSTALL_FFMPEG_ARGS.contains(&"--disable-interactivity"));
+    }
 
     #[test]
     fn a_short_track_is_not_split() {

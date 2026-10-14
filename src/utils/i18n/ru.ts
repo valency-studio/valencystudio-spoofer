@@ -128,6 +128,16 @@ export const ru: TranslationTree = {
     retryInstall: 'Попробовать установить снова',
     missingFfmpeg:
       'ffmpeg не найден в PATH, поэтому загрузка недоступна. Установите ffmpeg и снова откройте приложение.',
+    ffmpegRequiredTitle: 'FFmpeg не установлен',
+    ffmpegRequiredDescription:
+      'Для работы раздела «Музыка» требуется FFmpeg. Установите его через Winget или вернитесь в Spoofer.',
+    ffmpegInstall: 'Установить FFmpeg',
+    ffmpegReturnToSpoofer: 'Вернуться в Spoofer',
+    ffmpegInstalling: 'Установка FFmpeg через Winget...',
+    ffmpegInstallOutput: 'Вывод Winget',
+    ffmpegInstallFailed: 'Winget не удалось установить FFmpeg: {error}',
+    ffmpegInstallComplete:
+      'FFmpeg установлен. Перезапустите приложение, чтобы применить изменения PATH.',
     missingYtDlp:
       'yt-dlp не найден в PATH, поэтому импорт по ссылке недоступен. Установите yt-dlp и снова откройте приложение.',
   },
