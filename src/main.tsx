@@ -11,6 +11,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import { ErrorBoundary } from './components/core/ErrorBoundary';
 import { Toast } from './components/shared/Toast';
+import { TrakteerSupportButton } from './components/shared/TrakteerSupportButton';
 import { TooltipProvider } from './components/ui/tooltip';
 import { ConfigProvider } from './contexts/ConfigContext';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -75,6 +76,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
                   <ErrorBoundary>
                     <App />
                     <Toast />
+                    <TrakteerSupportButton />
                   </ErrorBoundary>
                 </main>
               </TooltipProvider>
