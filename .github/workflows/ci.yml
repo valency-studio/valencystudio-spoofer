@@ -444,6 +444,9 @@ jobs:
     permissions:
       contents: read
 
+    outputs:
+      downloads: ${{ steps.mirror.outputs.downloads }}
+
     steps:
       - name: Download release assets
         env:
@@ -465,48 +468,95 @@ jobs:
             --dir mirror
           ls -la mirror
 
-      - name: Rename bundles to Latest names and upload
+      - name: Upload bundles under Latest names, falling back to versioned
+        id: mirror
         env:
           ZIPLINE_TOKEN: ${{ secrets.ZIPLINE_TOKEN }}
+          TAG_NAME: ${{ needs.prepare-release.outputs.RELEASE_TAG }}
         shell: bash
         run: |
           set -euo pipefail
           shopt -s nullglob
 
+          # Uploads one file and prints the URL the server actually stored.
+          #
+          # Zipline refuses a name it already holds (E1009), and this instance
+          # exposes neither a delete nor an overwrite route, so a "Latest" copy
+          # can only be written once. The response body is returned rather than
+          # discarded so the caller can tell a name clash from a real failure.
           upload() {
             local file="$1"
-            echo "Uploading $file ..."
             local mime
             mime=$(file --mime-type -b "$file")
-            local url
-            url=$(curl -sS -f \
+            curl -sS \
               -H "authorization: $ZIPLINE_TOKEN" \
               -H 'content-type: multipart/form-data' \
-              -H 'x-zipline-format: name' \
-              -H 'x-zipline-original-name: true' \
+              -H "x-zipline-format: name" \
+              -H "x-zipline-original-name: true" \
               -F "file=@${file};type=${mime}" \
-              https://files.valencystudio.dpdns.org/api/upload \
-              | jq -r '.files[0].url')
-            if [ -z "$url" ] || [ "$url" = "null" ]; then
-              echo "::error::Upload returned no URL for $file"
-              exit 1
-            fi
-            echo "$file -> $url"
+              https://files.valencystudio.dpdns.org/api/upload
           }
 
-          # Versioned bundles become stable Latest names, e.g.
-          # "ValencyStudio - Spoofer_3.0.2_x64-setup.exe" ->
-          # "ValencyStudio - Spoofer_Latest_x64-setup.exe".
-          # The plugin has no version in its name and uploads as-is.
+          version="${TAG_NAME#v}"
+
           uploaded=0
+          downloads='{}'
+
           for f in mirror/*.exe mirror/*.dmg mirror/*.AppImage mirror/*.rbxmx; do
             base=$(basename "$f")
-            newbase=$(printf '%s' "$base" | sed -E 's/_[0-9]+\.[0-9]+\.[0-9]+_/_Latest_/')
-            if [ "$newbase" != "$base" ]; then
-              mv "$f" "mirror/$newbase"
-              f="mirror/$newbase"
+
+            # Every file needs a versioned spelling to fall back to, so an
+            # asset that ships without one (the plugin is named
+            # "ValencyStudioSpoofer.rbxmx") gets the tag version grafted on.
+            # Without this the fallback would retry the very name that was
+            # just refused, and the job could never get past its first run.
+            versioned="$base"
+            if [[ "$base" != *"$version"* ]]; then
+              versioned="${base%.*}_${version}.${base##*.}"
             fi
-            upload "$f"
+
+            # The version sits between underscores in a bundle
+            # ("..._3.0.3_x64-setup.exe") but before the extension in a grafted
+            # name ("..._3.0.3.rbxmx"), so both separators are covered.
+            latest=$(printf '%s' "$versioned" |
+              sed -E 's/_[0-9]+\.[0-9]+\.[0-9]+([._])/_Latest\1/')
+
+            if [ "$latest" != "$base" ]; then
+              mv "$f" "mirror/$latest"
+              f="mirror/$latest"
+            fi
+
+            response=$(upload "$f")
+            url=$(jq -r '.files[0].url // empty' <<<"$response")
+
+            if [ -z "$url" ]; then
+              echo "::notice::$latest was refused, so the versioned name is used instead."
+              echo "::notice::$(jq -r '.error // "no reason given"' <<<"$response")"
+              mv "$f" "mirror/$versioned"
+              f="mirror/$versioned"
+              response=$(upload "$f")
+              url=$(jq -r '.files[0].url // empty' <<<"$response")
+            fi
+
+            if [ -z "$url" ]; then
+              echo "::error::Upload failed for $f: $response"
+              exit 1
+            fi
+
+            # Zipline echoes the origin it was reached on, which is plain http.
+            # The site serves HTTPS, so the published link is upgraded rather
+            # than sending people to an unencrypted download.
+            url="${url/#http:\/\//https:\/\/}"
+
+            echo "$f -> $url"
+            case "$f" in
+              *.exe)      key=windows ;;
+              *.dmg)      key=macos ;;
+              *.AppImage) key=linux ;;
+              *.rbxmx)    key=plugin ;;
+              *)          key="other-$uploaded" ;;
+            esac
+            downloads=$(jq -c --arg k "$key" --arg v "$url" '. + {($k): $v}' <<<"$downloads")
             uploaded=$((uploaded + 1))
           done
 
@@ -514,6 +564,9 @@ jobs:
             echo "::error::No bundles found to mirror."
             exit 1
           fi
+
+          echo "Uploads this run: $downloads"
+          echo "downloads=$downloads" >> "$GITHUB_OUTPUT"
 
   announce-release:
     name: Announce on Discord
@@ -538,6 +591,7 @@ jobs:
           RELEASE_TAG: ${{ needs.prepare-release.outputs.RELEASE_TAG }}
           RELEASE_URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.prepare-release.outputs.RELEASE_TAG }}
           DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
+          ZIPLINE_DOWNLOADS: ${{ needs.upload-zipline.outputs.downloads }}
 
         run: |
           python3 <<'PY'
@@ -552,15 +606,47 @@ jobs:
           release_tag = os.environ.get("RELEASE_TAG", "").strip()
           release_url = os.environ.get("RELEASE_URL", "").strip()
           channel_id = os.environ.get("DISCORD_CHANNEL_ID", "").strip()
+          raw_downloads = os.environ.get("ZIPLINE_DOWNLOADS", "").strip()
 
           ICON_URL = "https://files.valencystudio.dpdns.org/raw/c1PUm0.png"
           BANNER_URL = "https://files.valencystudio.dpdns.org/u/image.png"
-          DOWNLOADS = (
-              "- **Windows** [Download](https://files.valencystudio.dpdns.org/u/ValencyStudio.-.Spoofer_Latest_x64-setup.exe)\n"
-              "- **Mac** [Download](https://files.valencystudio.dpdns.org/u/ValencyStudio.-.Spoofer_Latest_universal.dmg)\n"
-              "- **Linux** [Download](https://files.valencystudio.dpdns.org/u/ValencyStudio.-.Spoofer_Latest_amd64.AppImage)\n"
-              "\n**Plugins Roblox** [Download Here](https://files.valencystudio.dpdns.org/u/ValencyStudioSpoofer.rbxmx)"
-          )
+
+          # The mirror job reports the URL each file actually landed on. Using
+          # those instead of a hardcoded link is what keeps the announcement
+          # honest: a "Latest" name is only written once, so a later release
+          # falls back to a versioned name and the link follows it.
+          try:
+              downloads = json.loads(raw_downloads) if raw_downloads else {}
+          except json.JSONDecodeError:
+              downloads = {}
+
+          def download_line(label, key):
+              url = downloads.get(key)
+              if not url:
+                  return None
+              return f"- **{label}** [Download]({url})"
+
+          lines = [
+              line
+              for line in (
+                  download_line("Windows", "windows"),
+                  download_line("Mac", "macos"),
+                  download_line("Linux", "linux"),
+              )
+              if line
+          ]
+          plugin_url = downloads.get("plugin")
+          if plugin_url:
+              lines.append("")
+              lines.append(f"**Plugins Roblox** [Download Here]({plugin_url})")
+
+          if not lines:
+              raise RuntimeError(
+                  "The mirror job reported no download URLs, so the announcement "
+                  "would only contain dead links."
+              )
+
+          DOWNLOADS = "\n".join(lines)
 
           release_record_cache = None
 
