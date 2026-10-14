@@ -19,7 +19,7 @@ import type { RbxInstance } from '../../utils/robloxPlaceParser/types';
 import {
   loadCachedGroups,
   loadCachedUsers,
-  logIsm,
+  logValencyStudio,
   normalizeId,
   type RobloxGroup,
   type RobloxUserInfo,
@@ -334,7 +334,11 @@ export default function SpoofingView() {
       }
     } catch (e) {
       addDebugLog('error', ['Failed to load profile secrets', e]);
-      logIsm('warn', 'The saved cookie for this Roblox profile could not be restored.', true);
+      logValencyStudio(
+        'warn',
+        'The saved cookie for this Roblox profile could not be restored.',
+        true,
+      );
     }
 
     updateCategory('spoofing', {
@@ -391,7 +395,7 @@ export default function SpoofingView() {
       }
     } catch (e) {
       addDebugLog('error', ['Failed to validate cookie profile during retry load', e]);
-      logIsm('warn', 'The saved cookie for this retry could not be restored.', true);
+      logValencyStudio('warn', 'The saved cookie for this retry could not be restored.', true);
     }
 
     return {
@@ -437,15 +441,15 @@ export default function SpoofingView() {
             '[INFO] Studio scan finished. No spoofable assets found in this place.\n',
           ),
         );
-        logIsm('info', 'Studio scan finished. No assets found.', true);
+        logValencyStudio('info', 'Studio scan finished. No assets found.', true);
       } else {
         setLogs((prev) =>
           appendSpoofingLog(prev, `[SUCCESS] Studio Scan Complete! Found ${totalAssets} assets.\n`),
         );
-        logIsm('info', `Studio scan completed. Found ${totalAssets} assets.`, true);
+        logValencyStudio('info', `Studio scan completed. Found ${totalAssets} assets.`, true);
       }
     } catch (error) {
-      logIsm('error', `Studio scan failed: ${String(error)}`, true);
+      logValencyStudio('error', `Studio scan failed: ${String(error)}`, true);
       setLogs((prev) => appendSpoofingLog(prev, `[ERROR] Studio scan failed: ${String(error)}\n`));
     } finally {
       setTimeout(() => setIsScanningStudio(false), 600);
@@ -485,7 +489,7 @@ export default function SpoofingView() {
 
   const validateApiKeyForRun = async (apiKey: string, selectedUser: string): Promise<boolean> => {
     if (apiKey.length < 20) {
-      logIsm(
+      logValencyStudio(
         'warn',
         'Add an Open Cloud API key with Assets read/write access before spoofing.',
         true,
@@ -505,7 +509,7 @@ export default function SpoofingView() {
       });
       const message = result.message || 'No validation details returned.';
       if (!result.ok && /invalid|unauthorized/i.test(message)) {
-        logIsm('warn', message, true);
+        logValencyStudio('warn', message, true);
         setLogs((prev) => appendSpoofingLog(prev, `[WARN] ${message}\n`));
         return false;
       }
@@ -549,7 +553,7 @@ export default function SpoofingView() {
     runContext?: SpooferRunContext,
   ) => {
     if (useSpooferStore.getState().isSpoofing) {
-      logIsm(
+      logValencyStudio(
         'warn',
         'A spoofing job is already running. Wait for it to finish or use Force Reset.',
         true,
@@ -574,7 +578,7 @@ export default function SpoofingView() {
     if (cookie.length < 50) {
       const msg =
         'Cannot start spoofer: no valid Roblox cookie. Open Accounts and paste a fresh .ROBLOSECURITY value, then try again.';
-      logIsm('warn', msg, true);
+      logValencyStudio('warn', msg, true);
       setLogs((prev) => appendSpoofingLog(prev, `[WARN] ${msg}\n`));
       return;
     }
@@ -585,7 +589,7 @@ export default function SpoofingView() {
       addDebugLog('warn', ['Pre-spoofing cookie validation failed', e]);
       const msg =
         'Cannot start spoofer: the current Roblox cookie is invalid or expired. Refresh the cookie in Accounts.';
-      logIsm('warn', msg, true);
+      logValencyStudio('warn', msg, true);
       setLogs((prev) => appendSpoofingLog(prev, `[WARN] ${msg}\n`));
       return;
     }
@@ -650,7 +654,7 @@ export default function SpoofingView() {
     if (finalAssetIds.size === 0) {
       const msg =
         'Cannot start spoofer: no valid asset IDs found. Paste some IDs into "Additional IDs to Spoof", load a place file, or scan Studio first.';
-      logIsm('warn', msg, true);
+      logValencyStudio('warn', msg, true);
       setLogs((prev) => appendSpoofingLog(prev, `[WARN] ${msg}\n`));
       return;
     }
@@ -814,7 +818,7 @@ export default function SpoofingView() {
         },
       });
     } catch (err) {
-      logIsm(
+      logValencyStudio(
         'error',
         `Could not launch the spoofer: ${err instanceof Error ? err.message : String(err)}`,
         true,
@@ -846,7 +850,7 @@ export default function SpoofingView() {
       const timeoutSecs = detail?.timeoutSecs ?? store.discoveryTimeoutSecs ?? 60;
 
       if (!cookie || cookie.length < 50) {
-        logIsm(
+        logValencyStudio(
           'warn',
           'Please select an active account with a valid cookie to discover place IDs.',
           false,
@@ -872,7 +876,7 @@ export default function SpoofingView() {
       }
 
       if (targetAssetIds.length === 0) {
-        logIsm(
+        logValencyStudio(
           'warn',
           'No assets were found in the explorer to discover place IDs for. Please scan a place or select assets first.',
           false,
@@ -881,7 +885,7 @@ export default function SpoofingView() {
       }
 
       store.setIsDiscoveringPlaceIds(true);
-      logIsm(
+      logValencyStudio(
         'info',
         `Discovering place IDs in parallel for ${targetAssetIds.length} asset(s) (${timeoutSecs}s limit/asset)...`,
         false,
@@ -955,35 +959,35 @@ export default function SpoofingView() {
         const durationSec = (durationMs / 1000).toFixed(2);
 
         if (discoveredCount > 0) {
-          logIsm(
+          logValencyStudio(
             'success',
             `Discovery complete for ${targetAssetIds.length} asset(s) in ${durationSec}s (${avgMsPerAsset}ms/asset, ${discoveredCount} resolved).`,
             false,
           );
         } else {
-          logIsm(
+          logValencyStudio(
             'warn',
             `Discovery completed in ${durationSec}s, but no working place IDs were found.`,
             false,
           );
         }
       } catch (err) {
-        logIsm('error', `Place ID discovery failed: ${String(err)}`, false);
+        logValencyStudio('error', `Place ID discovery failed: ${String(err)}`, false);
       } finally {
         store.setIsDiscoveringPlaceIds(false);
       }
     };
-    document.addEventListener('ism-open-scan-options', onOpenScan);
-    document.addEventListener('ism-run-spoofer', onRun);
-    document.addEventListener('ism-open-paste-ids', onOpenPaste);
-    document.addEventListener('ism-start-scan', onStartScan);
-    document.addEventListener('ism-discover-place-ids', onDiscoverPlaceIds);
+    document.addEventListener('ValencyStudio-open-scan-options', onOpenScan);
+    document.addEventListener('ValencyStudio-run-spoofer', onRun);
+    document.addEventListener('ValencyStudio-open-paste-ids', onOpenPaste);
+    document.addEventListener('ValencyStudio-start-scan', onStartScan);
+    document.addEventListener('ValencyStudio-discover-place-ids', onDiscoverPlaceIds);
     return () => {
-      document.removeEventListener('ism-open-scan-options', onOpenScan);
-      document.removeEventListener('ism-run-spoofer', onRun);
-      document.removeEventListener('ism-open-paste-ids', onOpenPaste);
-      document.removeEventListener('ism-start-scan', onStartScan);
-      document.removeEventListener('ism-discover-place-ids', onDiscoverPlaceIds);
+      document.removeEventListener('ValencyStudio-open-scan-options', onOpenScan);
+      document.removeEventListener('ValencyStudio-run-spoofer', onRun);
+      document.removeEventListener('ValencyStudio-open-paste-ids', onOpenPaste);
+      document.removeEventListener('ValencyStudio-start-scan', onStartScan);
+      document.removeEventListener('ValencyStudio-discover-place-ids', onDiscoverPlaceIds);
     };
   }, []);
 

@@ -86,13 +86,13 @@ export const detectCookie = async (mode: 'studio' | 'browser', userId: string | 
   return null;
 };
 
-export const logIsm = (
+export const logValencyStudio = (
   level: 'info' | 'success' | 'warn' | 'error',
   message: string,
   notify?: boolean,
 ) => {
-  if (typeof window !== 'undefined' && typeof window.ismLog === 'function') {
-    window.ismLog(level, message, notify);
+  if (typeof window !== 'undefined' && typeof window.ValencyStudioLog === 'function') {
+    window.ValencyStudioLog(level, message, notify);
     return;
   }
 

@@ -1,13 +1,15 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 
 import type { AppConfig } from '../contexts/ConfigContext';
-import { logIsm } from './robloxProfiles';
+import { logValencyStudio } from './robloxProfiles';
 
 let currentAudio: HTMLAudioElement | null = null;
 let playbackToken = 0;
 
 const notifyPlaybackChange = (assetId: string | null) => {
-  window.dispatchEvent(new CustomEvent('ism-audio-playback-change', { detail: { assetId } }));
+  window.dispatchEvent(
+    new CustomEvent('ValencyStudio-audio-playback-change', { detail: { assetId } }),
+  );
 };
 
 export const stopRobloxAudio = () => {
@@ -22,7 +24,7 @@ export const stopRobloxAudio = () => {
 
 export const playRobloxAudio = async (assetId: string, config: AppConfig) => {
   if (!assetId.trim()) {
-    logIsm('warn', 'No Roblox audio asset id was provided.');
+    logValencyStudio('warn', 'No Roblox audio asset id was provided.');
     return false;
   }
 
@@ -49,7 +51,7 @@ export const playRobloxAudio = async (assetId: string, config: AppConfig) => {
         currentAudio = null;
         notifyPlaybackChange(null);
       }
-      logIsm('error', `Playback failed for audio ${assetId}`);
+      logValencyStudio('error', `Playback failed for audio ${assetId}`);
     });
 
     audio.addEventListener('ended', () => {
@@ -66,13 +68,13 @@ export const playRobloxAudio = async (assetId: string, config: AppConfig) => {
     }
 
     notifyPlaybackChange(assetId);
-    logIsm('success', `Playing Roblox audio ${assetId}.`);
+    logValencyStudio('success', `Playing Roblox audio ${assetId}.`);
     return true;
   } catch (err) {
     if (currentToken === playbackToken) {
       stopRobloxAudio();
     }
-    logIsm('error', `Could not play Roblox audio ${assetId}: ${String(err)}`);
+    logValencyStudio('error', `Could not play Roblox audio ${assetId}: ${String(err)}`);
     return false;
   }
 };

@@ -19,7 +19,7 @@ describe('debugLogger', () => {
 
   it('adds logs properly and assigns incremental IDs', () => {
     addDebugLog('info', ['Test message 1']);
-    addDebugLog('error', ['Test message 2'], 'ism');
+    addDebugLog('error', ['Test message 2'], 'ValencyStudio');
 
     const logs = getDebugLogs();
     expect(logs).toHaveLength(2);
@@ -29,7 +29,7 @@ describe('debugLogger', () => {
 
     expect(logs[1].message).toBe('Test message 2');
     expect(logs[1].level).toBe('error');
-    expect(logs[1].source).toBe('ism');
+    expect(logs[1].source).toBe('ValencyStudio');
 
     expect(logs[1].id).toBeGreaterThan(logs[0].id);
   });
@@ -87,13 +87,13 @@ describe('debugLogger', () => {
   });
 
   describe('global hooks', () => {
-    it('window.ismLog invokes addDebugLog with source ism', () => {
-      window.ismLog('success', 'Operation completed');
+    it('window.ValencyStudioLog invokes addDebugLog with source ValencyStudio', () => {
+      window.ValencyStudioLog('success', 'Operation completed');
       const logs = getDebugLogs();
       expect(logs).toHaveLength(1);
       expect(logs[0].level).toBe('success');
       expect(logs[0].message).toBe('Operation completed');
-      expect(logs[0].source).toBe('ism');
+      expect(logs[0].source).toBe('ValencyStudio');
     });
   });
 });

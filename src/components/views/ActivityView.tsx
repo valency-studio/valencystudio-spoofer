@@ -16,7 +16,7 @@ import { useConfig } from '../../contexts/ConfigContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { queueSpoofRetry, type SpoofJob } from '../../utils/jobTypes';
 import { deleteUploadRecord, getUploadHistory, type UploadRecord } from '../../utils/music';
-import { logIsm } from '../../utils/robloxProfiles';
+import { logValencyStudio } from '../../utils/robloxProfiles';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { HistoryRow } from './music/MusicView';
 
@@ -35,7 +35,7 @@ export default function ActivityView() {
 
       setJobs(finalJobs);
     } catch (e) {
-      logIsm('error', `Failed to load job history: ${e}`, true);
+      logValencyStudio('error', `Failed to load job history: ${e}`, true);
     } finally {
       setIsLoading(false);
     }
@@ -45,7 +45,7 @@ export default function ActivityView() {
     try {
       setMusicHistory(await getUploadHistory());
     } catch (e) {
-      logIsm('error', `Failed to load music upload history: ${e}`, true);
+      logValencyStudio('error', `Failed to load music upload history: ${e}`, true);
     }
   };
 
@@ -71,7 +71,7 @@ export default function ActivityView() {
       await deleteUploadRecord(id);
       setMusicHistory((previous) => previous.filter((record) => record.id !== id));
     } catch (error) {
-      logIsm('error', `Could not delete music upload record: ${error}`, true);
+      logValencyStudio('error', `Could not delete music upload record: ${error}`, true);
     }
   };
 
@@ -81,7 +81,7 @@ export default function ActivityView() {
       await invoke('delete_job', { jobId });
       setJobs((prev) => prev.filter((j) => j.id !== jobId));
     } catch (error) {
-      logIsm('error', `Could not delete job: ${error}`, true);
+      logValencyStudio('error', `Could not delete job: ${error}`, true);
     }
   };
 
@@ -90,7 +90,7 @@ export default function ActivityView() {
     try {
       await invoke('open_job_log', { logPath });
     } catch (error) {
-      logIsm('error', `Could not open log: ${error}`, true);
+      logValencyStudio('error', `Could not open log: ${error}`, true);
     }
   };
 

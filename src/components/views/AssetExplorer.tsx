@@ -48,7 +48,7 @@ import { useSpooferStore } from '../../stores/spooferStore';
 import type { PluginAsset, PluginAssetStore } from '../../utils/pluginBridge';
 import { playRobloxAudio, stopRobloxAudio } from '../../utils/robloxAudio';
 import type { ParsedAssetRef, RbxInstance } from '../../utils/robloxPlaceParser/types';
-import { logIsm } from '../../utils/robloxProfiles';
+import { logValencyStudio } from '../../utils/robloxProfiles';
 import { isTauriRuntime } from '../../utils/tauriRuntime';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
@@ -256,7 +256,7 @@ export default function AssetExplorer({
       scanTypes.has(k),
     );
     document.dispatchEvent(
-      new CustomEvent('ism-start-scan', {
+      new CustomEvent('ValencyStudio-start-scan', {
         detail: { scanTypes: types, scanPath: p.trim() },
       }),
     );
@@ -509,7 +509,7 @@ export default function AssetExplorer({
             ]);
           })
           .catch((err) => {
-            logIsm('error', `Failed to resolve script references: ${String(err)}`);
+            logValencyStudio('error', `Failed to resolve script references: ${String(err)}`);
           });
       }
     },
@@ -541,9 +541,9 @@ export default function AssetExplorer({
     const handlePlaybackChange = (event: Event) => {
       setPlayingAudioId((event as CustomEvent<{ assetId: string | null }>).detail.assetId);
     };
-    window.addEventListener('ism-audio-playback-change', handlePlaybackChange);
+    window.addEventListener('ValencyStudio-audio-playback-change', handlePlaybackChange);
     return () => {
-      window.removeEventListener('ism-audio-playback-change', handlePlaybackChange);
+      window.removeEventListener('ValencyStudio-audio-playback-change', handlePlaybackChange);
       stopRobloxAudio();
     };
   }, []);
@@ -861,9 +861,9 @@ export default function AssetExplorer({
                           .getState()
                           .setLoadedFileName(path.split(/[\\/]/).pop() ?? path);
                         setLoadedFilePath(path);
-                        logIsm('success', `Loaded place file: ${path}`);
+                        logValencyStudio('success', `Loaded place file: ${path}`);
                       } catch (err) {
-                        logIsm('error', `Failed to load place file: ${String(err)}`);
+                        logValencyStudio('error', `Failed to load place file: ${String(err)}`);
                       }
                     }}
                     className="flex items-center justify-center gap-2 px-5 h-11 text-text-primary font-bold text-sm hover:bg-bg-elevated disabled:opacity-50 transition-colors cursor-pointer"
@@ -939,7 +939,7 @@ export default function AssetExplorer({
                         (k) => scanTypes.has(k),
                       );
                       document.dispatchEvent(
-                        new CustomEvent('ism-start-scan', {
+                        new CustomEvent('ValencyStudio-start-scan', {
                           detail: { scanTypes: types },
                         }),
                       );
@@ -1136,7 +1136,7 @@ export default function AssetExplorer({
                                   'scripts',
                                 ].filter((k) => scanTypes.has(k));
                                 document.dispatchEvent(
-                                  new CustomEvent('ism-start-scan', {
+                                  new CustomEvent('ValencyStudio-start-scan', {
                                     detail: { scanTypes: types },
                                   }),
                                 );
@@ -1296,7 +1296,9 @@ export default function AssetExplorer({
                             size="sm"
                             className="h-8 text-xs text-text-secondary hover:text-text-primary gap-1.5 w-full"
                             onClick={() =>
-                              document.dispatchEvent(new CustomEvent('ism-open-paste-ids'))
+                              document.dispatchEvent(
+                                new CustomEvent('ValencyStudio-open-paste-ids'),
+                              )
                             }
                           >
                             <ClipboardPaste size={13} />
@@ -1637,7 +1639,7 @@ export default function AssetExplorer({
                               className="h-7 px-2 flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                               onClick={() =>
                                 document.dispatchEvent(
-                                  new CustomEvent('ism-discover-place-ids', {
+                                  new CustomEvent('ValencyStudio-discover-place-ids', {
                                     detail: { timeoutSecs: discoveryTimeoutSecs },
                                   }),
                                 )
@@ -1713,7 +1715,7 @@ export default function AssetExplorer({
                           type="button"
                           className="h-7 w-7 flex items-center justify-center text-muted-foreground hover:text-foreground rounded transition-colors cursor-pointer"
                           onClick={() =>
-                            document.dispatchEvent(new CustomEvent('ism-open-paste-ids'))
+                            document.dispatchEvent(new CustomEvent('ValencyStudio-open-paste-ids'))
                           }
                         >
                           <ClipboardPaste size={13} />
@@ -1757,7 +1759,7 @@ export default function AssetExplorer({
                         useSpooferStore.getState().setTargetPathsMap(targetPaths || {});
                         if (selectedAssetIds.size > 0) {
                           document.dispatchEvent(
-                            new CustomEvent('ism-run-spoofer', {
+                            new CustomEvent('ValencyStudio-run-spoofer', {
                               detail: {
                                 assetIds: Array.from(selectedAssetIds),
                                 targetPaths,
@@ -1766,7 +1768,7 @@ export default function AssetExplorer({
                           );
                         } else {
                           document.dispatchEvent(
-                            new CustomEvent('ism-run-spoofer', {
+                            new CustomEvent('ValencyStudio-run-spoofer', {
                               detail: { targetPaths },
                             }),
                           );

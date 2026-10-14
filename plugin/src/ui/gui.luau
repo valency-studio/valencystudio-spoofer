@@ -787,9 +787,9 @@ logConnection = LogService.MessageOut:Connect(function(message, messageType)
 		return
 	end
 
-	local isIsm = string.find(message, "[ValencyStudio - Spoofer]", 1, true)
+	local isValencyStudio = string.find(message, "[ValencyStudio - Spoofer]", 1, true)
 
-	if isIsm then
+	if isValencyStudio then
 		logCounter += 1
 		local logLabel = Instance.new("TextLabel")
 		logLabel.Name = "Log_" .. logCounter

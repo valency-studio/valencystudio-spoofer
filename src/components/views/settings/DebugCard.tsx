@@ -4,7 +4,7 @@ import { Bug, FolderOpen, Trash2 } from 'lucide-react';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useSpooferStore } from '../../../stores/spooferStore';
-import { logIsm } from '../../../utils/robloxProfiles';
+import { logValencyStudio } from '../../../utils/robloxProfiles';
 import { Button } from '../../ui/button';
 import { SettingCard, SettingSwitchRow } from './SettingComponents';
 
@@ -32,17 +32,17 @@ export default function DebugCard() {
       });
       sessionStorage.clear();
       store.showToast('success', successMessage);
-      logIsm('success', successMessage);
+      logValencyStudio('success', successMessage);
     } catch (err) {
       useSpooferStore.getState().showToast('error', `Failed to clear cache: ${String(err)}`);
-      logIsm('error', `Failed to clear cache: ${String(err)}`);
+      logValencyStudio('error', `Failed to clear cache: ${String(err)}`);
     }
   }
 
   const handleCacheChange = async (enabled: boolean) => {
     updateConfig('debug', 'enableCache', enabled);
     if (enabled) {
-      logIsm('success', 'Cache enabled.');
+      logValencyStudio('success', 'Cache enabled.');
       return;
     }
     await handleClearCache('Cache disabled. Cached runtime data cleared.');
@@ -85,7 +85,7 @@ export default function DebugCard() {
           className="h-8 text-xs font-semibold flex items-center justify-center gap-2"
           onClick={() =>
             invoke('open_logs_folder').catch((err) =>
-              logIsm('error', `Failed to open logs folder: ${String(err)}`),
+              logValencyStudio('error', `Failed to open logs folder: ${String(err)}`),
             )
           }
         >

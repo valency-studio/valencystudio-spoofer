@@ -19,7 +19,11 @@ import { useState } from 'react';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useConfigStore } from '../../../stores/configStore';
-import { loadCachedUsers, logIsm, validateCookieProfile } from '../../../utils/robloxProfiles';
+import {
+  loadCachedUsers,
+  logValencyStudio,
+  validateCookieProfile,
+} from '../../../utils/robloxProfiles';
 import { Button } from '../../ui/button';
 import { Card } from '../../ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../ui/dialog';
@@ -134,9 +138,9 @@ export default function AccountsView() {
       setIsAddOpen(false);
       setNewCookie('');
       setNewApiKey('');
-      logIsm('success', 'Roblox account added.', true);
+      logValencyStudio('success', 'Roblox account added.', true);
     } catch (e: any) {
-      logIsm('error', `Could not add account: ${e.message || String(e)}`, true);
+      logValencyStudio('error', `Could not add account: ${e.message || String(e)}`, true);
     } finally {
       setIsAdding(false);
     }
@@ -192,7 +196,7 @@ export default function AccountsView() {
 
     updateAccountsList(updated);
     setIsValidatingAll(false);
-    logIsm(
+    logValencyStudio(
       'info',
       `Account validation finished: ${validCount} valid, ${invalidCount} invalid.`,
       true,
@@ -233,10 +237,10 @@ export default function AccountsView() {
       if (permissionGranted) {
         sendNotification({ title: 'ValencyStudio - Spoofer', body: msg });
       } else {
-        logIsm('success', msg, true);
+        logValencyStudio('success', msg, true);
       }
     } catch (e) {
-      logIsm('success', msg, true);
+      logValencyStudio('success', msg, true);
     }
   };
 

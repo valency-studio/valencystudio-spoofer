@@ -3,7 +3,7 @@ import { HelpCircle, Laptop } from 'lucide-react';
 
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import { logIsm } from '../../../utils/robloxProfiles';
+import { logValencyStudio } from '../../../utils/robloxProfiles';
 import { Button } from '../../ui/button';
 import { SettingCard, SettingSwitchRow } from './SettingComponents';
 
@@ -14,7 +14,7 @@ export default function BehaviorCard() {
   const handleDesktopNotificationsChange = async (enabled: boolean) => {
     updateConfig('general', 'desktopNotifications', enabled);
     if (!enabled) {
-      logIsm('info', t('misc.notificationsDisabledTitle'));
+      logValencyStudio('info', t('misc.notificationsDisabledTitle'));
       return;
     }
 
@@ -25,18 +25,18 @@ export default function BehaviorCard() {
           body: t('misc.desktopNotificationsEnabled'),
         },
       });
-      logIsm(
+      logValencyStudio(
         shown ? 'success' : 'warn',
         shown ? t('misc.notificationsEnabledTitle') : t('misc.notificationsFailed'),
       );
     } catch (err) {
-      logIsm('error', `Desktop notifications failed: ${String(err)}`);
+      logValencyStudio('error', `Desktop notifications failed: ${String(err)}`);
     }
   };
 
   const handleShowTutorial = () => {
     updateConfig('ui', 'tutorialCompleted', false);
-    window.dispatchEvent(new Event('ism-start-tutorial'));
+    window.dispatchEvent(new Event('ValencyStudio-start-tutorial'));
   };
 
   return (

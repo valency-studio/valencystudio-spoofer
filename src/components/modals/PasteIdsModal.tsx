@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { cn } from '../../lib/utils';
 import { useSpooferStore } from '../../stores/spooferStore';
-import { logIsm } from '../../utils/robloxProfiles';
+import { logValencyStudio } from '../../utils/robloxProfiles';
 import { queueStudioReplacements } from '../../utils/studioBridge';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
@@ -74,7 +74,7 @@ export default function PasteIdsModal({
       setIsApplying(true);
       try {
         await queueStudioReplacements(pairs);
-        logIsm(
+        logValencyStudio(
           'success',
           `Sent ${replacePairCount} replacement${replacePairCount === 1 ? '' : 's'} to the Studio plugin.`,
           true,
@@ -91,7 +91,7 @@ export default function PasteIdsModal({
         setRawInput('');
         onOpenChange(false);
       } catch (e: unknown) {
-        logIsm(
+        logValencyStudio(
           'error',
           `Could not send replacements to Studio: ${e instanceof Error ? e.message : String(e)}. Make sure Roblox Studio is open and the ValencyStudio - Spoofer plugin is running.`,
           true,
@@ -141,7 +141,7 @@ export default function PasteIdsModal({
       });
 
       const message = `Added ${singleIds.length} ID(s) to Explorer (${matchedIds.length} matched in Studio, ${ghostIds.length} created as Ghost IDs).`;
-      logIsm('info', message, true);
+      logValencyStudio('info', message, true);
       showToast('info', message);
 
       setRawInput('');

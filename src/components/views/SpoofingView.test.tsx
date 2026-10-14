@@ -87,7 +87,7 @@ vi.mock('../../utils/apiClient', () => ({
 vi.mock('../../utils/robloxProfiles', () => ({
   loadCachedGroups: vi.fn().mockResolvedValue([]),
   loadCachedUsers: vi.fn().mockResolvedValue([]),
-  logIsm: vi.fn(),
+  logValencyStudio: vi.fn(),
   normalizeId: vi.fn((id: string) => id),
   saveCachedGroups: vi.fn(),
   validateCookieProfile: vi.fn().mockResolvedValue(null),

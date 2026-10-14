@@ -8,7 +8,7 @@ import type {
   SpooferResultPayload,
   SpooferStartedPayload,
 } from '../types/tauriEvents';
-import { logIsm } from '../utils/robloxProfiles';
+import { logValencyStudio } from '../utils/robloxProfiles';
 import { appendSpoofingLog } from '../utils/spoofingLogs';
 import { isTauriRuntime } from '../utils/tauriRuntime';
 
@@ -166,7 +166,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           message = `Spoofing complete: ${ok} succeeded, ${failed} failed${skipped ? `, ${skipped} skipped` : ''} out of ${total} asset(s) in ${durationSec}s (${avgMsPerAsset}ms/asset).`;
         }
         useSpooferStore.getState().showToast(level, message, 6000);
-        logIsm(
+        logValencyStudio(
           level === 'error' ? 'error' : level === 'success' ? 'success' : 'info',
           message,
           false,
@@ -317,13 +317,13 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                         setSpoofingLogs((prev) => appendSpoofingLog(prev, `[ERROR] ${err}`));
                       }
                     }
-                    logIsm(failCount > 0 ? 'warn' : 'success', logMsg, false);
+                    logValencyStudio(failCount > 0 ? 'warn' : 'success', logMsg, false);
                   })
                   .catch((err) => {
                     console.error('[AssetPermissions] Fatal error granting permissions:', err);
                     const errMsg = `Could not auto-grant permissions: ${String(err)}`;
                     setSpoofingLogs((prev) => appendSpoofingLog(prev, `[ERROR] ${errMsg}`));
-                    logIsm('error', errMsg, false);
+                    logValencyStudio('error', errMsg, false);
                   })
                   .finally(() => {
                     useSpooferStore.getState().setIsGrantingPermissions(false);

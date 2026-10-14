@@ -9,7 +9,7 @@ import { addDebugLog } from '../../utils/debugLogger';
 import {
   loadCachedGroups,
   loadCachedUsers,
-  logIsm,
+  logValencyStudio,
   normalizeId,
   type RobloxGroup,
   type RobloxUserInfo,
@@ -106,7 +106,11 @@ export default function ProfilePopup({ collapsed = false }: { collapsed?: boolea
       }
     } catch (e) {
       addDebugLog('error', ['ProfilePopup: failed to load profile secrets', e]);
-      logIsm('warn', 'The saved cookie for this Roblox profile could not be restored.', true);
+      logValencyStudio(
+        'warn',
+        'The saved cookie for this Roblox profile could not be restored.',
+        true,
+      );
     }
     updateCategory('spoofing', {
       selectedUser: userId,

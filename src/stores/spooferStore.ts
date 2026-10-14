@@ -456,8 +456,8 @@ export const applyReplacements = async (
           '\n[INFO] No replacements were generated (all assets may have been skipped or failed).',
         ),
       );
-      if (typeof window.ismLog === 'function') {
-        window.ismLog(
+      if (typeof window.ValencyStudioLog === 'function') {
+        window.ValencyStudioLog(
           'info',
           'No replacements generated. All selected assets may have already been spoofed or failed.',
           true,

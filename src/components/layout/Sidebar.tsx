@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import IsmLogo from '../../assets/app_icon.png';
+import ValencyStudioLogo from '../../assets/app_icon.png';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useStudioConnectionState } from '../../contexts/StudioConnectionContext';
 import { cn } from '../../lib/utils';
@@ -82,7 +82,7 @@ export default function Sidebar({
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <img
-                    src={IsmLogo}
+                    src={ValencyStudioLogo}
                     className="w-full h-full object-contain block select-none pointer-events-none"
                     alt=""
                   />

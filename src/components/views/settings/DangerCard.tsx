@@ -38,7 +38,7 @@ export default function DangerCard() {
             );
             if (confirmed) {
               resetConfig();
-              window.ismLog?.('success', t('settings.resetSuccess'));
+              window.ValencyStudioLog?.('success', t('settings.resetSuccess'));
             }
           }}
         >

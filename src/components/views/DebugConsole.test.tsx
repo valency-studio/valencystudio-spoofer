@@ -37,7 +37,7 @@ describe('DebugConsole', () => {
         id: '1',
         timestamp: '12:00:00',
         level: 'info',
-        source: 'ism',
+        source: 'ValencyStudio',
         message: 'Test message',
       },
       {
@@ -99,7 +99,7 @@ describe('DebugConsole', () => {
     fireEvent.click(copyBtn);
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      '[12:00:00] [ISM] INFO: Test message\n[12:00:01] [CONSOLE] ERROR: Error message',
+      '[12:00:00] [VALENCYSTUDIO] INFO: Test message\n[12:00:01] [CONSOLE] ERROR: Error message',
     );
   });
 

@@ -31,8 +31,8 @@ export const TutorialGate = () => {
 
   useEffect(() => {
     const handler = () => setOpen(true);
-    window.addEventListener('ism-start-tutorial', handler);
-    return () => window.removeEventListener('ism-start-tutorial', handler);
+    window.addEventListener('ValencyStudio-start-tutorial', handler);
+    return () => window.removeEventListener('ValencyStudio-start-tutorial', handler);
   }, []);
 
   const handleComplete = useCallback(() => {

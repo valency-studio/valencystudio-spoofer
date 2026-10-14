@@ -11,7 +11,7 @@ vi.mock('@tauri-apps/api/core', () => ({
 }));
 
 vi.mock('./robloxProfiles', () => ({
-  logIsm: vi.fn(),
+  logValencyStudio: vi.fn(),
 }));
 
 describe('robloxAudio', () => {
@@ -48,13 +48,13 @@ describe('robloxAudio', () => {
   it('returns false and logs warning if asset id is empty', async () => {
     const result = await playRobloxAudio(' ', dummyConfig);
     expect(result).toBe(false);
-    expect(robloxProfiles.logIsm).toHaveBeenCalledWith('warn', expect.any(String));
+    expect(robloxProfiles.logValencyStudio).toHaveBeenCalledWith('warn', expect.any(String));
   });
 
   it('plays audio successfully', async () => {
     vi.mocked(tauriCore.invoke).mockResolvedValue('/temp/audio.mp3');
-    vi.mocked(robloxProfiles.logIsm).mockImplementation((level, msg) => {
-      console.log('LOG_ISM:', level, msg);
+    vi.mocked(robloxProfiles.logValencyStudio).mockImplementation((level, msg) => {
+      console.log('LOG_ValencyStudio:', level, msg);
     });
 
     const result = await playRobloxAudio('123', dummyConfig);
@@ -62,7 +62,7 @@ describe('robloxAudio', () => {
     expect(result).toBe(true);
     expect(globalThis.Audio).toHaveBeenCalledWith('asset:///temp/audio.mp3');
     expect(mockAudio.play).toHaveBeenCalled();
-    expect(robloxProfiles.logIsm).toHaveBeenCalledWith('success', expect.any(String));
+    expect(robloxProfiles.logValencyStudio).toHaveBeenCalledWith('success', expect.any(String));
   });
 
   it('handles playback failure from tauri backend', async () => {
@@ -70,7 +70,7 @@ describe('robloxAudio', () => {
     const result = await playRobloxAudio('123', dummyConfig);
 
     expect(result).toBe(false);
-    expect(robloxProfiles.logIsm).toHaveBeenCalledWith(
+    expect(robloxProfiles.logValencyStudio).toHaveBeenCalledWith(
       'error',
       expect.stringContaining('backend error'),
     );
@@ -81,7 +81,7 @@ describe('robloxAudio', () => {
     await playRobloxAudio('123', dummyConfig);
 
     mockAudio.onerror();
-    expect(robloxProfiles.logIsm).toHaveBeenCalledWith(
+    expect(robloxProfiles.logValencyStudio).toHaveBeenCalledWith(
       'error',
       expect.stringContaining('Playback failed'),
     );

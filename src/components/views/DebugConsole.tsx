@@ -65,7 +65,7 @@ const LEVEL_CONFIG: Record<string, { color: string; bg: string; border: string; 
 };
 
 const SOURCE_CONFIG: Record<string, { label: string; tag: string }> = {
-  ism: { label: 'ISM', tag: 'text-primary/60' },
+  ValencyStudio: { label: 'ValencyStudio', tag: 'text-primary/60' },
   console: { label: 'DEV', tag: 'text-muted-foreground/60' },
 };
 
@@ -164,7 +164,7 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
 
   const sources = [
     { value: 'all', label: 'All' },
-    { value: 'ism', label: 'ISM' },
+    { value: 'ValencyStudio', label: 'ValencyStudio' },
     { value: 'console', label: 'DEV' },
   ];
 

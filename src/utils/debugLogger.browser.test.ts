@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const createWindow = () => {
   const listeners: Record<string, EventListener[]> = {};
   return {
-    __ismDebugLogger: undefined as any,
-    ismLog: undefined as any,
+    __ValencyStudioDebugLogger: undefined as any,
+    ValencyStudioLog: undefined as any,
     addEventListener: (event: string, fn: EventListener) => {
       listeners[event] = listeners[event] ?? [];
       listeners[event].push(fn);
@@ -69,8 +69,8 @@ describe('addDebugLog', () => {
 
   it('respects the source parameter', async () => {
     const { addDebugLog, getDebugLogs } = await getLogger();
-    addDebugLog('success', ['done'], 'ism');
-    expect(getDebugLogs()[0].source).toBe('ism');
+    addDebugLog('success', ['done'], 'ValencyStudio');
+    expect(getDebugLogs()[0].source).toBe('ValencyStudio');
   });
 
   it('assigns incrementing ids across entries', async () => {

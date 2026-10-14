@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { isTauriRuntime } from './tauriRuntime';
 
 type LogLevel = 'info' | 'success' | 'warn' | 'error';
-type LogSource = 'console' | 'ism';
+type LogSource = 'console' | 'ValencyStudio';
 
 export interface LogEntry {
   id: number;
@@ -44,21 +44,21 @@ interface DebugLoggerState {
 
 declare global {
   interface Window {
-    ismLog: (level: LogLevel, message: string, notify?: boolean) => void;
-    __ismDebugLogger?: DebugLoggerState;
+    ValencyStudioLog: (level: LogLevel, message: string, notify?: boolean) => void;
+    __ValencyStudioDebugLogger?: DebugLoggerState;
   }
 }
 
 function getState(): DebugLoggerState {
-  if (!window.__ismDebugLogger) {
-    window.__ismDebugLogger = {
+  if (!window.__ValencyStudioDebugLogger) {
+    window.__ValencyStudioDebugLogger = {
       logs: [],
       counter: 0,
       listeners: new Set(),
       patched: false,
     };
   }
-  return window.__ismDebugLogger;
+  return window.__ValencyStudioDebugLogger;
 }
 
 function formatArg(arg: unknown): string {
@@ -224,8 +224,8 @@ function installDebugLogger() {
     addDebugLog('error', [event.reason || 'Unhandled promise rejection'], 'console');
   });
 
-  window.ismLog = (level: LogLevel, message: string, notify?: boolean) => {
-    addDebugLog(level, [message], 'ism', notify);
+  window.ValencyStudioLog = (level: LogLevel, message: string, notify?: boolean) => {
+    addDebugLog(level, [message], 'ValencyStudio', notify);
   };
 
   if (isTauriRuntime()) {
@@ -244,10 +244,10 @@ function installDebugLogger() {
           const message = payload.message || JSON.stringify(payload);
 
           if (typeof message === 'string' && message.includes('[ui]')) return;
-          if (typeof message === 'string' && message.includes('[ism]')) return;
+          if (typeof message === 'string' && message.includes('[ValencyStudio]')) return;
           if (typeof message === 'string' && message.includes('[console]')) return;
 
-          addDebugLog(level, [message], 'ism');
+          addDebugLog(level, [message], 'ValencyStudio');
         }).catch((e) => {
           console.error('Failed to listen to tauri-plugin-log:', e);
         });

@@ -7,7 +7,7 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { useConfigStore } from '../../../stores/configStore';
 import {
   detectCookie,
-  logIsm,
+  logValencyStudio,
   mergeCachedUser,
   validateCookieProfile,
 } from '../../../utils/robloxProfiles';
@@ -53,14 +53,14 @@ export default function CredentialsSection() {
       selectedGroup: 'none',
     });
     setAuthStatus('success');
-    logIsm('info', 'Cookie validated for the selected profile.');
+    logValencyStudio('info', 'Cookie validated for the selected profile.');
     void saveSecrets();
   };
 
   const runAutoDetect = async (mode: string) => {
     if (mode === 'none') return;
     setAuthStatus('loading');
-    logIsm('info', `Auto detecting Roblox cookie from ${mode}.`);
+    logValencyStudio('info', `Auto detecting Roblox cookie from ${mode}.`);
 
     try {
       const detected = await detectCookie(
@@ -73,7 +73,7 @@ export default function CredentialsSection() {
           mode === 'browser'
             ? ' (Chrome and Edge 127+ protect cookies with app-bound encryption. Please paste your .ROBLOSECURITY cookie manually)'
             : ' (Please paste your .ROBLOSECURITY cookie manually)';
-        logIsm('info', `Could not find an active Roblox cookie.${extraMsg}`);
+        logValencyStudio('info', `Could not find an active Roblox cookie.${extraMsg}`);
         updateCategory('advanced', {
           autoCookieStudio: false,
           autoCookieBrowser: false,
@@ -99,14 +99,14 @@ export default function CredentialsSection() {
           autoCookieBrowser: false,
         });
         setManualCookieEdit(true);
-        logIsm(
+        logValencyStudio(
           'warn',
           'The detected Roblox cookie has expired. Please sign in to Roblox again or paste a fresh cookie manually.',
           true,
         );
       } else {
         setAuthStatus('idle');
-        logIsm(
+        logValencyStudio(
           'warn',
           `Could not check for a Roblox cookie right now (${errStr}). Keeping your existing credentials.`,
         );
@@ -143,7 +143,7 @@ export default function CredentialsSection() {
         applyValidatedCookie(result);
       } catch {
         setAuthStatus('idle');
-        logIsm('warn', 'The manually entered Roblox cookie could not be validated.');
+        logValencyStudio('warn', 'The manually entered Roblox cookie could not be validated.');
       }
     }, 900);
     return () => window.clearTimeout(timer);
@@ -156,7 +156,7 @@ export default function CredentialsSection() {
 
     if (key.length < 20) {
       setStatus('error');
-      logIsm(
+      logValencyStudio(
         'warn',
         `Paste a ${isUser ? 'User' : 'Group'} Open Cloud API key before validating.`,
         true,
@@ -172,14 +172,14 @@ export default function CredentialsSection() {
       const message = result.message || 'No validation details returned.';
       if (result.ok) {
         setStatus('success');
-        logIsm('success', `[${isUser ? 'User' : 'Group'} API Key] ${message}`, true);
+        logValencyStudio('success', `[${isUser ? 'User' : 'Group'} API Key] ${message}`, true);
         void saveSecrets();
       } else if (/invalid|unauthorized/i.test(message)) {
         setStatus('error');
-        logIsm('warn', `[${isUser ? 'User' : 'Group'} API Key] ${message}`, true);
+        logValencyStudio('warn', `[${isUser ? 'User' : 'Group'} API Key] ${message}`, true);
       } else {
         setStatus('idle');
-        logIsm(
+        logValencyStudio(
           'warn',
           `Could not fully verify the ${isUser ? 'User' : 'Group'} Open Cloud API key: ${message}`,
           true,
@@ -187,7 +187,7 @@ export default function CredentialsSection() {
       }
     } catch (error) {
       setStatus('error');
-      logIsm(
+      logValencyStudio(
         'warn',
         `${isUser ? 'User' : 'Group'} Open Cloud API key validation failed: ${String(error)}`,
         true,
