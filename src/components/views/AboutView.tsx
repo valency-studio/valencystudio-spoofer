@@ -3,9 +3,7 @@ import {
   ArrowUpRight,
   Globe,
   Heart,
-  Info,
   MessageCircle,
-  MessagesSquare,
   Music4,
   ShieldCheck,
   Sparkles,
@@ -15,7 +13,6 @@ import { useEffect, useState } from 'react';
 import appIcon from '../../assets/app_icon.png';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { isTauriRuntime } from '../../utils/tauriRuntime';
-import { Button } from '../ui/button';
 
 /** Runtime facts gathered once, each shown as "unknown" rather than hidden. */
 interface RuntimeInfo {
@@ -73,10 +70,10 @@ export default function AboutView() {
       url: 'https://valencystudio.dpdns.org',
     },
     {
-      icon: <MessagesSquare size={15} />,
-      label: t('about.github'),
-      hint: t('about.githubHint'),
-      url: 'https://github.com/valency-studio/valencystudio-spoofer',
+      icon: <Heart size={15} />,
+      label: t('about.supportMe'),
+      hint: t('about.supportMeHint'),
+      url: 'https://trakteer.id/valencystudio',
     },
     {
       icon: <MessageCircle size={15} />,
@@ -188,41 +185,6 @@ export default function AboutView() {
                 </li>
               ))}
             </ul>
-          </section>
-
-          <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-semibold text-text-primary">{t('about.openSource')}</h2>
-            <div className="flex flex-col gap-2 rounded-lg border border-border-subtle bg-card p-4 text-sm text-text-secondary">
-              <p>{t('about.openSourceNote')}</p>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (!isTauriRuntime()) return;
-                    void invoke('open_external', {
-                      url: 'https://github.com/valency-studio/valencystudio-spoofer/blob/main/LICENSE',
-                    }).catch(() => {});
-                  }}
-                >
-                  <Info size={14} />
-                  {t('about.viewSource')}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (!isTauriRuntime()) return;
-                    void invoke('open_external', {
-                      url: 'https://github.com/valency-studio/valencystudio-spoofer/releases/latest',
-                    }).catch(() => {});
-                  }}
-                >
-                  <Info size={14} />
-                  {t('about.changelog')}
-                </Button>
-              </div>
-            </div>
           </section>
 
           <p className="pb-4 text-center text-xs text-text-muted">
