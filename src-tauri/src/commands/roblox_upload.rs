@@ -152,7 +152,10 @@ pub struct UploadRecord {
     /// Who the asset was created against. Needed to (re)grant the Use
     /// permission on later launches; older rows predate the field and read as
     /// 0, which skips the grant rather than granting to the wrong account.
+    /// Exported as a float because a u64 would lose precision as a JavaScript
+    /// number. Roblox user ids stay far below that limit.
     #[serde(default)]
+    #[specta(type = f64)]
     pub creator_user_id: u64,
     /// Speed the track was baked at. The render is source/speed seconds long,
     /// so the row shows which PlaybackSpeed restores the original tempo.
