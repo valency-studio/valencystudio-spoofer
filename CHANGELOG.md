@@ -4,6 +4,36 @@ All notable changes to ValencyStudio - Spoofer are documented here. Versions
 follow [Semantic Versioning](https://semver.org/); release tags are derived
 from `package.json` by CI.
 
+## [3.0.3] - 2026-10-14
+
+### Added
+
+- **About tab** with app identity, feature highlights, live build details
+  (version, platform, architecture, runtime) and community links. Values the
+  backend cannot report render as a dash instead of failing.
+- **Trakteer support button.** The floating widget is injected as a document
+  script, since a script rendered from JSX never executes. Both Tauri configs
+  allow the Trakteer CDN for the loader and its icon. Loading is failure
+  tolerant: no button, no crash.
+- **GitHub funding metadata** pointing at Trakteer, so the Sponsor button shows
+  on the repository.
+
+### Changed
+
+- **ISM branding renamed to ValencyStudio** across assets, the log helper
+  (`logIsm` to `logValencyStudio`), the audio playback event, the debug console
+  source labels and the Studio plugin's log filter.
+- **About tab now carries a Support / Donate link** to Trakteer in place of the
+  GitHub row, and the redundant open-source section was dropped.
+
+### Fixed
+
+- **`tauri:dev` no longer fails to start.** Specta refused to export the new
+  `creatorUserId` field as a BigInt; it is exported as a float, matching how
+  asset ids were already handled.
+- Three call sites mangled by the rename (`logValencyStudioencyStudio`) and a
+  copy-logs test expectation that did not account for the uppercased label.
+
 ## [3.0.2] - 2026-10-14
 
 ### Fixed
@@ -87,6 +117,7 @@ from `package.json` by CI.
   IPC, and `https:` entries remain. No code path fetches remote plain-HTTP
   or remote WebSockets.
 
+[3.0.3]: https://github.com/valency-studio/valencystudio-spoofer/releases/tag/v3.0.3
 [3.0.2]: https://github.com/valency-studio/valencystudio-spoofer/releases/tag/v3.0.2
 [3.0.1]: https://github.com/valency-studio/valencystudio-spoofer/releases/tag/v3.0.1
 [3.0.0]: https://github.com/valency-studio/valencystudio-spoofer/releases/tag/v3.0.0
