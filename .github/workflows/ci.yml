@@ -478,23 +478,53 @@ jobs:
           set -euo pipefail
           shopt -s nullglob
 
-          # Uploads one file and prints the URL the server actually stored.
+          # Uploads one file, leaving the HTTP status and the raw body in
+          # UPLOAD_STATUS and UPLOAD_BODY.
           #
-          # Zipline refuses a name it already holds (E1009), and this instance
-          # exposes neither a delete nor an overwrite route, so a "Latest" copy
-          # can only be written once. The response body is returned rather than
-          # discarded so the caller can tell a name clash from a real failure.
+          # The status matters: the site sits behind Cloudflare, which answers
+          # a slow upload with an HTML error page instead of JSON. A body that
+          # is not JSON is therefore expected, not exceptional, so nothing here
+          # throws and every failure stays diagnosable from the log alone.
+          UPLOAD_STATUS=""
+          UPLOAD_BODY=""
+
           upload() {
             local file="$1"
             local mime
             mime=$(file --mime-type -b "$file")
-            curl -sS \
+
+            local body_file
+            body_file="$(mktemp)"
+
+            local status
+            if status=$(curl -sS -o "$body_file" -w '%{http_code}' \
               -H "authorization: $ZIPLINE_TOKEN" \
               -H 'content-type: multipart/form-data' \
               -H "x-zipline-format: name" \
               -H "x-zipline-original-name: true" \
               -F "file=@${file};type=${mime}" \
-              https://files.valencystudio.dpdns.org/api/upload
+              https://files.valencystudio.dpdns.org/api/upload); then
+              UPLOAD_STATUS="$status"
+            else
+              UPLOAD_STATUS="curl-failed:$?"
+            fi
+
+            UPLOAD_BODY="$(cat "$body_file")"
+            rm -f "$body_file"
+          }
+
+          # Echoes the stored URL, or nothing when the body is not a Zipline
+          # reply. jq is never allowed to abort the step, which is what turned
+          # the Cloudflare error page into an unexplained "parse error".
+          stored_url() {
+            jq -r '.files[0].url // empty' <<<"$UPLOAD_BODY" 2>/dev/null || true
+          }
+
+          # A name clash is the only failure a different name can fix. Retrying
+          # a timeout under another name would just spend twice as long failing.
+          is_name_clash() {
+            [ "$UPLOAD_STATUS" = "400" ] &&
+              jq -e '.error | test("E1009")' <<<"$UPLOAD_BODY" >/dev/null 2>&1
           }
 
           version="${TAG_NAME#v}"
@@ -526,20 +556,23 @@ jobs:
               f="mirror/$latest"
             fi
 
-            response=$(upload "$f")
-            url=$(jq -r '.files[0].url // empty' <<<"$response")
+            upload "$f"
+            url="$(stored_url)"
 
-            if [ -z "$url" ]; then
+            if [ -z "$url" ] && is_name_clash; then
               echo "::notice::$latest was refused, so the versioned name is used instead."
-              echo "::notice::$(jq -r '.error // "no reason given"' <<<"$response")"
               mv "$f" "mirror/$versioned"
               f="mirror/$versioned"
-              response=$(upload "$f")
-              url=$(jq -r '.files[0].url // empty' <<<"$response")
+              upload "$f"
+              url="$(stored_url)"
             fi
 
             if [ -z "$url" ]; then
-              echo "::error::Upload failed for $f: $response"
+              echo "::error::Upload of $f failed with HTTP $UPLOAD_STATUS"
+              echo "::error::Response: ${UPLOAD_BODY:-<empty>}"
+              echo "::error::Large bundles take over a minute to transfer, and the"
+              echo "::error::site sits behind Cloudflare, so a timeout here usually"
+              echo "::error::means the proxy gave up rather than the file being bad."
               exit 1
             fi
 
@@ -548,7 +581,6 @@ jobs:
             # than sending people to an unencrypted download.
             url="${url/#http:\/\//https:\/\/}"
 
-            echo "$f -> $url"
             case "$f" in
               *.exe)      key=windows ;;
               *.dmg)      key=macos ;;
@@ -556,6 +588,16 @@ jobs:
               *.rbxmx)    key=plugin ;;
               *)          key="other-$uploaded" ;;
             esac
+
+            # Zipline answers /u/ for a text-like upload with a redirect to its
+            # HTML viewer, so the plugin link would open a web page instead of
+            # installing anything. /raw/ serves the bytes; the bundles keep /u/
+            # so they still arrive as an attachment.
+            if [ "$key" = "plugin" ]; then
+              url="${url/\/u\//\/raw\/}"
+            fi
+
+            echo "$f -> $url"
             downloads=$(jq -c --arg k "$key" --arg v "$url" '. + {($k): $v}' <<<"$downloads")
             uploaded=$((uploaded + 1))
           done
