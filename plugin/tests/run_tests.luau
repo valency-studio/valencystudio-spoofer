@@ -166,6 +166,42 @@ describe("patcher.luau", function()
 	end)
 end)
 
+describe("manual replacement boundary protections", function()
+	it("should replace only isolated asset IDs and not unrelated digit sequences", function()
+		local source = 'local a = "rbxassetid://12345"; local b = "foo12345bar"; local c = 12345;'
+		local updated = source:gsub("%f[%d]12345%f[%D]", "67890")
+
+		expect(updated:find("rbxassetid://67890") ~= nil).to_be_truthy()
+		expect(updated:find("foo67890bar") == nil).to_be_truthy()
+	end)
+
+	it("should accept multiple mapping formats used by the manual replace parser", function()
+		local formats = {
+			"12345 -> 67890",
+			"12345:67890",
+			"12345,67890",
+			"12345 67890",
+		}
+
+		for _, line in ipairs(formats) do
+			local oldId, newId = line:match("(%d+)%s*[-=]>%s*(%d+)")
+			if not oldId then
+				oldId, newId = line:match("(%d+)%s*:%s*(%d+)")
+			end
+			if not oldId then
+				oldId, newId = line:match("(%d+)%s*,%s*(%d+)")
+			end
+			if not oldId then
+				oldId, newId = line:match("(%d+)%s+(%d+)")
+			end
+
+			expect(oldId ~= nil).to_be_truthy()
+			expect(newId ~= nil).to_be_truthy()
+			expect(oldId ~= newId).to_be_truthy()
+		end
+	end)
+end)
+
 describe("properties.luau", function()
 	it("should correctly identify property text limits using real constants", function()
 		expect(getMaxRecordValueBytes("Source")).to_equal(MAX_SCRIPT_SOURCE_BYTES)
