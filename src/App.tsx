@@ -58,7 +58,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden text-foreground relative font-sans selection:bg-signal-active/25 antialiased bg-background">
+    <div className="flex h-screen w-screen overflow-hidden text-foreground relative font-sans selection:bg-primary/25 antialiased bg-background">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="flex flex-col flex-1 min-w-0 h-full relative z-10">

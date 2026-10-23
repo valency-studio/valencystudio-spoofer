@@ -115,7 +115,7 @@ export default function ResultsModal({
             </span>
             {replacementsArray.length > 0 && (
               <Button size="sm" variant="outline" onClick={handleCopyAll} className="gap-2">
-                {copied ? <Check size={16} className="text-success" /> : <Copy size={16} />}
+                {copied ? <Check size={16} className="text-signal-live" /> : <Copy size={16} />}
                 {copied ? t('common.copied') : t('results.copyAll')}
               </Button>
             )}
@@ -146,7 +146,9 @@ export default function ResultsModal({
                       <span className="text-xs text-muted-foreground font-medium truncate">
                         {t('misc.spoofedId')}
                       </span>
-                      <span className="text-sm font-mono font-semibold text-success">{newId}</span>
+                      <span className="text-sm font-mono font-semibold text-signal-live">
+                        {newId}
+                      </span>
                     </div>
                   </div>
                 );

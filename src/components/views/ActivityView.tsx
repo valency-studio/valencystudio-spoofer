@@ -182,7 +182,7 @@ export default function ActivityView() {
                                   <img
                                     src={job.group.iconUrl}
                                     alt=""
-                                    className="w-4.5 h-4.5 rounded-full border-[2px] border-bg-surface absolute -bottom-0.5 -right-0.5 object-cover bg-bg-base shadow-xs"
+                                    className="w-4.5 h-4.5 rounded-full border-[2px] border-bg-base absolute -bottom-0.5 -right-0.5 object-cover bg-bg-base shadow-xs"
                                   />
                                 )}
                               </div>

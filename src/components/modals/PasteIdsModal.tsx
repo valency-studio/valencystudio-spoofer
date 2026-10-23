@@ -199,11 +199,11 @@ export default function PasteIdsModal({
           ) : (
             <p className="text-xs text-text-secondary leading-relaxed">
               Paste a list of ID pairs, one per line. Any of these separators work:{' '}
-              <code className="text-2xs bg-bg-muted px-1 rounded">-{'>'}</code>{' '}
-              <code className="text-2xs bg-bg-muted px-1 rounded">=</code>{' '}
-              <code className="text-2xs bg-bg-muted px-1 rounded">,</code> or spaces. Lines starting
-              with <code className="text-2xs bg-bg-muted px-1 rounded">#</code> or{' '}
-              <code className="text-2xs bg-bg-muted px-1 rounded">//</code> are ignored.
+              <code className="text-2xs bg-bg-elevated px-1 rounded">-{'>'}</code>{' '}
+              <code className="text-2xs bg-bg-elevated px-1 rounded">=</code>{' '}
+              <code className="text-2xs bg-bg-elevated px-1 rounded">,</code> or spaces. Lines
+              starting with <code className="text-2xs bg-bg-elevated px-1 rounded">#</code> or{' '}
+              <code className="text-2xs bg-bg-elevated px-1 rounded">//</code> are ignored.
             </p>
           )}
 

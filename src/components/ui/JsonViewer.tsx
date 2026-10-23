@@ -31,7 +31,7 @@ export function JsonViewer({ data, name, defaultExpanded = false, level = 0 }: J
   const renderValue = (val: unknown) => {
     if (val === null) return <span className="text-danger/80">null</span>;
     if (val === undefined) return <span className="text-danger/80">undefined</span>;
-    if (typeof val === 'string') return <span className="text-success">"{val}"</span>;
+    if (typeof val === 'string') return <span className="text-signal-live">"{val}"</span>;
     if (typeof val === 'number') return <span className="text-[#f59e0b]">{val}</span>;
     if (typeof val === 'boolean')
       return <span className="text-[#3b82f6]">{val ? 'true' : 'false'}</span>;

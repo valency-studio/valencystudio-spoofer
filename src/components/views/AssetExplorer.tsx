@@ -10,7 +10,6 @@ import {
   Copy,
   Download,
   Eye,
-  FileUp,
   FolderOpen,
   Image as ImageIcon,
   Inbox,
@@ -207,7 +206,6 @@ export default function AssetExplorer({
   mode: _mode = 'drawer',
 }: AssetExplorerProps) {
   const { t } = useLanguage();
-  const [isDragOver] = useState(false);
   const [, setEnlargedImage] = useState<{ id: string; name: string } | null>(null);
   const [, setPreviewingAnimation] = useState<{
     id: string;
@@ -773,18 +771,6 @@ export default function AssetExplorer({
 
   return (
     <div className="h-full bg-background flex flex-col shrink-0 overflow-hidden relative w-full border-l-0">
-      {isDragOver && (
-        <div
-          key="asset-drag-drop"
-          className="absolute inset-0 z-50 flex items-center justify-center bg-bg-surface/90 border-2 border-dashed border-primary m-1 rounded-md pointer-events-none"
-        >
-          <div className="flex flex-col items-center gap-3 text-primary">
-            <FileUp size={28} />
-            <span className="font-semibold text-sm">{t('misc.dropRbxl')}</span>
-          </div>
-        </div>
-      )}
-
       <div
         key="asset-explorer-body"
         className="flex-1 overflow-y-auto scrollbar-hide w-full flex flex-col"

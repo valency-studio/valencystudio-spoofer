@@ -129,7 +129,7 @@ export default function ExecutionLogs({
               {eta ? ` - ${eta}` : ''})
             </span>
           )}
-          <div className="ml-2 flex items-center gap-2 text-2xs text-text-secondary bg-bg-muted px-2 py-0.5 rounded border border-border-subtle">
+          <div className="ml-2 flex items-center gap-2 text-2xs text-text-secondary bg-bg-elevated px-2 py-0.5 rounded border border-border-subtle">
             <span title={t('accounts.downloader')}>↓ {downloaderName}</span>
             <span className="opacity-40">|</span>
             <span title={t('accounts.uploader')}>↑ {uploaderName}</span>

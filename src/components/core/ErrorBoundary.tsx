@@ -104,7 +104,7 @@ export class ErrorBoundary extends Component<Props, State> {
               ? getTranslation(useLanguage.getState().lang, 'misc.crashReportSent')
               : getTranslation(useLanguage.getState().lang, 'misc.crashReportDisabled')}
           </p>
-          <div className="bg-bg-card border border-border p-4 rounded-xl mt-4 max-w-2xl text-left overflow-auto max-h-48 text-sm w-full font-mono shadow-inner">
+          <div className="bg-bg-surface border border-border p-4 rounded-xl mt-4 max-w-2xl text-left overflow-auto max-h-48 text-sm w-full font-mono shadow-inner">
             <div className="text-red-400 font-semibold mb-2">
               {this.state.error?.name}: {this.state.error?.message}
             </div>
