@@ -282,6 +282,7 @@ export const en: TranslationTree = {
       'No manageable groups found. Make sure your account has group management permissions in Roblox.',
   },
   settings: {
+    permissions: 'Permissions',
     cacheClearFailed: 'Failed to clear cache',
     cacheEnabled: 'Cache enabled.',
     cacheDisabled: 'Cache disabled. Cached runtime data cleared.',
@@ -456,6 +457,9 @@ export const en: TranslationTree = {
     iUnderstandEnableIt: 'I Understand the Cost, Enable Video Uploads',
   },
   debug: {
+    entryMany: 'entries',
+    entryOne: 'entry',
+    toggleLevelLogs: 'Toggle {level} logs',
     title: 'Debug Console',
     clear: 'Clear',
     all: 'All',
@@ -481,6 +485,7 @@ export const en: TranslationTree = {
     goToBottom: 'Go to Bottom',
   },
   explorer: {
+    name: 'Name',
     downloadFailed: 'Download failed',
     clearFilters: 'Clear filters',
     assetTypeScripts: 'Scripts',

@@ -283,6 +283,7 @@ export const fr: TranslationTree = {
     spoofAllAssets: 'Usurper tous les actifs ({count})',
   },
   settings: {
+    permissions: 'Autorisations',
     cacheClearFailed: 'Échec du vidage du cache',
     cacheEnabled: 'Cache activé.',
     cacheDisabled: "Cache désactivé. Les données d'exécution en cache ont été effacées.",
@@ -463,6 +464,9 @@ export const fr: TranslationTree = {
     iUnderstandEnableIt: 'Je Comprends, Activer',
   },
   debug: {
+    entryMany: 'entrées',
+    entryOne: 'entrée',
+    toggleLevelLogs: 'Basculer les journaux {level}',
     title: 'Console de Débogage',
     clear: 'Effacer',
     all: 'Tout',
@@ -488,6 +492,7 @@ export const fr: TranslationTree = {
     goToBottom: 'Aller en bas',
   },
   explorer: {
+    name: 'Nom',
     downloadFailed: 'Échec du téléchargement',
     clearFilters: 'Effacer les filtres',
     assetTypeScripts: 'Scripts',

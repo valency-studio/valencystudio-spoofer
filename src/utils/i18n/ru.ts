@@ -282,6 +282,7 @@ export const ru: TranslationTree = {
       'Группы не найдены. Добавьте учетные данные в настройках, затем выберите пользователя.',
   },
   settings: {
+    permissions: 'Разрешения',
     cacheClearFailed: 'Не удалось очистить кэш',
     cacheEnabled: 'Кэш включён.',
     cacheDisabled: 'Кэш отключён. Сохранённые данные времени выполнения очищены.',
@@ -450,6 +451,9 @@ export const ru: TranslationTree = {
     iUnderstandEnableIt: 'Я Понимаю, Включить',
   },
   debug: {
+    entryMany: 'записей',
+    entryOne: 'запись',
+    toggleLevelLogs: 'Переключить логи {level}',
     title: 'Консоль Отладки',
     clear: 'Очистить',
     all: 'Все',
@@ -475,6 +479,7 @@ export const ru: TranslationTree = {
     goToBottom: 'Вниз',
   },
   explorer: {
+    name: 'Имя',
     downloadFailed: 'Скачивание не удалось',
     clearFilters: 'Сбросить фильтры',
     assetTypeScripts: 'Скрипты',

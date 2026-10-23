@@ -284,6 +284,7 @@ export const id: TranslationTree = {
       'Tidak ada grup yang bisa dikelola. Pastikan akun Anda memiliki izin pengelolaan grup di Roblox.',
   },
   settings: {
+    permissions: 'Izin',
     cacheClearFailed: 'Gagal membersihkan cache',
     cacheEnabled: 'Cache diaktifkan.',
     cacheDisabled: 'Cache dimatikan. Data runtime yang tersimpan dibersihkan.',
@@ -456,6 +457,9 @@ export const id: TranslationTree = {
     iUnderstandEnableIt: 'Saya Memahami Biaya Ini, Aktifkan Unggahan Video',
   },
   debug: {
+    entryMany: 'entri',
+    entryOne: 'entri',
+    toggleLevelLogs: 'Alihkan log {level}',
     title: 'Konsol Debug',
     clear: 'Bersihkan',
     all: 'Semua',
@@ -481,6 +485,7 @@ export const id: TranslationTree = {
     goToBottom: 'Ke Bawah',
   },
   explorer: {
+    name: 'Nama',
     downloadFailed: 'Unduhan gagal',
     clearFilters: 'Bersihkan filter',
     assetTypeScripts: 'Script',

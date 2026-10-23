@@ -599,23 +599,27 @@ export default function AssetInspectorPanel({
             {dataOpen && (
               <div className="flex flex-col divide-y divide-border-subtle/20">
                 <div className="flex items-center min-h-[26px] px-2 py-1 gap-2">
-                  <span className="w-[38%] text-2xs text-text-muted">Class Name</span>
+                  <span className="w-[38%] text-2xs text-text-muted">
+                    {t('explorer.className')}
+                  </span>
                   <span className="flex-1 text-2xs text-text-primary font-medium truncate">
-                    {asset.className || 'Unknown'}
+                    {asset.className || t('common.unknown')}
                   </span>
                 </div>
                 <div className="flex items-center min-h-[26px] px-2 py-1 gap-2">
-                  <span className="w-[38%] text-2xs text-text-muted">Name</span>
+                  <span className="w-[38%] text-2xs text-text-muted">{t('explorer.name')}</span>
                   <span className="flex-1 text-2xs text-text-primary font-medium truncate">
-                    {asset.instanceName || 'Unknown'}
+                    {asset.instanceName || t('common.unknown')}
                   </span>
                 </div>
                 <div className="flex items-center min-h-[26px] px-2 py-1 gap-2">
-                  <span className="w-[38%] text-2xs text-text-muted">Parent</span>
+                  <span className="w-[38%] text-2xs text-text-muted">{t('explorer.parent')}</span>
                   <span className="flex-1 text-2xs text-text-secondary truncate">{parentName}</span>
                 </div>
                 <div className="flex items-center min-h-[28px] px-2 py-1 gap-2 group">
-                  <span className="w-[38%] text-2xs text-text-muted">DataModel Path</span>
+                  <span className="w-[38%] text-2xs text-text-muted">
+                    {t('explorer.dataModelPath')}
+                  </span>
                   <div className="flex-1 flex items-center gap-1 min-w-0">
                     <span className="text-2xs font-mono text-text-secondary truncate flex-1 select-all">
                       {asset.path || 'Unknown'}

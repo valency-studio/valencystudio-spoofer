@@ -131,7 +131,7 @@ export default function ProfilePopup({ collapsed = false }: { collapsed?: boolea
                 ? 'flex items-center justify-start w-full h-10 px-3 rounded-md hover:bg-bg-elevated transition-colors shrink-0'
                 : 'flex items-center gap-3 w-full h-11 px-3 rounded-md hover:bg-bg-elevated transition-colors border border-border-subtle bg-bg-surface/40 shrink-0'
             }
-            aria-label="Profile"
+            aria-label={t('accounts.profile')}
           >
             {avatarUrl ? (
               <img

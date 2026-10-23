@@ -164,16 +164,16 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
   };
 
   const sources = [
-    { value: 'all', label: 'All' },
-    { value: 'ValencyStudio', label: 'ValencyStudio' },
-    { value: 'console', label: 'DEV' },
+    { value: 'all', label: t('debug.all') },
+    { value: 'ValencyStudio', label: t('debug.ValencyStudio') },
+    { value: 'console', label: t('debug.dev') },
   ];
 
   const levels = [
-    { value: 'info', label: 'Info' },
-    { value: 'success', label: 'Success' },
-    { value: 'warn', label: 'Warn' },
-    { value: 'error', label: 'Error' },
+    { value: 'info', label: t('debug.info') },
+    { value: 'success', label: t('debug.success') },
+    { value: 'warn', label: t('debug.warn') },
+    { value: 'error', label: t('debug.error') },
   ];
 
   if (!isOpen) return null;
@@ -243,7 +243,9 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
                     />
                     {lvl.label}
                   </TooltipTrigger>
-                  <TooltipContent>Toggle {lvl.label} logs</TooltipContent>
+                  <TooltipContent>
+                    {t('debug.toggleLevelLogs').replace('{level}', lvl.label)}
+                  </TooltipContent>
                 </Tooltip>
               );
             })}
@@ -252,7 +254,8 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
 
         <div className="flex items-center gap-1">
           <span className="text-2xs text-text-muted font-mono mr-2">
-            {filteredLogs.length} {filteredLogs.length === 1 ? 'entry' : 'entries'}
+            {filteredLogs.length}{' '}
+            {filteredLogs.length === 1 ? t('debug.entryOne') : t('debug.entryMany')}
           </span>
 
           <Tooltip>

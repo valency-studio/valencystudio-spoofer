@@ -174,7 +174,7 @@ export default function AppearanceCard() {
         </div>
         <Select value={lang} onValueChange={(val) => setLang(val as any)}>
           <SelectTrigger className="w-40 h-8 text-xs bg-bg-base/70">
-            <SelectValue placeholder="Language" />
+            <SelectValue placeholder={t('settings.language')} />
           </SelectTrigger>
           <SelectContent>
             {Object.entries(langOptions).map(([value, label]) => (

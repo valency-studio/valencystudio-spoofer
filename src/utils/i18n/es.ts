@@ -280,6 +280,7 @@ export const es: TranslationTree = {
     spoofAllAssets: 'Falsificar todos los activos ({count})',
   },
   settings: {
+    permissions: 'Permisos',
     cacheClearFailed: 'No se pudo borrar la caché',
     cacheEnabled: 'Caché activada.',
     cacheDisabled: 'Caché desactivada. Se borraron los datos de ejecución guardados.',
@@ -457,6 +458,9 @@ export const es: TranslationTree = {
     iUnderstandEnableIt: 'Entiendo, Habilitar',
   },
   debug: {
+    entryMany: 'entradas',
+    entryOne: 'entrada',
+    toggleLevelLogs: 'Alternar registros de {level}',
     title: 'Consola de Depuración',
     clear: 'Limpiar',
     all: 'Todo',
@@ -482,6 +486,7 @@ export const es: TranslationTree = {
     goToBottom: 'Ir al fondo',
   },
   explorer: {
+    name: 'Nombre',
     downloadFailed: 'Falló la descarga',
     clearFilters: 'Limpiar filtros',
     assetTypeScripts: 'Scripts',
