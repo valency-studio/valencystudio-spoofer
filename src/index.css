@@ -103,7 +103,6 @@ input[type='number'] {
   --text-sm: 0.8125rem; /* 13px — control labels, nav, body */
   --text-base: 0.875rem; /* 14px — section headings */
 
-  --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;
   /* Reserved for machine data the user reads character by character: asset IDs,
      hashes, paths, log lines. A column of plain numbers wants `tabular-nums`

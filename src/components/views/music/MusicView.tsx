@@ -52,6 +52,7 @@ import {
   SPEED_PRESETS,
   SPEED_RANGE,
 } from '../../../utils/music';
+import { EmptyState } from '../../shared/EmptyState';
 
 export default function MusicView() {
   const { t } = useLanguage();
@@ -308,9 +309,10 @@ export default function MusicView() {
             </div>
 
             {tracks.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-border-subtle p-6 text-center text-sm text-text-muted">
-                {t('music.empty')}
-              </p>
+              <EmptyState
+                className="rounded-lg border border-dashed border-border-subtle p-6"
+                title={t('music.empty')}
+              />
             ) : (
               <ul className="flex flex-col gap-4">
                 {tracks.map((track) => (
@@ -353,9 +355,10 @@ export default function MusicView() {
             </div>
 
             {history.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-border-subtle p-6 text-center text-sm text-text-muted">
-                {t('music.historyEmpty')}
-              </p>
+              <EmptyState
+                className="rounded-lg border border-dashed border-border-subtle p-6"
+                title={t('music.historyEmpty')}
+              />
             ) : (
               <ul className="flex flex-col gap-2">
                 {history.map((record) => (
