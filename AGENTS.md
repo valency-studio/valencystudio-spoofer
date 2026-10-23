@@ -15,9 +15,10 @@ Bun is the package manager (`bun.lock`, Bun 1.3.14 in CI). Use `bun run ...`, no
 | `bun run dev`          | Vite only, in a browser. No Rust backend, so every `invoke` fails. Use only for UI layout work.                                                                                                                                                                 |
 | `bun run check`        | The gate. Required before pushing.                                                                                                                                                                                                                              |
 | `bun run build:plugin` | Concatenates `plugin/` into `dist-plugin/ValencyStudioSpoofer.rbxmx`.                                                                                                                                                                                           |
+| `bun run test:plugin`  | Expands `--#include` in `plugin/tests/run_tests.luau` and runs it under the stock `luau` interpreter. Downloads `luau` into `node_modules/.cache` on first run; `LUAU_BIN` overrides.                                                                           |
 | `bun run format`       | Prettier + `cargo fmt` + StyLua.                                                                                                                                                                                                                                |
 
-`bun run check` expands to, in order: `format:check → build:plugin → typecheck → lint → test → build:app → rust:check → rust:lint → rust:test`.
+`bun run check` expands to, in order: `format:check → build:plugin → typecheck → lint → test → test:plugin → build:app → rust:check → rust:lint → rust:test`.
 
 Focused runs:
 
@@ -30,7 +31,6 @@ Focused runs:
 Run these separately when you touch the relevant code.
 
 - **Selene** (Luau linter) — CI only: `cd plugin && selene .`. CI installs it with `cargo install selene --version 0.31.0`; locally use `rokit install` (`rokit.toml` pins 0.31.0) or the same cargo command. Rules are relaxed in `plugin/selene.toml`.
-- **`plugin/tests/run_tests.luau`** — not referenced by any package script or workflow. Run it manually; it is not a safety net.
 - **Playwright e2e** — see above.
 
 ## Generated files (tracked in git — commit them)
