@@ -64,6 +64,7 @@ struct ToolSpec {
 const FFMPEG: ToolSpec = ToolSpec { program: "ffmpeg", version_arg: "-version" };
 const FFPROBE: ToolSpec = ToolSpec { program: "ffprobe", version_arg: "-version" };
 const YTDLP: ToolSpec = ToolSpec { program: "yt-dlp", version_arg: "--version" };
+#[cfg(windows)]
 /// `--id` + `--source winget` are load-bearing. A bare `install ffmpeg` search
 /// spans every configured source; when the `msstore` source is unreachable
 /// (certificate mismatch, offline Store) Winget reports the remaining matches
@@ -86,6 +87,7 @@ const WINGET_INSTALL_FFMPEG_ARGS: [&str; 9] = [
 /// A negative code is a Win32 HRESULT and Winget prints those in hex, so the
 /// decimal form would not line up with the line the user already sees in the
 /// installer output above.
+#[cfg(windows)]
 fn winget_exit_code(code: Option<i32>) -> String {
     match code {
         None => "unknown".to_string(),
@@ -94,6 +96,7 @@ fn winget_exit_code(code: Option<i32>) -> String {
     }
 }
 
+#[cfg(windows)]
 async fn forward_install_output<R>(app: AppHandle, output: R) -> std::io::Result<()>
 where
     R: AsyncRead + Unpin,

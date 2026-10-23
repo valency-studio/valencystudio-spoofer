@@ -187,6 +187,7 @@ fn system_proxy() -> Option<String> {
     }
 }
 
+#[cfg(windows)]
 fn parse_wininet_proxy(raw: &str) -> Option<String> {
     let raw = raw.trim();
     if raw.is_empty() {
