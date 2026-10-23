@@ -7,6 +7,7 @@ import {
   FileAudio,
   Info,
   Link2,
+  Loader2,
   Pencil,
   Play,
   Square,
@@ -26,6 +27,7 @@ import {
   DialogTitle,
 } from '../../../components/ui/dialog';
 import { Input } from '../../../components/ui/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/tooltip';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { cn } from '../../../lib/utils';
@@ -50,12 +52,15 @@ import {
   SPEED_PRESETS,
   SPEED_RANGE,
 } from '../../../utils/music';
+import { readableError } from '../../../utils/notifyError';
+import { EmptyState } from '../../shared/EmptyState';
 
 export default function MusicView() {
   const { t } = useLanguage();
   const { updateConfig } = useConfig();
   const {
     tools,
+    toolError,
     tracks,
     error,
     status,
@@ -64,6 +69,7 @@ export default function MusicView() {
     progress,
     uploading,
     refreshTools,
+    installMissingTools,
     refreshQuota,
     resumeValidation,
     uploadTrack,
@@ -108,14 +114,16 @@ export default function MusicView() {
     setImporting(false);
   };
 
-  // Only ffmpeg is warned about. yt-dlp installs itself on first run, so a
-  // missing one means the install failed and is worth surfacing with a retry.
+  // The install dialog only covers a missing ffmpeg, so the banner is left with
+  // what it cannot fix: a missing ffprobe, which disables local import, and a
+  // yt-dlp whose first-run install failed, which the retry here can recover.
   const missing = tools
     ? [
-        !tools.ffmpeg ? t('music.missingFfmpeg') : null,
+        !tools.ffprobe ? t('music.missingFfprobe') : null,
         !tools.ytdlp ? t('music.missingYtDlp') : null,
       ].filter(Boolean)
     : [];
+  const canRetryTools = toolError !== null || (!!tools && !tools.ytdlp);
 
   const returnToSpoofer = () => updateConfig('ui', 'activeTab', 'spoofing');
 
@@ -133,8 +141,10 @@ export default function MusicView() {
       });
       await installFfmpeg();
       setFfmpegInstalled(true);
+      // Re-probe so the dialog closes on its own once the tool is reachable.
+      await refreshTools();
     } catch (error) {
-      setFfmpegInstallError(String(error));
+      setFfmpegInstallError(readableError(error));
     } finally {
       stopListening?.();
       setInstallingFfmpeg(false);
@@ -155,31 +165,28 @@ export default function MusicView() {
             <DialogDescription>{t('music.ffmpegRequiredDescription')}</DialogDescription>
           </DialogHeader>
 
-          {ffmpegInstallOutput.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <p className="text-xs font-medium text-text-secondary">
-                {t('music.ffmpegInstallOutput')}
-              </p>
-              <pre
-                role="log"
-                aria-live="polite"
-                className="max-h-48 overflow-auto rounded-md bg-background p-3 text-xs text-text-secondary"
-              >
-                {ffmpegInstallOutput.join('\n')}
-              </pre>
+          {installingFfmpeg && (
+            <div role="status" className="flex items-start gap-3 rounded-lg bg-bg-elevated p-3">
+              <Loader2 size={16} className="mt-0.5 shrink-0 animate-spin text-primary" />
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-medium text-text-primary">
+                  {t('music.ffmpegInstalling')}
+                </p>
+                <p className="text-xs text-text-secondary">{t('music.ffmpegInstallHint')}</p>
+              </div>
             </div>
           )}
 
-          {installingFfmpeg && (
-            <p role="status" className="text-sm text-text-secondary">
-              {t('music.ffmpegInstalling')}
-            </p>
-          )}
-
           {ffmpegInstallError && (
-            <p role="alert" className="text-sm text-danger">
-              {t('music.ffmpegInstallFailed').replace('{error}', ffmpegInstallError)}
-            </p>
+            <div role="alert" className="flex items-start gap-3 rounded-lg bg-danger/10 p-3">
+              <CircleAlert size={16} className="mt-0.5 shrink-0 text-danger" />
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-medium text-danger">
+                  {t('music.ffmpegInstallFailedTitle')}
+                </p>
+                <p className="text-xs break-words text-text-secondary">{ffmpegInstallError}</p>
+              </div>
+            </div>
           )}
 
           {ffmpegInstalled && (
@@ -188,9 +195,27 @@ export default function MusicView() {
             </p>
           )}
 
+          {/* Raw installer output is evidence, not the main story: collapsed
+              unless the install failed, where it is the only clue the user has. */}
+          {ffmpegInstallOutput.length > 0 && (
+            <details open={!!ffmpegInstallError} className="group">
+              <summary className="cursor-pointer text-xs text-text-muted select-none hover:text-text-secondary">
+                {t('music.ffmpegInstallOutput')}
+              </summary>
+              <pre
+                role="log"
+                aria-live="polite"
+                className="mt-2 max-h-40 overflow-y-auto rounded-md bg-bg-surface p-3 text-xs leading-relaxed break-words whitespace-pre-wrap text-text-secondary"
+              >
+                {ffmpegInstallOutput.join('\n')}
+              </pre>
+            </details>
+          )}
+
           <DialogFooter>
             {!ffmpegInstalled && (
               <Button onClick={() => void handleInstallFfmpeg()} disabled={installingFfmpeg}>
+                {installingFfmpeg && <Loader2 className="animate-spin" />}
                 {installingFfmpeg ? t('music.ffmpegInstalling') : t('music.ffmpegInstall')}
               </Button>
             )}
@@ -208,14 +233,30 @@ export default function MusicView() {
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
-          {missing.length > 0 && (
-            <div className="flex items-start gap-2 rounded-lg border border-signal-warn/30 bg-signal-warn/10 p-3">
+          {(missing.length > 0 || toolError) && (
+            <div
+              role="status"
+              className="flex items-start gap-3 rounded-lg border border-signal-warn/30 bg-signal-warn/10 p-3"
+            >
               <CircleAlert size={15} className="mt-0.5 shrink-0 text-signal-warn" />
-              <div className="text-sm text-text-secondary">
+              <div className="min-w-0 flex-1 text-sm text-text-secondary">
                 {missing.map((line) => (
                   <p key={line}>{line}</p>
                 ))}
+                {toolError && (
+                  <p className="mt-1 text-xs break-words">{readableError(toolError)}</p>
+                )}
               </div>
+              {canRetryTools && (
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="shrink-0"
+                  onClick={() => void installMissingTools()}
+                >
+                  {t('music.retryToolInstall')}
+                </Button>
+              )}
             </div>
           )}
 
@@ -275,7 +316,9 @@ export default function MusicView() {
 
             {error && (
               <p className="text-sm text-danger" role="alert">
-                {error === 'yt-dlp-unavailable' ? t('music.ytdlpUnavailable') : error}
+                {error === 'yt-dlp-unavailable'
+                  ? t('music.ytdlpUnavailable')
+                  : readableError(error)}
               </p>
             )}
           </section>
@@ -289,9 +332,10 @@ export default function MusicView() {
             </div>
 
             {tracks.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-border-subtle p-8 text-center text-sm text-text-muted">
-                {t('music.empty')}
-              </p>
+              <EmptyState
+                className="rounded-lg border border-dashed border-border-subtle p-6"
+                title={t('music.empty')}
+              />
             ) : (
               <ul className="flex flex-col gap-4">
                 {tracks.map((track) => (
@@ -334,9 +378,10 @@ export default function MusicView() {
             </div>
 
             {history.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-border-subtle p-6 text-center text-sm text-text-muted">
-                {t('music.historyEmpty')}
-              </p>
+              <EmptyState
+                className="rounded-lg border border-dashed border-border-subtle p-6"
+                title={t('music.historyEmpty')}
+              />
             ) : (
               <ul className="flex flex-col gap-2">
                 {history.map((record) => (
@@ -395,8 +440,8 @@ export function HistoryRow({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-text-primary">{record.title}</p>
           <p className="mt-0.5 text-xs text-text-muted">
-            {formatUploadDate(record.uploadedAt)} · {formatBytes(record.totalBytes)}
-            {split ? ` · ${t('music.parts').replace('{count}', String(record.pieces.length))}` : ''}
+            {formatUploadDate(record.uploadedAt)}, {formatBytes(record.totalBytes)}
+            {split ? `, ${t('music.parts').replace('{count}', String(record.pieces.length))}` : ''}
           </p>
         </div>
 
@@ -469,9 +514,17 @@ function AssetId({ value }: { value?: number | null }) {
   return (
     <button
       type="button"
-      onClick={() => void navigator.clipboard.writeText(String(value))}
-      className="w-24 shrink-0 truncate rounded border border-border-subtle px-1.5 py-0.5 text-right font-mono text-xs text-text-muted hover:text-text-primary"
-      title={t('music.copyId')}
+      onClick={() => {
+        void navigator.clipboard.writeText(String(value));
+        setCopied(true);
+      }}
+      aria-label={t('music.copyId')}
+      title={String(value)}
+      // `select-all` overrides the button default of `user-select: none`, so the
+      // id can still be dragged out by hand; `truncate` only clips visually and
+      // the selectable text stays whole. `w-28` is the width 13 digits need at
+      // this type scale, which is what current Roblox ids run to.
+      className="w-28 shrink-0 cursor-pointer truncate rounded border border-border-subtle px-1.5 py-0.5 text-right font-mono text-xs text-text-muted select-all hover:border-border-strong hover:text-text-primary"
     >
       {copied ? t('music.copied') : value}
     </button>
@@ -501,19 +554,27 @@ function StatusPill({ status, detail }: { status: string; detail?: string }) {
   // honest if the backend ever grows a status the view does not know.
   const text = label ?? status;
 
-  return (
+  const pill = (
     <span
       className={cn(
         'flex w-28 shrink-0 items-center justify-center gap-1 rounded border px-1.5 py-0.5 text-xs',
         tone ?? 'border-border-subtle bg-bg-elevated text-text-muted',
       )}
-      title={detail}
     >
       {status !== 'accepted' && status !== 'rejected' && (
         <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-current" />
       )}
       <span className="truncate">{text}</span>
     </span>
+  );
+
+  if (!detail) return pill;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger render={pill} />
+      <TooltipContent className="max-w-xs break-words">{detail}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -814,8 +875,8 @@ function TrackEditor({
           )}
           <p className="mt-0.5 text-xs text-text-muted">
             {formatDuration(track.info?.duration)}
-            {track.uploader ? ` · ${track.uploader}` : ''}
-            {track.exportedPath ? ` · ${t('music.exportedLabel')}` : ''}
+            {track.uploader ? `, ${track.uploader}` : ''}
+            {track.exportedPath ? `, ${t('music.exportedLabel')}` : ''}
           </p>
         </div>
 
@@ -828,7 +889,6 @@ function TrackEditor({
           }}
           disabled={renaming || busy}
           aria-label={t('music.rename')}
-          title={t('music.renameHint')}
         >
           <Pencil size={15} />
         </Button>
@@ -850,7 +910,7 @@ function TrackEditor({
           label={t('music.speed')}
           value={
             preset
-              ? `${t(preset.labelKey)} · ${track.speed.toFixed(2)}x`
+              ? `${t(preset.labelKey)}, ${track.speed.toFixed(2)}x`
               : `${track.speed.toFixed(2)}x`
           }
         >
@@ -919,7 +979,7 @@ function TrackEditor({
 
           <Control
             label={t('music.quality')}
-            value={`${track.quality}/${QUALITY_RANGE.max} · ${qualityBitrateKbps(track.quality)} kbps`}
+            value={`${track.quality}/${QUALITY_RANGE.max}, ${qualityBitrateKbps(track.quality)} kbps`}
           >
             <input
               type="range"
@@ -969,7 +1029,7 @@ function TrackEditor({
             <li key={file.path} className="flex items-center justify-between gap-3 text-xs">
               <span className="truncate text-text-secondary">{file.displayName}</span>
               <span className="shrink-0 text-text-muted tabular-nums">
-                {formatDuration(file.outputDuration)} · {(file.bytes / 1024 / 1024).toFixed(1)} MB
+                {formatDuration(file.outputDuration)}, {(file.bytes / 1024 / 1024).toFixed(1)} MB
               </span>
             </li>
           ))}
@@ -1034,7 +1094,6 @@ export function RobloxHint({
               setCopied(true);
             }}
             aria-label={t('music.copyPlaybackSpeed')}
-            title={t('music.copyPlaybackSpeed')}
           >
             {copied ? <Check size={15} /> : <Copy size={15} />}
           </Button>

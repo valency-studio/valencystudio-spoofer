@@ -1,43 +1,24 @@
 import { invoke } from '@tauri-apps/api/core';
-import { emit, listen } from '@tauri-apps/api/event';
 import { open as openFilePicker } from '@tauri-apps/plugin-dialog';
 import {
   Check,
   ChevronDown,
-  ChevronRight,
   CircleAlert,
   ClipboardPaste,
   Copy,
   Download,
-  Eye,
-  FileUp,
   FolderOpen,
-  Image as ImageIcon,
-  Inbox,
   Loader2,
   Lock,
   MapPin,
-  Maximize2,
-  Minimize2,
   Play,
   RotateCcw,
   ScanSearch,
   Settings2,
-  Square,
   Trash2,
-  Volume2,
   X,
 } from 'lucide-react';
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useConfig } from '../../contexts/ConfigContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -45,159 +26,27 @@ import { useStudioConnectionState } from '../../contexts/StudioConnectionContext
 import { useStudioAssetPoll } from '../../hooks/useStudioAssetPoll';
 import { cn } from '../../lib/utils';
 import { useSpooferStore } from '../../stores/spooferStore';
+import { buildDataModelTree, getAssetId } from '../../utils/explorerTree';
 import type { PluginAsset, PluginAssetStore } from '../../utils/pluginBridge';
-import { playRobloxAudio, stopRobloxAudio } from '../../utils/robloxAudio';
+import { stopRobloxAudio } from '../../utils/robloxAudio';
 import type { ParsedAssetRef, RbxInstance } from '../../utils/robloxPlaceParser/types';
 import { logValencyStudio } from '../../utils/robloxProfiles';
 import { isTauriRuntime } from '../../utils/tauriRuntime';
+import { AssetTypePicker, SCAN_ASSET_TYPES } from '../shared/AssetTypePicker';
+import { SectionLabel } from '../shared/SectionLabel';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
-import {
-  ExplorerTreeNode,
-  formatShortId,
-  getAssetId,
-  getAssetKey,
-  getBrightPlaceIdColor,
-} from './asset-explorer/ExplorerTree';
+import AssetInspectorPanel from './asset-explorer/AssetInspectorPanel';
+import { ExplorerTreeNode, getAssetKey } from './asset-explorer/ExplorerTree';
 
 interface AssetExplorerProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   onScanReceived?: () => void;
   mode?: 'drawer' | 'main';
-}
-
-const AnimationPreview = lazy(() => import('../shared/AnimationPreview'));
-
-function compactSingleChildFolders(nodes: RbxInstance[]): RbxInstance[] {
-  return nodes.map((node) => {
-    let current = node;
-    const isRootService =
-      [
-        'Workspace',
-        'ReplicatedStorage',
-        'Lighting',
-        'ServerScriptService',
-        'ServerStorage',
-        'StarterGui',
-        'StarterPack',
-        'StarterPlayer',
-        'SoundService',
-        'MaterialService',
-        'StudioSession',
-        'Place',
-      ].includes(current.className) ||
-      ['Workspace', 'ReplicatedStorage', 'Lighting', 'ReplicatedFirst', 'Studio Session'].includes(
-        current.name,
-      );
-
-    if (!isRootService) {
-      while (current.assets.length === 0 && current.children.length === 1) {
-        const onlyChild = current.children[0];
-        current = {
-          ...onlyChild,
-          referent: `${current.referent}->${onlyChild.referent}`,
-          name: `${current.name} / ${onlyChild.name}`,
-        };
-      }
-    }
-
-    return {
-      ...current,
-      children: compactSingleChildFolders(current.children),
-    };
-  });
-}
-
-function buildDataModelTree(
-  allAssets: { asset: PluginAsset; type: ParsedAssetRef['type'] }[],
-): RbxInstance[] {
-  const nodeMap = new Map<string, RbxInstance>();
-  const rootNodes: RbxInstance[] = [];
-
-  const getOrCreateNode = (pathParts: string[], className?: string): RbxInstance => {
-    const fullPath = pathParts.join('.');
-    if (nodeMap.has(fullPath)) {
-      const existing = nodeMap.get(fullPath)!;
-      if (className && (existing.className === 'Folder' || existing.className === 'Instance')) {
-        existing.className = className;
-      }
-      return existing;
-    }
-
-    const name = pathParts[pathParts.length - 1];
-    let resolvedClass = className || 'Folder';
-    if (pathParts.length === 1) {
-      resolvedClass = name;
-    }
-
-    const newNode: RbxInstance = {
-      referent: `datamodel-${fullPath}`,
-      className: resolvedClass,
-      name,
-      assets: [],
-      children: [],
-    };
-    nodeMap.set(fullPath, newNode);
-
-    if (pathParts.length === 1) {
-      rootNodes.push(newNode);
-    } else {
-      const parentParts = pathParts.slice(0, pathParts.length - 1);
-      const parentNode = getOrCreateNode(parentParts);
-      parentNode.children.push(newNode);
-    }
-
-    return newNode;
-  };
-
-  for (const item of allAssets) {
-    const a = item.asset;
-    const rawPath = a.fullName || a.script || a.name || 'Workspace';
-    const parts = rawPath.split('.').filter(Boolean);
-    if (parts.length === 0) continue;
-
-    const isScriptRef = item.type === 'script_ref';
-    const targetNode = isScriptRef
-      ? getOrCreateNode(parts.length > 1 ? parts.slice(0, -1) : parts, 'Script')
-      : getOrCreateNode(parts, a.kind || undefined);
-
-    const assetId = a.assetId ?? '';
-    const propName = a.property ?? a.callType ?? a.sourceHint ?? '';
-
-    if (
-      targetNode.assets.some(
-        (ref) => ref.assetId === assetId && ref.propertyName === propName && ref.type === item.type,
-      )
-    ) {
-      continue;
-    }
-
-    const isAliasProperty =
-      (propName === 'AnimationContent' &&
-        targetNode.assets.some((r) => r.propertyName === 'AnimationId')) ||
-      (propName === 'AudioContent' &&
-        targetNode.assets.some((r) => r.propertyName === 'SoundId')) ||
-      (propName === 'MeshContent' && targetNode.assets.some((r) => r.propertyName === 'MeshId'));
-    if (isAliasProperty) {
-      continue;
-    }
-
-    targetNode.assets.push({
-      type: item.type,
-      assetId,
-      rawValue: `rbxassetid://${assetId}`,
-      className: a.kind ?? targetNode.className,
-      instanceName: a.name ?? parts[parts.length - 1] ?? assetId,
-      propertyName: propName,
-      path: rawPath,
-    });
-  }
-
-  return compactSingleChildFolders(rootNodes);
 }
 
 export default function AssetExplorer({
@@ -207,12 +56,6 @@ export default function AssetExplorer({
   mode: _mode = 'drawer',
 }: AssetExplorerProps) {
   const { t } = useLanguage();
-  const [isDragOver] = useState(false);
-  const [, setEnlargedImage] = useState<{ id: string; name: string } | null>(null);
-  const [, setPreviewingAnimation] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
   const searchQuery = useSpooferStore((s) => s.searchQuery);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const activeAssetFilters = useSpooferStore((s) => s.activeAssetFilters);
@@ -225,9 +68,7 @@ export default function AssetExplorer({
   const [placeIdInput, setPlaceIdInput] = useState('');
   const [confirmClearPins, setConfirmClearPins] = useState(false);
   const [spoofModeOpen, setSpoofModeOpen] = useState(false);
-  const [scanTypes, setScanTypes] = useState<Set<string>>(
-    new Set(['sounds', 'animations', 'images', 'meshes', 'scripts']),
-  );
+  const [scanTypes, setScanTypes] = useState<Set<string>>(new Set(SCAN_ASSET_TYPES));
   const [showScanOptions, setShowScanOptions] = useState(false);
 
   const toggleScanType = (key: string) => {
@@ -252,9 +93,7 @@ export default function AssetExplorer({
   const handleRunTargetedScan = (pathOverride?: string) => {
     const p = pathOverride || targetedPath;
     if (!p.trim()) return;
-    const types = ['sounds', 'animations', 'images', 'meshes', 'scripts'].filter((k) =>
-      scanTypes.has(k),
-    );
+    const types = SCAN_ASSET_TYPES.filter((k) => scanTypes.has(k));
     document.dispatchEvent(
       new CustomEvent('ValencyStudio-start-scan', {
         detail: { scanTypes: types, scanPath: p.trim() },
@@ -773,18 +612,6 @@ export default function AssetExplorer({
 
   return (
     <div className="h-full bg-background flex flex-col shrink-0 overflow-hidden relative w-full border-l-0">
-      {isDragOver && (
-        <div
-          key="asset-drag-drop"
-          className="absolute inset-0 z-50 flex items-center justify-center bg-bg-surface/90 border-2 border-dashed border-primary m-1 rounded-md pointer-events-none"
-        >
-          <div className="flex flex-col items-center gap-3 text-primary">
-            <FileUp size={28} />
-            <span className="font-semibold text-sm">{t('misc.dropRbxl')}</span>
-          </div>
-        </div>
-      )}
-
       <div
         key="asset-explorer-body"
         className="flex-1 overflow-y-auto scrollbar-hide w-full flex flex-col"
@@ -877,8 +704,8 @@ export default function AssetExplorer({
                       render={
                         <button
                           type="button"
+                          aria-label={t('explorer.fileExtractionOptions')}
                           className="h-11 w-10 text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors border-l border-border flex items-center justify-center cursor-pointer"
-                          title="File extraction options"
                         >
                           <Settings2 size={16} />
                         </button>
@@ -892,42 +719,17 @@ export default function AssetExplorer({
                     >
                       <div className="flex flex-col gap-3">
                         <div>
-                          <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-2 block">
-                            Asset Types
-                          </span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {[
-                              { key: 'sounds', label: 'Sounds' },
-                              { key: 'animations', label: 'Animations' },
-                              { key: 'images', label: 'Images' },
-                              { key: 'meshes', label: 'Meshes' },
-                              { key: 'scripts', label: 'Scripts' },
-                            ].map((type) => (
-                              <button
-                                key={type.key}
-                                type="button"
-                                onClick={() => toggleScanType(type.key)}
-                                className={cn(
-                                  'px-2.5 py-1 rounded-full text-2xs font-semibold border transition-colors cursor-pointer',
-                                  scanTypes.has(type.key)
-                                    ? 'bg-primary/15 border-primary/40 text-primary'
-                                    : 'bg-bg-base border-border-subtle text-text-muted hover:text-text-primary hover:border-border',
-                                )}
-                              >
-                                {scanTypes.has(type.key) && (
-                                  <Check size={9} className="inline mr-1" />
-                                )}
-                                {type.label}
-                              </button>
-                            ))}
-                          </div>
+                          <SectionLabel className="mb-2 block">
+                            {t('explorer.assetTypes')}
+                          </SectionLabel>
+                          <AssetTypePicker scanTypes={scanTypes} onToggle={toggleScanType} />
                         </div>
                       </div>
                     </PopoverContent>
                   </Popover>
                 </div>
 
-                <div className="flex items-center rounded-lg overflow-hidden border border-primary/20 shadow-sm">
+                <div className="flex items-center rounded-lg overflow-hidden border border-primary/20">
                   <button
                     type="button"
                     onClick={() => {
@@ -935,9 +737,7 @@ export default function AssetExplorer({
                         showToast('error', t('explorer.studioNotConnectedAction'));
                         return;
                       }
-                      const types = ['sounds', 'animations', 'images', 'meshes', 'scripts'].filter(
-                        (k) => scanTypes.has(k),
-                      );
+                      const types = SCAN_ASSET_TYPES.filter((k) => scanTypes.has(k));
                       document.dispatchEvent(
                         new CustomEvent('ValencyStudio-start-scan', {
                           detail: { scanTypes: types },
@@ -946,11 +746,11 @@ export default function AssetExplorer({
                     }}
                     data-tutorial-target="explorer-scan-studio"
                     disabled={scanTypes.size === 0}
+                    aria-label={t('spoof.scanStudio')}
                     className={cn(
                       'flex items-center justify-center gap-2 px-6 h-11 bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors',
                       !studioConnected && 'opacity-70',
                     )}
-                    title={!studioConnected ? t('explorer.studioNotConnected') : undefined}
                   >
                     <ScanSearch size={18} />
                     {t('spoof.scanStudio')}
@@ -961,6 +761,7 @@ export default function AssetExplorer({
                       render={
                         <button
                           type="button"
+                          aria-label={t('explorer.allAssetTypes')}
                           className="h-11 w-10 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors border-l border-primary-foreground/20 flex items-center justify-center"
                         >
                           <Settings2 size={16} />
@@ -975,35 +776,10 @@ export default function AssetExplorer({
                     >
                       <div className="flex flex-col gap-3">
                         <div>
-                          <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-2 block">
-                            Asset Types
-                          </span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {[
-                              { key: 'sounds', label: 'Sounds' },
-                              { key: 'animations', label: 'Animations' },
-                              { key: 'images', label: 'Images' },
-                              { key: 'meshes', label: 'Meshes' },
-                              { key: 'scripts', label: 'Scripts' },
-                            ].map((type) => (
-                              <button
-                                key={type.key}
-                                type="button"
-                                onClick={() => toggleScanType(type.key)}
-                                className={cn(
-                                  'px-2.5 py-1 rounded-full text-2xs font-semibold border transition-colors',
-                                  scanTypes.has(type.key)
-                                    ? 'bg-primary/15 border-primary/40 text-primary'
-                                    : 'bg-bg-base border-border-subtle text-text-muted hover:text-text-primary hover:border-border',
-                                )}
-                              >
-                                {scanTypes.has(type.key) && (
-                                  <Check size={9} className="inline mr-1" />
-                                )}
-                                {type.label}
-                              </button>
-                            ))}
-                          </div>
+                          <SectionLabel className="mb-2 block">
+                            {t('explorer.assetTypes')}
+                          </SectionLabel>
+                          <AssetTypePicker scanTypes={scanTypes} onToggle={toggleScanType} />
                         </div>
                       </div>
                     </PopoverContent>
@@ -1017,10 +793,7 @@ export default function AssetExplorer({
                 type="button"
                 onClick={() => {
                   if (!studioConnected) {
-                    showToast(
-                      'error',
-                      'No Roblox Studio plugin connected. Please connect Studio first.',
-                    );
+                    showToast('error', t('explorer.studioNotConnectedToast'));
                     return;
                   }
                   setRootInstances((prev) =>
@@ -1042,7 +815,6 @@ export default function AssetExplorer({
                   'text-sm text-text-muted hover:text-primary underline font-medium transition-colors cursor-pointer',
                   !studioConnected && 'opacity-60 cursor-not-allowed hover:text-text-muted',
                 )}
-                title={!studioConnected ? t('explorer.studioNotConnected') : undefined}
               >
                 {t('explorer.connectWithoutScanning')}
               </button>
@@ -1052,7 +824,7 @@ export default function AssetExplorer({
           <div className="flex-1 flex flex-col overflow-hidden h-full w-full relative">
             {(isSpoofing || isReplacing || isGrantingPermissions) && (
               <div className="absolute top-0 left-0 right-0 z-50 pointer-events-none">
-                <div className="h-1 bg-bg-base w-full overflow-hidden shadow-md">
+                <div className="h-1 bg-bg-base w-full overflow-hidden">
                   <div
                     className="h-full bg-primary transition-all duration-300"
                     style={{
@@ -1081,15 +853,19 @@ export default function AssetExplorer({
                     }}
                   />
                 </div>
-                <div className="absolute top-1.5 right-3 px-2.5 py-0.5 rounded bg-bg-surface/90 border border-border-subtle text-2xs text-text-primary font-mono shadow-sm pointer-events-auto flex items-center gap-1.5">
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="absolute top-1.5 right-3 px-2.5 py-0.5 rounded bg-bg-surface/90 border border-border-subtle text-2xs text-text-primary tabular-nums pointer-events-auto flex items-center gap-1.5"
+                >
                   <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   <span>
                     {isSpoofing
-                      ? `${spoofStatusText || 'Initializing...'}${spoofTotalCount > 0 ? ` · ${spoofCurrentCount}/${spoofTotalCount}` : ''}${activeEta ? ` · ${activeEta}` : ''}`
+                      ? `${spoofStatusText || 'Initializing...'}${spoofTotalCount > 0 ? `, ${spoofCurrentCount}/${spoofTotalCount}` : ''}${activeEta ? `, ${activeEta}` : ''}`
                       : isReplacing
-                        ? `Replacing${replaceTotalCount > 0 ? ` · ${replaceCurrentCount}/${replaceTotalCount}` : '...'}${activeEta ? ` · ${activeEta}` : ''}`
+                        ? `Replacing${replaceTotalCount > 0 ? `, ${replaceCurrentCount}/${replaceTotalCount}` : '...'}${activeEta ? `, ${activeEta}` : ''}`
                         : isGrantingPermissions
-                          ? `Asset Permissions${permissionsTotalCount > 0 ? ` · ${permissionsCurrentCount}/${permissionsTotalCount}` : '...'}${activeEta ? ` · ${activeEta}` : ''}`
+                          ? `${t('spoof.assetPermissionsProgress')}${permissionsTotalCount > 0 ? `, ${permissionsCurrentCount}/${permissionsTotalCount}` : '...'}${activeEta ? `, ${activeEta}` : ''}`
                           : ''}
                   </span>
                 </div>
@@ -1124,17 +900,11 @@ export default function AssetExplorer({
 
                       {!isScanningStudio && (
                         <div className="flex flex-col gap-2 w-full max-w-xs mt-2">
-                          <div className="flex items-center rounded-lg overflow-hidden border border-primary/20 shadow-sm w-full">
+                          <div className="flex items-center rounded-lg overflow-hidden border border-primary/20 w-full">
                             <button
                               type="button"
                               onClick={() => {
-                                const types = [
-                                  'sounds',
-                                  'animations',
-                                  'images',
-                                  'meshes',
-                                  'scripts',
-                                ].filter((k) => scanTypes.has(k));
+                                const types = SCAN_ASSET_TYPES.filter((k) => scanTypes.has(k));
                                 document.dispatchEvent(
                                   new CustomEvent('ValencyStudio-start-scan', {
                                     detail: { scanTypes: types },
@@ -1145,7 +915,7 @@ export default function AssetExplorer({
                               className="flex-1 flex items-center justify-center gap-2 h-8 bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 disabled:opacity-50 transition-colors"
                             >
                               <ScanSearch size={14} />
-                              <span>Scan Studio</span>
+                              <span>{t('explorer.scanStudio')}</span>
                             </button>
 
                             <Popover>
@@ -1167,35 +937,14 @@ export default function AssetExplorer({
                               >
                                 <div className="flex flex-col gap-3">
                                   <div>
-                                    <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-2 block">
-                                      Asset Types
-                                    </span>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {[
-                                        { key: 'sounds', label: 'Sounds' },
-                                        { key: 'animations', label: 'Animations' },
-                                        { key: 'images', label: 'Images' },
-                                        { key: 'meshes', label: 'Meshes' },
-                                        { key: 'scripts', label: 'Scripts' },
-                                      ].map((type) => (
-                                        <button
-                                          key={type.key}
-                                          type="button"
-                                          onClick={() => toggleScanType(type.key)}
-                                          className={cn(
-                                            'px-2 py-0.5 rounded-full text-2xs font-semibold border transition-colors cursor-pointer',
-                                            scanTypes.has(type.key)
-                                              ? 'bg-primary/15 border-primary/40 text-primary'
-                                              : 'bg-bg-base border-border-subtle text-text-muted hover:text-text-primary hover:border-border',
-                                          )}
-                                        >
-                                          {scanTypes.has(type.key) && (
-                                            <Check size={8} className="inline mr-1" />
-                                          )}
-                                          {type.label}
-                                        </button>
-                                      ))}
-                                    </div>
+                                    <SectionLabel className="mb-2 block">
+                                      {t('explorer.assetTypes')}
+                                    </SectionLabel>
+                                    <AssetTypePicker
+                                      scanTypes={scanTypes}
+                                      onToggle={toggleScanType}
+                                      size="sm"
+                                    />
                                   </div>
                                 </div>
                               </PopoverContent>
@@ -1211,7 +960,7 @@ export default function AssetExplorer({
                                   className="h-8 text-xs font-medium gap-1.5 w-full"
                                 >
                                   <MapPin size={13} />
-                                  <span>Scan Specific Path / Model</span>
+                                  <span>{t('explorer.scanSpecificPath')}</span>
                                 </Button>
                               }
                             />
@@ -1222,51 +971,27 @@ export default function AssetExplorer({
                               className="w-76 p-3 bg-bg-surface border border-border shadow-xl rounded-lg z-[250]"
                             >
                               <div className="flex flex-col gap-2.5">
-                                <div className="text-2xs font-bold uppercase tracking-wider text-text-muted">
-                                  Targeted Path Scan
-                                </div>
+                                <SectionLabel>{t('explorer.targetedPathScan')}</SectionLabel>
                                 <p className="text-2xs text-text-secondary leading-snug">
-                                  Scan only a specific instance or container instead of the whole
-                                  game:
+                                  {t('explorer.targetedPathScanBody')}
                                 </p>
                                 <Input
                                   value={targetedPath}
                                   onChange={(e) => setTargetedPath(e.target.value)}
-                                  placeholder="e.g. game.Workspace.AKAnims or Guns"
+                                  placeholder={t('explorer.targetedPathPlaceholder')}
                                   className="h-8 text-xs font-mono bg-bg-base"
                                   onKeyDown={(e) => e.key === 'Enter' && handleRunTargetedScan()}
                                 />
 
                                 <div>
-                                  <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-1.5 block">
-                                    Asset Types
-                                  </span>
-                                  <div className="flex flex-wrap gap-1">
-                                    {[
-                                      { key: 'sounds', label: 'Sounds' },
-                                      { key: 'animations', label: 'Animations' },
-                                      { key: 'images', label: 'Images' },
-                                      { key: 'meshes', label: 'Meshes' },
-                                      { key: 'scripts', label: 'Scripts' },
-                                    ].map((type) => (
-                                      <button
-                                        key={type.key}
-                                        type="button"
-                                        onClick={() => toggleScanType(type.key)}
-                                        className={cn(
-                                          'px-2 py-0.5 rounded-full text-2xs font-semibold border transition-colors cursor-pointer',
-                                          scanTypes.has(type.key)
-                                            ? 'bg-primary/15 border-primary/40 text-primary'
-                                            : 'bg-bg-base border-border-subtle text-text-muted hover:text-text-primary hover:border-border',
-                                        )}
-                                      >
-                                        {scanTypes.has(type.key) && (
-                                          <Check size={8} className="inline mr-1" />
-                                        )}
-                                        {type.label}
-                                      </button>
-                                    ))}
-                                  </div>
+                                  <SectionLabel className="mb-1.5 block">
+                                    {t('explorer.assetTypes')}
+                                  </SectionLabel>
+                                  <AssetTypePicker
+                                    scanTypes={scanTypes}
+                                    onToggle={toggleScanType}
+                                    size="sm"
+                                  />
                                 </div>
 
                                 <div className="flex justify-end gap-2 pt-1 border-t border-border-subtle/50">
@@ -1276,7 +1001,7 @@ export default function AssetExplorer({
                                     className="h-7 text-xs"
                                     onClick={() => setTargetedScanOpen(false)}
                                   >
-                                    Cancel
+                                    {t('common.cancel')}
                                   </Button>
                                   <Button
                                     size="sm"
@@ -1284,7 +1009,7 @@ export default function AssetExplorer({
                                     disabled={!targetedPath.trim() || !studioConnected}
                                     onClick={() => handleRunTargetedScan()}
                                   >
-                                    Scan Path
+                                    {t('explorer.scanPath')}
                                   </Button>
                                 </div>
                               </div>
@@ -1302,7 +1027,7 @@ export default function AssetExplorer({
                             }
                           >
                             <ClipboardPaste size={13} />
-                            <span>Add Manual / Ghost IDs</span>
+                            <span>{t('explorer.addManualGhostIds')}</span>
                           </Button>
                         </div>
                       )}
@@ -1320,8 +1045,6 @@ export default function AssetExplorer({
                         toggleNode={toggleNode}
                         getAllAssetIds={getAllAssetIds}
                         getAllAssetKeys={getAllAssetKeys}
-                        setEnlargedImage={setEnlargedImage}
-                        setPreviewingAnimation={setPreviewingAnimation}
                         activeAssetFilters={activeAssetFilters}
                         searchQuery={deferredSearchQuery}
                         playingAudioId={playingAudioId}
@@ -1362,8 +1085,8 @@ export default function AssetExplorer({
                       <Button
                         variant="outline"
                         size="icon"
+                        aria-label={t('explorer.clearExplorer')}
                         className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 border-border-subtle"
-                        title={t('explorer.clearExplorer') ?? 'Clear Explorer'}
                       />
                     }
                   >
@@ -1376,13 +1099,11 @@ export default function AssetExplorer({
                     className="w-56 p-3 bg-bg-surface border border-border rounded-lg shadow-lg"
                   >
                     <div className="flex flex-col gap-2.5">
-                      <div className="text-2xs font-bold uppercase tracking-widest text-text-muted">
-                        {t('explorer.clearExplorer')}
-                      </div>
+                      <SectionLabel className="block">{t('explorer.clearExplorer')}</SectionLabel>
                       <div className="text-xs text-text-secondary leading-normal">
-                        {t('common.areYouSure') ?? 'Are you sure?'}{' '}
+                        {t('common.areYouSure')}{' '}
                         <span className="text-text-muted">
-                          This will remove all {stats.total} scanned assets.
+                          {t('explorer.clearExplorerBody').replace('{count}', String(stats.total))}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 justify-end pt-1">
@@ -1397,7 +1118,7 @@ export default function AssetExplorer({
                         <Button
                           variant="destructive"
                           size="sm"
-                          className="h-7 text-xs px-3 font-semibold bg-red-500 text-white"
+                          className="h-7 text-xs px-3 font-semibold bg-danger text-white"
                           onClick={() => {
                             setRootInstances([]);
                             setLoadedFileName(null);
@@ -1412,7 +1133,7 @@ export default function AssetExplorer({
                             setClearConfirmOpen(false);
                           }}
                         >
-                          {t('common.clear') ?? 'Clear'}
+                          {t('common.clear')}
                         </Button>
                       </div>
                     </div>
@@ -1422,7 +1143,7 @@ export default function AssetExplorer({
                   <span>{stats.total} assets found</span>
                   {lastScanTime && (
                     <>
-                      <span>•</span>
+                      <span>,</span>
                       <span>
                         Scanned{' '}
                         {new Date(lastScanTime).toLocaleTimeString([], {
@@ -1437,7 +1158,7 @@ export default function AssetExplorer({
 
               <div className="flex items-center gap-2 shrink-0">
                 {selectedCount > 0 && (
-                  <div className="flex items-center rounded-lg border border-border-subtle bg-bg-surface p-0.5 shrink-0 gap-0.5 shadow-sm">
+                  <div className="flex items-center rounded-lg border border-border-subtle bg-bg-surface p-0.5 shrink-0 gap-0.5">
                     <Popover open={lockOpen} onOpenChange={setLockOpen}>
                       <PopoverTrigger
                         render={
@@ -1464,14 +1185,14 @@ export default function AssetExplorer({
                         className="w-64 p-3 bg-bg-surface border border-border shadow-xl rounded-lg"
                       >
                         <div className="flex flex-col gap-2">
-                          <div className="text-2xs font-semibold uppercase tracking-widest text-text-muted">
-                            {t('settings.forcePlaceIds')} · {selectedCount} selected
-                          </div>
+                          <SectionLabel className="font-semibold">
+                            {t('settings.forcePlaceIds')}, {selectedCount} selected
+                          </SectionLabel>
                           <Input
                             value={placeIdInput}
                             onChange={(e) => setPlaceIdInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && applyPin()}
-                            placeholder={t('settings.forcePlaceIdsPlaceholder') || 'e.g. 123456789'}
+                            placeholder={t('settings.forcePlaceIdsPlaceholder')}
                             className="h-8 text-xs bg-bg-base font-mono"
                           />
                           <div className="flex items-center justify-between gap-2">
@@ -1603,7 +1324,7 @@ export default function AssetExplorer({
                                 )}
                               >
                                 <Copy size={13} />
-                                <span className="flex-1">Copy Replacement Pairs</span>
+                                <span className="flex-1">{t('explorer.copyReplacementPairs')}</span>
                               </button>
 
                               <button
@@ -1618,7 +1339,7 @@ export default function AssetExplorer({
                                 )}
                               >
                                 <Copy size={13} className="text-muted-foreground" />
-                                <span className="flex-1">Copy Replaced IDs Only</span>
+                                <span className="flex-1">{t('explorer.copyReplacedIdsOnly')}</span>
                               </button>
                             </div>
                           </PopoverContent>
@@ -1628,7 +1349,7 @@ export default function AssetExplorer({
                   </div>
                 )}
 
-                <div className="flex items-center rounded-lg border border-border-subtle bg-bg-surface p-0.5 shrink-0 gap-0.5 shadow-sm">
+                <div className="flex items-center rounded-lg border border-border-subtle bg-bg-surface p-0.5 shrink-0 gap-0.5">
                   {config.spoofing.selectedUser !== 'none' && (
                     <div className="flex items-center rounded overflow-hidden">
                       <Tooltip>
@@ -1651,14 +1372,17 @@ export default function AssetExplorer({
                               ) : (
                                 <MapPin size={13} />
                               )}
-                              <span>Discover</span>
+                              <span>{t('explorer.discover')}</span>
                             </button>
                           }
                         />
                         <TooltipContent>
                           {isDiscoveringPlaceIds
-                            ? 'Discovering Place IDs...'
-                            : `Discover Place IDs (${discoveryTimeoutSecs}s limit/asset)`}
+                            ? t('explorer.discoveringPlaceIds')
+                            : t('explorer.discoverPlaceIdsTooltip').replace(
+                                '{secs}',
+                                String(discoveryTimeoutSecs),
+                              )}
                         </TooltipContent>
                       </Tooltip>
 
@@ -1681,10 +1405,8 @@ export default function AssetExplorer({
                         >
                           <div className="flex flex-col gap-3">
                             <div className="flex items-center justify-between">
-                              <span className="text-2xs font-bold uppercase tracking-wider text-text-muted">
-                                Discovery Timeout
-                              </span>
-                              <span className="text-xs font-mono font-bold text-primary">
+                              <SectionLabel>{t('explorer.discoveryTimeout')}</SectionLabel>
+                              <span className="text-xs font-semibold tabular-nums text-primary">
                                 {discoveryTimeoutSecs}s / asset
                               </span>
                             </div>
@@ -1697,7 +1419,7 @@ export default function AssetExplorer({
                               onChange={(e) => setDiscoveryTimeoutSecs(Number(e.target.value))}
                               className="w-full accent-primary h-1.5 bg-bg-base rounded-lg cursor-pointer"
                             />
-                            <div className="flex justify-between text-2xs text-text-muted font-mono">
+                            <div className="flex justify-between text-2xs text-text-muted tabular-nums">
                               <span>30s (fast)</span>
                               <span>120s</span>
                               <span>300s (deep)</span>
@@ -1722,7 +1444,7 @@ export default function AssetExplorer({
                         </button>
                       }
                     />
-                    <TooltipContent>Manual Replace & Add IDs</TooltipContent>
+                    <TooltipContent>{t('spoof.manualReplace')}</TooltipContent>
                   </Tooltip>
 
                   {storedReplacementsCount > 0 && (
@@ -1753,7 +1475,7 @@ export default function AssetExplorer({
                     <Button
                       size="sm"
                       data-tutorial-target="run-spoofer"
-                      className="h-8 px-3 rounded-r-none rounded-l-md text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm"
+                      className="h-8 px-3 rounded-r-none rounded-l-md text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                       onClick={() => {
                         const targetPaths = computeTargetPaths();
                         useSpooferStore.getState().setTargetPathsMap(targetPaths || {});
@@ -1782,14 +1504,14 @@ export default function AssetExplorer({
                         <Play size={13} fill="currentColor" />
                       )}
                       {isSpoofing
-                        ? (t('spoof.runSpoofer') ?? 'Run Spoofer') + '…'
+                        ? t('spoof.runSpoofer') + '…'
                         : config.spoofing.downloadOnly
                           ? selectedCount > 0
-                            ? `Download Selected (${selectedCount})`
-                            : `Download All (${stats.displayed})`
+                            ? t('spoof.downloadSelected').replace('{count}', String(selectedCount))
+                            : t('spoof.downloadAll').replace('{count}', String(stats.displayed))
                           : selectedCount > 0
-                            ? `Spoof Selected (${selectedCount})`
-                            : `Spoof All Assets (${stats.displayed})`}
+                            ? t('spoof.spoofSelected').replace('{count}', String(selectedCount))
+                            : t('spoof.spoofAllAssets').replace('{count}', String(stats.displayed))}
                     </Button>
                     <PopoverTrigger
                       render={
@@ -1829,7 +1551,7 @@ export default function AssetExplorer({
                         )}
                         fill="currentColor"
                       />
-                      <span className="flex-1">Spoof (Upload)</span>
+                      <span className="flex-1">{t('explorer.spoofUpload')}</span>
                       {!config.spoofing.downloadOnly && (
                         <Check size={12} className="text-primary" />
                       )}
@@ -1853,7 +1575,7 @@ export default function AssetExplorer({
                           config.spoofing.downloadOnly ? 'text-primary' : 'text-muted-foreground',
                         )}
                       />
-                      <span className="flex-1">Download Only</span>
+                      <span className="flex-1">{t('explorer.downloadOnlyMode')}</span>
                       {config.spoofing.downloadOnly && <Check size={12} className="text-primary" />}
                     </button>
 
@@ -1868,9 +1590,11 @@ export default function AssetExplorer({
                       className="flex items-center gap-2 w-full h-7 px-2 rounded-md text-xs text-left transition-colors text-text-secondary hover:text-text-primary hover:bg-bg-elevated cursor-pointer"
                     >
                       <RotateCcw size={12} className="text-primary" />
-                      <span className="flex-1 font-medium">Re-apply Replacements</span>
+                      <span className="flex-1 font-medium">
+                        {t('explorer.reapplyReplacements')}
+                      </span>
                       {storedReplacementsCount > 0 && (
-                        <span className="text-2xs text-muted-foreground font-mono bg-bg-base px-1 rounded border border-border-subtle">
+                        <span className="text-2xs text-muted-foreground tabular-nums bg-bg-base px-1 rounded border border-border-subtle">
                           {storedReplacementsCount}
                         </span>
                       )}
@@ -1889,12 +1613,12 @@ export default function AssetExplorer({
                         import('@tauri-apps/api/core')
                           .then(({ invoke }) => invoke('force_reset_spoofer_job'))
                           .catch(() => {});
-                        showToast('info', 'Button state reset. You can start a new spoof.');
+                        showToast('info', t('explorer.forceResetToast'));
                       }}
-                      className="flex items-center gap-2 w-full h-7 px-2 rounded-md text-xs text-left transition-colors text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      className="flex items-center gap-2 w-full h-7 px-2 rounded-md text-xs text-left transition-colors text-danger hover:bg-danger/10"
                     >
-                      <X size={12} className="text-red-400" />
-                      <span className="flex-1 font-medium">Force Reset (Stuck?)</span>
+                      <X size={12} className="text-danger" />
+                      <span className="flex-1 font-medium">{t('explorer.forceResetStuck')}</span>
                     </button>
                   </PopoverContent>
                 </Popover>
@@ -1910,7 +1634,7 @@ export default function AssetExplorer({
             <DialogTitle>{t('settings.forcePlaceIds')}</DialogTitle>
           </DialogHeader>
           <div className="py-2 text-sm text-text-secondary">
-            {t('common.areYouSure') ?? 'Are you sure?'}{' '}
+            {t('common.areYouSure')}{' '}
             <span className="text-text-muted">
               ({pinnedCount} pinned asset{pinnedCount === 1 ? '' : 's'})
             </span>
@@ -1933,590 +1657,6 @@ export default function AssetExplorer({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-function findPropertiesForInstance(instancePath: string, roots: RbxInstance[]): ParsedAssetRef[] {
-  const list: ParsedAssetRef[] = [];
-  const walk = (nodes: RbxInstance[]) => {
-    for (const node of nodes) {
-      for (const a of node.assets) {
-        if (a.path === instancePath) {
-          list.push(a);
-        }
-      }
-      walk(node.children);
-    }
-  };
-  walk(roots);
-  return list;
-}
-
-function AssetInspectorPanel({
-  asset,
-  onClose,
-  playingAudioId,
-  setPlayingAudioId,
-  allInstances = [],
-  showViewport = true,
-  showProperties = true,
-}: {
-  asset: ParsedAssetRef | null;
-  onClose: () => void;
-  playingAudioId: string | null;
-  setPlayingAudioId: (id: string | null) => void;
-  allInstances?: RbxInstance[];
-  showViewport?: boolean;
-  showProperties?: boolean;
-}) {
-  const { config } = useConfig();
-  const [selectedAssetRef, setSelectedAssetRef] = useState<ParsedAssetRef | null>(asset);
-  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [appearanceOpen, setAppearanceOpen] = useState(true);
-  const [dataOpen, setDataOpen] = useState(true);
-  const [isPoppedOut, setIsPoppedOut] = useState(false);
-
-  const [imageZoom, setImageZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isDraggingImage, setIsDraggingImage] = useState(false);
-  const dragStartRef = useRef({ x: 0, y: 0 });
-
-  const assetForcePlaceIds = useSpooferStore((s) => s.assetForcePlaceIds) ?? {};
-  const lastReplacements = useSpooferStore((s) => s.lastReplacements) ?? {};
-
-  useEffect(() => {
-    setSelectedAssetRef(asset);
-    setImageZoom(1);
-    setPan({ x: 0, y: 0 });
-  }, [asset]);
-
-  const activeAsset = selectedAssetRef || asset;
-  const activeAssetId = activeAsset ? getAssetId(activeAsset) : '';
-  const isImage = activeAsset?.type === 'image';
-  const isMesh = activeAsset?.type === 'mesh';
-  const isAudio = activeAsset?.type === 'audio';
-  const isAnimation =
-    activeAsset?.type === 'animation' || activeAsset?.type === 'raw_keyframe_sequence';
-
-  useEffect(() => {
-    const unlistenClosed = listen('preview-window-closed', () => {
-      setIsPoppedOut(false);
-    });
-    const unlistenReady = listen('preview-window-ready', () => {
-      if (activeAsset) {
-        void emit('preview-asset-change', activeAsset);
-      }
-    });
-    return () => {
-      unlistenClosed.then((fn) => fn());
-      unlistenReady.then((fn) => fn());
-    };
-  }, [activeAsset]);
-
-  useEffect(() => {
-    if (activeAsset && isPoppedOut) {
-      try {
-        localStorage.setItem('preview-current-asset', JSON.stringify(activeAsset));
-        void emit('preview-asset-change', activeAsset);
-      } catch {}
-    }
-  }, [activeAsset, isPoppedOut]);
-
-  const handleTogglePopout = async () => {
-    if (isPoppedOut) {
-      try {
-        const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-        const win = await WebviewWindow.getByLabel('asset-preview');
-        if (win) await win.close();
-      } catch {}
-      setIsPoppedOut(false);
-      return;
-    }
-
-    try {
-      if (activeAsset) {
-        localStorage.setItem('preview-current-asset', JSON.stringify(activeAsset));
-      }
-      const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-      let win = await WebviewWindow.getByLabel('asset-preview');
-      if (win) {
-        await win.show();
-        await win.setFocus();
-        if (activeAsset) void emit('preview-asset-change', activeAsset);
-      } else {
-        win = new WebviewWindow('asset-preview', {
-          url: 'preview.html',
-          title: 'Asset Preview',
-          width: 440,
-          height: 480,
-          minWidth: 280,
-          minHeight: 280,
-          alwaysOnTop: true,
-          decorations: false,
-          transparent: true,
-          shadow: true,
-        });
-      }
-      setIsPoppedOut(true);
-    } catch (e) {
-      console.warn('Could not launch secondary window, fallback to in-app popout', e);
-      setIsPoppedOut(true);
-    }
-  };
-
-  const instanceProperties = useMemo(() => {
-    if (!asset) return [];
-    const props = findPropertiesForInstance(asset.path, allInstances);
-    if (props.length === 0) return [asset];
-    return props;
-  }, [asset, allInstances]);
-
-  useEffect(() => {
-    if (!activeAssetId || (!isImage && !isMesh)) {
-      setThumbnailUrl(null);
-      return;
-    }
-
-    setLoading(true);
-    setError(false);
-    invoke<string | null>('fetch_roblox_thumbnail', { assetId: activeAssetId })
-      .then((url) => {
-        if (url) {
-          setThumbnailUrl(url);
-        } else if (isImage) {
-          setThumbnailUrl(`https://assetdelivery.roblox.com/v1/asset/?id=${activeAssetId}`);
-        } else {
-          setError(true);
-        }
-      })
-      .catch(() => {
-        if (isImage) {
-          setThumbnailUrl(`https://assetdelivery.roblox.com/v1/asset/?id=${activeAssetId}`);
-        } else {
-          setError(true);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [activeAssetId, isImage, isMesh]);
-
-  if (!asset || !activeAsset) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-xs text-center p-6 gap-2 select-none h-full bg-bg-surface/5">
-        <FolderOpen size={36} className="opacity-30 text-primary mb-2" />
-        <span className="text-sm font-semibold text-text-secondary">No Instance Selected</span>
-        <span className="max-w-[240px] text-2xs leading-relaxed">
-          Select an instance in the Explorer tree to inspect its Roblox properties.
-        </span>
-      </div>
-    );
-  }
-
-  const handleCopy = async (text: string, field: string) => {
-    if (!text) return;
-    await navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
-  };
-
-  const handlePlayAudio = async () => {
-    if (playingAudioId === activeAssetId) {
-      stopRobloxAudio();
-      setPlayingAudioId(null);
-      return;
-    }
-
-    setPlayingAudioId(activeAssetId);
-    await playRobloxAudio(activeAssetId, config).catch((err) => {
-      console.error('Failed to play audio:', err);
-      setPlayingAudioId(null);
-    });
-  };
-
-  const parentName = asset.path.split('.').slice(-2, -1)[0] || 'Workspace';
-
-  const renderViewport = (isFloating: boolean = false) => (
-    <div
-      className={cn(
-        'relative overflow-hidden flex items-center justify-center bg-bg-base/70',
-        isFloating ? 'w-full h-full' : 'flex-1 min-h-[160px] border-b border-border-subtle',
-      )}
-    >
-      {isAnimation && (
-        <Suspense
-          fallback={
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          }
-        >
-          <AnimationPreview assetId={activeAssetId} assetName={activeAsset.instanceName} inline />
-        </Suspense>
-      )}
-
-      {(isImage || isMesh) && (
-        <div
-          className="w-full h-full flex items-center justify-center p-3 bg-checkerboard bg-[size:16px_16px] relative overflow-hidden cursor-grab active:cursor-grabbing select-none"
-          onWheel={(e) => {
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? -0.2 : 0.2;
-            setImageZoom((prev) => Math.max(0.25, Math.min(8, +(prev + delta).toFixed(2))));
-          }}
-          onMouseDown={(e) => {
-            if (e.button === 0) {
-              setIsDraggingImage(true);
-              dragStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
-            }
-          }}
-          onMouseMove={(e) => {
-            if (isDraggingImage) {
-              setPan({
-                x: e.clientX - dragStartRef.current.x,
-                y: e.clientY - dragStartRef.current.y,
-              });
-            }
-          }}
-          onMouseUp={() => setIsDraggingImage(false)}
-          onMouseLeave={() => setIsDraggingImage(false)}
-        >
-          {loading ? (
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          ) : error ? (
-            <div className="text-xs text-destructive flex flex-col items-center gap-2">
-              <ImageIcon size={24} className="opacity-40" />
-              <span>Failed to load preview</span>
-            </div>
-          ) : thumbnailUrl ? (
-            <img
-              src={thumbnailUrl}
-              alt=""
-              className="max-w-full max-h-full object-contain rounded shadow-lg border border-border pointer-events-none transition-transform duration-75"
-              style={{
-                transform: `translate(${pan.x}px, ${pan.y}px) scale(${imageZoom})`,
-              }}
-              draggable={false}
-              onError={() => setError(true)}
-            />
-          ) : (
-            <div className="text-xs text-text-muted flex flex-col items-center gap-2">
-              <ImageIcon size={24} className="opacity-40" />
-              <span>No preview available</span>
-            </div>
-          )}
-
-          {thumbnailUrl && !loading && !error && (
-            <div
-              className="absolute bottom-2 right-2 flex items-center gap-1 bg-bg-surface/90 border border-border-subtle rounded-md px-1 py-0.5 shadow-md select-none z-10"
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              <button
-                type="button"
-                onClick={() => setImageZoom((prev) => Math.max(0.25, +(prev - 0.25).toFixed(2)))}
-                className="h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-foreground text-xs font-bold rounded cursor-pointer"
-                title="Zoom Out"
-              >
-                -
-              </button>
-              <Popover>
-                <PopoverTrigger
-                  render={
-                    <button
-                      type="button"
-                      className="h-5 px-1.5 flex items-center gap-0.5 text-2xs font-mono font-semibold text-text-secondary hover:text-foreground rounded cursor-pointer"
-                    >
-                      <span>{Math.round(imageZoom * 100)}%</span>
-                      <ChevronDown size={9} />
-                    </button>
-                  }
-                />
-                <PopoverContent
-                  align="end"
-                  side="top"
-                  sideOffset={4}
-                  className="w-20 p-1 bg-bg-surface border border-border shadow-xl rounded-md z-[350]"
-                >
-                  <div className="flex flex-col gap-0.5">
-                    {[0.5, 1, 1.5, 2, 4].map((z) => (
-                      <button
-                        key={z}
-                        type="button"
-                        onClick={() => {
-                          setImageZoom(z);
-                          setPan({ x: 0, y: 0 });
-                        }}
-                        className={cn(
-                          'flex items-center justify-between px-1.5 py-0.5 rounded text-2xs font-mono transition-colors text-left',
-                          imageZoom === z
-                            ? 'bg-primary text-primary-foreground font-bold'
-                            : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated',
-                        )}
-                      >
-                        <span>{Math.round(z * 100)}%</span>
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <button
-                type="button"
-                onClick={() => setImageZoom((prev) => Math.min(8, +(prev + 0.25).toFixed(2)))}
-                className="h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-foreground text-xs font-bold rounded cursor-pointer"
-                title="Zoom In"
-              >
-                +
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setImageZoom(1);
-                  setPan({ x: 0, y: 0 });
-                }}
-                className="h-5 px-1 flex items-center justify-center text-muted-foreground hover:text-foreground text-2xs font-medium border-l border-border-subtle/50 ml-0.5 cursor-pointer"
-                title="Reset Zoom"
-              >
-                Reset
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {isAudio && (
-        <div className="w-full h-full flex flex-col items-center justify-center p-4 gap-2 bg-gradient-to-b from-bg-base/30 to-bg-base/70">
-          <div className="w-12 h-10 flex items-center justify-center bg-primary/10 border border-primary/20 rounded-lg">
-            <Volume2 size={20} className="text-primary" />
-          </div>
-          <Button
-            size="sm"
-            variant={playingAudioId === activeAssetId ? 'destructive' : 'default'}
-            className="h-7 px-3 gap-1.5 font-semibold text-xs shadow-sm"
-            onClick={handlePlayAudio}
-          >
-            {playingAudioId === activeAssetId ? (
-              <>
-                <Square size={11} fill="currentColor" /> Stop Audio
-              </>
-            ) : (
-              <>
-                <Play size={11} fill="currentColor" /> Play Audio
-              </>
-            )}
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-
-  return (
-    <div className="flex-1 flex flex-col h-full bg-bg-surface/10 select-none relative overflow-hidden font-sans">
-      <div className="h-8 px-2.5 bg-bg-surface/60 border-b border-border flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <span className="text-2xs font-semibold text-text-muted">
-            {showProperties ? 'Properties -' : 'Preview -'}
-          </span>
-          <span className="text-xs font-bold text-foreground truncate">
-            {asset.className} "{asset.instanceName}"
-          </span>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              'h-6 w-6 transition-colors',
-              isPoppedOut ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
-            )}
-            onClick={() => void handleTogglePopout()}
-            title={isPoppedOut ? 'Dock Preview' : 'Popout to Secondary OS Window (Always on Top)'}
-          >
-            {isPoppedOut ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="h-6 w-6 text-muted-foreground hover:text-foreground"
-            title="Close panel"
-          >
-            <X size={13} />
-          </Button>
-        </div>
-      </div>
-
-      {showViewport && !isPoppedOut && renderViewport(false)}
-
-      {showProperties && (
-        <div
-          className={cn(
-            'overflow-y-auto divide-y divide-border-subtle/30 text-xs font-sans transition-all duration-200',
-            !showViewport || isPoppedOut ? 'flex-1' : 'shrink-0 max-h-[70%]',
-          )}
-        >
-          <div>
-            <button
-              type="button"
-              onClick={() => setAppearanceOpen(!appearanceOpen)}
-              className="w-full h-6 px-2 bg-bg-elevated/40 hover:bg-bg-elevated/70 flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wider text-text-muted select-none transition-colors text-left"
-            >
-              <ChevronRight
-                size={11}
-                className={cn('transition-transform duration-150', appearanceOpen && 'rotate-90')}
-              />
-              <span>Appearance & Values</span>
-              <span className="ml-auto font-normal text-muted-foreground">
-                ({instanceProperties.length})
-              </span>
-            </button>
-
-            {appearanceOpen && (
-              <div className="flex flex-col divide-y divide-border-subtle/20">
-                {instanceProperties.map((p) => {
-                  const propAssetId = getAssetId(p);
-                  const isCurrentActive =
-                    activeAssetId === propAssetId && activeAsset.propertyName === p.propertyName;
-                  const pinnedPid = propAssetId ? assetForcePlaceIds[propAssetId] : undefined;
-                  const replId = propAssetId ? lastReplacements[propAssetId] : undefined;
-
-                  return (
-                    <div
-                      key={`${p.path}:${p.propertyName}:${propAssetId}`}
-                      onClick={() => setSelectedAssetRef(p)}
-                      className={cn(
-                        'flex items-center min-h-[28px] px-2 py-1 gap-2 cursor-pointer transition-colors group',
-                        isCurrentActive ? 'bg-primary/10' : 'hover:bg-accent/40',
-                      )}
-                    >
-                      <div className="w-[38%] text-2xs font-medium text-text-secondary truncate flex items-center gap-1">
-                        <span className="truncate">{p.propertyName || 'Asset'}</span>
-                      </div>
-
-                      <div className="flex-1 flex items-center gap-1 min-w-0">
-                        <span className="text-2xs font-mono text-foreground truncate flex-1 select-all">
-                          {p.rawValue || `rbxassetid://${propAssetId}`}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedAssetRef(p);
-                          }}
-                          className={cn(
-                            'h-5 w-5 rounded flex items-center justify-center shrink-0 transition-colors',
-                            isCurrentActive
-                              ? 'text-primary bg-primary/20'
-                              : 'text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100',
-                          )}
-                          title="Preview this asset"
-                        >
-                          <Eye size={11} />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void handleCopy(propAssetId, `prop-${p.propertyName}`);
-                          }}
-                          className="h-5 w-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Copy Asset ID"
-                        >
-                          {copiedField === `prop-${p.propertyName}` ? (
-                            <Check size={11} className="text-primary" />
-                          ) : (
-                            <Copy size={11} />
-                          )}
-                        </button>
-
-                        {pinnedPid && (
-                          <div
-                            className="h-4 px-1 rounded text-2xs font-mono flex items-center gap-0.5 shrink-0"
-                            style={{
-                              color: getBrightPlaceIdColor(pinnedPid),
-                              backgroundColor: `${getBrightPlaceIdColor(pinnedPid)}18`,
-                            }}
-                            title={`Pinned Place ID: ${pinnedPid}`}
-                          >
-                            <Lock size={9} />
-                            <span>{formatShortId(pinnedPid)}</span>
-                          </div>
-                        )}
-
-                        {replId && (
-                          <div
-                            className="h-4 px-1 rounded text-2xs font-mono flex items-center gap-0.5 text-signal-spoofed bg-signal-spoofed/10 border border-signal-spoofed/20 shrink-0"
-                            title={`Spoofed to: rbxassetid://${replId}`}
-                          >
-                            <Inbox size={9} />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <button
-              type="button"
-              onClick={() => setDataOpen(!dataOpen)}
-              className="w-full h-6 px-2 bg-bg-elevated/40 hover:bg-bg-elevated/70 flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wider text-text-muted select-none transition-colors text-left"
-            >
-              <ChevronRight
-                size={11}
-                className={cn('transition-transform duration-150', dataOpen && 'rotate-90')}
-              />
-              <span>Instance Details</span>
-            </button>
-
-            {dataOpen && (
-              <div className="flex flex-col divide-y divide-border-subtle/20">
-                <div className="flex items-center min-h-[26px] px-2 py-1 gap-2">
-                  <span className="w-[38%] text-2xs text-text-muted">Class Name</span>
-                  <span className="flex-1 text-2xs text-text-primary font-medium truncate">
-                    {asset.className || 'Unknown'}
-                  </span>
-                </div>
-                <div className="flex items-center min-h-[26px] px-2 py-1 gap-2">
-                  <span className="w-[38%] text-2xs text-text-muted">Name</span>
-                  <span className="flex-1 text-2xs text-text-primary font-medium truncate">
-                    {asset.instanceName || 'Unknown'}
-                  </span>
-                </div>
-                <div className="flex items-center min-h-[26px] px-2 py-1 gap-2">
-                  <span className="w-[38%] text-2xs text-text-muted">Parent</span>
-                  <span className="flex-1 text-2xs text-text-secondary truncate">{parentName}</span>
-                </div>
-                <div className="flex items-center min-h-[28px] px-2 py-1 gap-2 group">
-                  <span className="w-[38%] text-2xs text-text-muted">DataModel Path</span>
-                  <div className="flex-1 flex items-center gap-1 min-w-0">
-                    <span className="text-2xs font-mono text-text-secondary truncate flex-1 select-all">
-                      {asset.path || 'Unknown'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => void handleCopy(asset.path, 'path')}
-                      className="h-5 w-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Copy full path"
-                    >
-                      {copiedField === 'path' ? (
-                        <Check size={11} className="text-primary" />
-                      ) : (
-                        <Copy size={11} />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

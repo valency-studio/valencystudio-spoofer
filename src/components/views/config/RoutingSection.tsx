@@ -16,26 +16,20 @@ export default function RoutingSection() {
   return (
     <SettingCard
       icon={Gauge}
-      title={t('config.routingLimits') || 'Routing and Limits'}
-      description="Configure network proxies and concurrency levels for downloading and uploading assets."
+      title={t('config.routingLimits')}
+      description={t('settings.routingDescription')}
     >
       <SettingFieldRow
-        label={t('settings.proxyUrl') || 'HTTP / SOCKS5 Proxy URL'}
-        description={
-          t('settings.proxyUrlPlaceholder') ||
-          'e.g. http://127.0.0.1:8080 or socks5://user:pass@host:1080'
-        }
+        label={t('settings.proxyUrl')}
+        description={t('settings.proxyUrlPlaceholder')}
         value={config.advanced.proxyUrl}
         onChange={(val) => updateConfig('advanced', 'proxyUrl', val)}
         placeholder="http://127.0.0.1:8080"
       />
 
       <SettingSwitchRow
-        label={t('settings.concurrentSpoofing') || 'Concurrent Processing'}
-        description={
-          t('settings.concurrentSpoofingDescription') ||
-          'Spoof and download multiple assets simultaneously to speed up processing.'
-        }
+        label={t('settings.concurrentSpoofing')}
+        description={t('settings.concurrentSpoofingDescription')}
         checked={config.advanced.concurrentSpoofing}
         onCheckedChange={(val) => updateConfig('advanced', 'concurrentSpoofing', val)}
       />
@@ -43,8 +37,8 @@ export default function RoutingSection() {
       {config.advanced.concurrentSpoofing && (
         <>
           <SettingSliderItem
-            label={t('settings.maxConcurrency') || 'Max Concurrency'}
-            description="Parallel thread ceiling for asset spoofing pipeline."
+            label={t('settings.maxConcurrency')}
+            description={t('settings.maxConcurrencyDescription')}
             value={config.advanced.maxConcurrency}
             onChange={(val) => updateConfig('advanced', 'maxConcurrency', val)}
             min={1}
@@ -53,8 +47,8 @@ export default function RoutingSection() {
           />
 
           <SettingSliderItem
-            label={t('settings.maxDownloadConcurrency') || 'Max Download Concurrency'}
-            description="Parallel streams for downloading Roblox asset payloads."
+            label={t('settings.maxDownloadConcurrency')}
+            description={t('settings.maxDownloadConcurrencyDescription')}
             value={config.advanced.maxDownloadConcurrency}
             onChange={(val) => updateConfig('advanced', 'maxDownloadConcurrency', val)}
             min={1}
@@ -63,8 +57,8 @@ export default function RoutingSection() {
           />
 
           <SettingSliderItem
-            label="Discovery Concurrency"
-            description="Parallel threads for place ID discovery lookups."
+            label={t('settings.discoveryConcurrency')}
+            description={t('settings.discoveryConcurrencyDescription')}
             value={config.advanced.discoveryConcurrency ?? 30}
             onChange={(val) => updateConfig('advanced', 'discoveryConcurrency', val)}
             min={1}
@@ -73,8 +67,8 @@ export default function RoutingSection() {
           />
 
           <SettingSliderItem
-            label="Upload Operation Poll Interval"
-            description="How frequently to check Roblox Open Cloud for upload completion (lower = faster, 200–400ms recommended)."
+            label={t('settings.uploadPollInterval')}
+            description={t('settings.uploadPollIntervalDescription')}
             value={config.advanced.operationPollIntervalMs ?? 250}
             onChange={(val) => updateConfig('advanced', 'operationPollIntervalMs', val)}
             min={100}
@@ -83,15 +77,15 @@ export default function RoutingSection() {
           />
 
           <SettingSliderItem
-            label="Batch Size & Speed"
+            label={t('settings.batchSizeSpeed')}
             description={
               (config.advanced.batchSize ?? 50) <= 25
-                ? 'Ultra Smooth — lower CPU load & smoother viewport rendering during replacement.'
+                ? t('settings.batchSpeedUltra')
                 : (config.advanced.batchSize ?? 50) <= 80
-                  ? 'Balanced — standard replacement throughput and stability.'
+                  ? t('settings.batchSpeedBalanced')
                   : (config.advanced.batchSize ?? 50) <= 180
-                    ? 'Fast — accelerated replacement batches with shorter yields.'
-                    : 'Max Speed — highest replacement speed.'
+                    ? t('settings.batchSpeedFast')
+                    : t('settings.batchSpeedMax')
             }
             value={config.advanced.batchSize ?? 50}
             onChange={(val) => {

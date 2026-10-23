@@ -16,6 +16,7 @@ import { useSpooferStore } from '../../stores/spooferStore';
 import { appendSpoofingLog } from '../../utils/spoofingLogs';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
 export default function ResultsModal({
   isOpen,
@@ -115,7 +116,7 @@ export default function ResultsModal({
             </span>
             {replacementsArray.length > 0 && (
               <Button size="sm" variant="outline" onClick={handleCopyAll} className="gap-2">
-                {copied ? <Check size={16} className="text-success" /> : <Copy size={16} />}
+                {copied ? <Check size={16} className="text-signal-live" /> : <Copy size={16} />}
                 {copied ? t('common.copied') : t('results.copyAll')}
               </Button>
             )}
@@ -131,12 +132,24 @@ export default function ResultsModal({
                     className="flex items-center justify-between p-3 rounded-md bg-muted border border-border gap-4"
                   >
                     <div className="flex flex-col flex-1 min-w-0">
-                      <span
-                        className="text-xs text-muted-foreground font-medium truncate"
-                        title={meta?.name}
-                      >
-                        {meta ? `${meta.type.toUpperCase()} • ${meta.name}` : t('misc.originalId')}
-                      </span>
+                      {meta?.name ? (
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <span className="text-xs text-muted-foreground font-medium truncate">
+                                {meta.type.toUpperCase()}, {meta.name}
+                              </span>
+                            }
+                          />
+                          <TooltipContent className="max-w-xs break-words">
+                            {meta.name}
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <span className="text-xs text-muted-foreground font-medium truncate">
+                          {t('misc.originalId')}
+                        </span>
+                      )}
                       <span className="text-sm font-mono font-semibold text-destructive">
                         {oldId}
                       </span>
@@ -146,7 +159,9 @@ export default function ResultsModal({
                       <span className="text-xs text-muted-foreground font-medium truncate">
                         {t('misc.spoofedId')}
                       </span>
-                      <span className="text-sm font-mono font-semibold text-success">{newId}</span>
+                      <span className="text-sm font-mono font-semibold text-signal-live">
+                        {newId}
+                      </span>
                     </div>
                   </div>
                 );
@@ -210,7 +225,7 @@ export default function ResultsModal({
                           <SkipForward size={14} className="text-muted-foreground shrink-0" />
                         )}
                         <span className="text-xs text-muted-foreground font-medium truncate">
-                          {typeLabel ? `${typeLabel} • ` : ''}
+                          {typeLabel ? `${typeLabel}, ` : ''}
                           {name}
                         </span>
                         <span className="text-xs font-mono text-muted-foreground/70 ml-auto shrink-0">
@@ -245,7 +260,7 @@ export default function ResultsModal({
         {loadedFilePath && loadedFilePath.endsWith('.rbxlx') && replacementsArray.length > 0 && (
           <div className="flex justify-end gap-3 pt-2">
             <Button onClick={handleSaveRbxlx} disabled={isSaving}>
-              Save Spoofed .rbxlx
+              {t('results.saveRbxlx')}
             </Button>
           </div>
         )}

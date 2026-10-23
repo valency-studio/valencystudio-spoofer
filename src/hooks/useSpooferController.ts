@@ -1,21 +1,24 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { readText as readClipboardText } from '@tauri-apps/plugin-clipboard-manager';
-import { ArrowDownUp, Settings2, ShieldAlert, SlidersHorizontal, Wand2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
-import { useConfig } from '../../contexts/ConfigContext';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { useStudioConnectionState } from '../../contexts/StudioConnectionContext';
-import { cn } from '../../lib/utils';
-import { useConfigStore } from '../../stores/configStore';
-import { applyReplacements, useSpooferStore } from '../../stores/spooferStore';
-import { getStudioPlaceIdFallback } from '../../utils/apiClient';
-import { addDebugLog } from '../../utils/debugLogger';
-import { type PendingSpoofRetry, takeSpoofRetry } from '../../utils/jobTypes';
-import { type PluginAsset } from '../../utils/pluginBridge';
-import type { RbxInstance } from '../../utils/robloxPlaceParser/types';
+import {
+  type AudioQuotaDisplay,
+  parseAudioQuota,
+} from '../components/views/spoofing/ProfileDropdowns';
+import { useConfig } from '../contexts/ConfigContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useStudioConnectionState } from '../contexts/StudioConnectionContext';
+import { useConfigStore } from '../stores/configStore';
+import { applyReplacements, useSpooferStore } from '../stores/spooferStore';
+import { getStudioPlaceIdFallback } from '../utils/apiClient';
+import { addDebugLog } from '../utils/debugLogger';
+import { getAssetId } from '../utils/explorerTree';
+import { type PendingSpoofRetry, takeSpoofRetry } from '../utils/jobTypes';
+import { type PluginAsset } from '../utils/pluginBridge';
+import type { RbxInstance } from '../utils/robloxPlaceParser/types';
 import {
   loadCachedGroups,
   loadCachedUsers,
@@ -25,36 +28,13 @@ import {
   type RobloxUserInfo,
   saveCachedGroups,
   validateCookieProfile,
-} from '../../utils/robloxProfiles';
-import { appendSpoofingLog } from '../../utils/spoofingLogs';
-import type { ScanOptions } from '../../utils/studioScan';
-import { triggerStudioScan } from '../../utils/studioScan';
-import { isTauriRuntime } from '../../utils/tauriRuntime';
-import PasteIdsModal from '../modals/PasteIdsModal';
-import ResultsModal from '../modals/ResultsModal';
-import ScanOptionsModal from '../modals/ScanOptionsModal';
-import { Button } from '../ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Label } from '../ui/label';
-import { Switch } from '../ui/switch';
-import CredentialsSection from './config/CredentialsSection';
-import ExclusionsSection from './config/ExclusionsSection';
-import RoutingSection from './config/RoutingSection';
-import UploadSection from './config/UploadSection';
-import AdvancedSection from './settings/AdvancedSection';
-import ExecutionLogs from './spoofing/ExecutionLogs';
-import {
-  AccountSwitcher,
-  type AudioQuotaDisplay,
-  AvatarDropdown,
-  GroupDropdown,
-  parseAudioQuota,
-} from './spoofing/ProfileDropdowns';
-import { SpoofingControls } from './spoofing/SpoofingControls';
-import { SpoofingCustomAssets } from './spoofing/SpoofingCustomAssets';
-import { SpoofProgressOverlay, SpoofProgressText } from './spoofing/SpoofingHeader';
+} from '../utils/robloxProfiles';
+import { appendSpoofingLog } from '../utils/spoofingLogs';
+import type { ScanOptions } from '../utils/studioScan';
+import { triggerStudioScan } from '../utils/studioScan';
+import { isTauriRuntime } from '../utils/tauriRuntime';
 
-type SpooferRunContext = {
+export type SpooferRunContext = {
   selectedUserId?: string;
   selectedGroupId?: string;
   cookie?: string;
@@ -73,7 +53,23 @@ type ApiKeyOwnerDetectResult = {
   message?: string;
 };
 
-export default function SpoofingView() {
+type PendingQuotaRun = {
+  assetIds: string[];
+  audioCount: number;
+  remaining: number;
+  runContext?: SpooferRunContext;
+};
+
+/**
+ * Headless spoofer controller.
+ *
+ * Owns every side effect that used to live in the always-mounted but hidden
+ * `SpoofingView`: the `ValencyStudio-*` document events dispatched by
+ * AssetExplorer, clipboard auto-queue, retry-on-boot, patch-result reporting and
+ * the job launch path. Must stay mounted for the whole app session, otherwise
+ * the AssetExplorer "Run" button has nothing listening to it.
+ */
+export function useSpooferController() {
   const { t } = useLanguage();
   const { studioPlaceId } = useStudioConnectionState();
   const { config, updateConfig, updateCategory } = useConfig();
@@ -84,9 +80,7 @@ export default function SpoofingView() {
     selectedAssetIds,
     setSelectedAssetIds,
     setSelectedAssetKeys,
-    spoofingLogs: logs,
     setSpoofingLogs: setLogs,
-    isSpoofing,
     spoofCompletionVersion,
     lastReplacements,
     lastAssetResults,
@@ -94,14 +88,7 @@ export default function SpoofingView() {
     setSpoofProgress,
     failedReplacements,
     setFailedReplacements,
-    isReplacing,
-    replaceError,
-    activeSpooferJobId,
-    isJobPaused,
-    setIsJobPaused,
-    showAdvanced,
-    setShowAdvanced,
-    isScanningStudio,
+    isScanningStudio: _isScanningStudio,
     setIsScanningStudio,
   } = useSpooferStore(
     useShallow((s) => ({
@@ -110,30 +97,19 @@ export default function SpoofingView() {
       selectedAssetIds: s.selectedAssetIds,
       setSelectedAssetIds: s.setSelectedAssetIds,
       setSelectedAssetKeys: s.setSelectedAssetKeys,
-      spoofingLogs: s.spoofingLogs,
       setSpoofingLogs: s.setSpoofingLogs,
-      isSpoofing: s.isSpoofing,
       spoofCompletionVersion: s.spoofCompletionVersion,
       lastReplacements: s.lastReplacements,
       lastAssetResults: s.lastAssetResults,
       setIsSpoofing: s.setIsSpoofing,
       setSpoofProgress: s.setSpoofProgress,
-      setActiveSpooferJobId: s.setActiveSpooferJobId,
-      setReplaceError: s.setReplaceError,
       failedReplacements: s.failedReplacements,
       setFailedReplacements: s.setFailedReplacements,
-      isReplacing: s.isReplacing,
-      replaceError: s.replaceError,
-      setIsReplacing: s.setIsReplacing,
-      activeSpooferJobId: s.activeSpooferJobId,
-      isJobPaused: s.isJobPaused,
-      setIsJobPaused: s.setIsJobPaused,
-      showAdvanced: s.showAdvanced,
-      setShowAdvanced: s.setShowAdvanced,
       isScanningStudio: s.isScanningStudio,
       setIsScanningStudio: s.setIsScanningStudio,
     })),
   );
+
   const [users, setUsers] = useState<RobloxUserInfo[]>(loadCachedUsers);
   const [groups, setGroups] = useState<RobloxGroup[]>(() =>
     loadCachedGroups(config.spoofing.selectedUser),
@@ -142,16 +118,8 @@ export default function SpoofingView() {
   const [resultsModalOpen, setResultsModalOpen] = useState(false);
   const [pasteIdsOpen, setPasteIdsOpen] = useState(false);
   const [scanOptionsOpen, setScanOptionsOpen] = useState(false);
-  const [advancedTab, setAdvancedTab] = useState('upload');
-  const [audioQuota, setAudioQuota] = useState<AudioQuotaDisplay>({
-    status: 'idle',
-  });
-  const [pendingQuotaRun, setPendingQuotaRun] = useState<{
-    assetIds: string[];
-    audioCount: number;
-    remaining: number;
-    runContext?: SpooferRunContext;
-  } | null>(null);
+  const [audioQuota, setAudioQuota] = useState<AudioQuotaDisplay>({ status: 'idle' });
+  const [pendingQuotaRun, setPendingQuotaRun] = useState<PendingQuotaRun | null>(null);
 
   const handleRunSpooferRef = useRef<
     (
@@ -160,6 +128,7 @@ export default function SpoofingView() {
       runContext?: SpooferRunContext,
     ) => Promise<void>
   >(async () => {});
+
   const failedAssetResults = lastAssetResults.filter((result) => result.success === false);
   const failedAssetIds = Array.from(
     new Set(
@@ -593,11 +562,6 @@ export default function SpoofingView() {
       setLogs((prev) => appendSpoofingLog(prev, `[WARN] ${msg}\n`));
       return;
     }
-
-    const getAssetId = (asset: { assetId?: string; id?: string }) => {
-      if ('assetId' in asset) return asset.assetId;
-      return asset.id ?? '';
-    };
 
     const extraIdsParsed = config.spoofing.extraAssetIds
       .split(/[\s,]+/)
@@ -1064,289 +1028,38 @@ export default function SpoofingView() {
     };
   }, []);
 
-  return (
-    <div className="w-full h-full">
-      <div className="w-full h-full p-4 flex flex-col overflow-hidden">
-        <div className="w-full flex-1 min-h-0 flex flex-col gap-4 relative px-2 pt-2">
-          <Dialog open={showAdvanced} onOpenChange={setShowAdvanced}>
-            <DialogContent className="w-[95vw]! max-w-[95vw]! sm:max-w-225! max-h-[90vh]! p-0! overflow-hidden">
-              <div className="flex h-full min-h-[75vh]">
-                <div className="w-56 shrink-0 flex flex-col gap-1 p-4 border-r border-border-subtle bg-bg-base">
-                  <div className="flex items-center gap-2 px-2 pb-3 mb-2 border-b border-border-subtle">
-                    <Settings2 size={16} className="text-primary" />
-                    <span className="text-sm font-bold text-text-primary">
-                      {t('settings.advanced')}
-                    </span>
-                  </div>
-                  {[
-                    {
-                      id: 'upload',
-                      label: t('config.assetProcessing'),
-                      icon: <ArrowDownUp size={15} />,
-                    },
-                    {
-                      id: 'routing',
-                      label: t('config.routingLimits'),
-                      icon: <SlidersHorizontal size={15} />,
-                    },
-                    {
-                      id: 'exclusions',
-                      label: t('config.exclusions'),
-                      icon: <ShieldAlert size={15} />,
-                    },
-                    {
-                      id: 'features',
-                      label: t('settings.advanced'),
-                      icon: <Settings2 size={15} />,
-                    },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setAdvancedTab(tab.id)}
-                      className={cn(
-                        'flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-left',
-                        advancedTab === tab.id
-                          ? 'bg-primary/10 text-primary'
-                          : 'text-text-secondary hover:bg-bg-surface hover:text-text-primary',
-                      )}
-                    >
-                      <span
-                        className={cn(advancedTab === tab.id ? 'text-primary' : 'text-text-muted')}
-                      >
-                        {tab.icon}
-                      </span>
-                      {tab.label}
-                    </button>
-                  ))}
-                  <div className="mt-auto pt-4 border-t border-border-subtle">
-                    <Button
-                      variant="default"
-                      className="w-full"
-                      onClick={() => setShowAdvanced(false)}
-                    >
-                      {t('common.done')}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-6">
-                  {advancedTab === 'upload' && (
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2 mb-4">
-                        <ArrowDownUp size={18} className="text-primary" />
-                        <h3 className="text-base font-semibold text-text-primary">
-                          {t('config.assetProcessing')}
-                        </h3>
-                      </div>
-                      <UploadSection />
-                    </div>
-                  )}
-                  {advancedTab === 'routing' && (
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2 mb-4">
-                        <SlidersHorizontal size={18} className="text-primary" />
-                        <h3 className="text-base font-semibold text-text-primary">
-                          {t('config.routingLimits')}
-                        </h3>
-                      </div>
-                      <RoutingSection />
-                    </div>
-                  )}
-                  {advancedTab === 'exclusions' && (
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2 mb-4">
-                        <ShieldAlert size={18} className="text-primary" />
-                        <h3 className="text-base font-semibold text-text-primary">
-                          {t('config.exclusions')}
-                        </h3>
-                      </div>
-                      <ExclusionsSection />
-                    </div>
-                  )}
-                  {advancedTab === 'features' && (
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2 mb-4">
-                        <Settings2 size={18} className="text-primary" />
-                        <h3 className="text-base font-semibold text-text-primary">
-                          {t('settings.advanced')}
-                        </h3>
-                      </div>
-                      <AdvancedSection />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-3 shrink-0">
-            <div className="col-span-1 lg:col-span-7 flex flex-col gap-2 p-3 bg-bg-surface border border-border-subtle rounded-lg shadow-sm">
-              <div className="flex items-center gap-2 mb-0.5">
-                <ArrowDownUp size={14} className="text-primary" />
-                <span className="text-xs font-bold uppercase tracking-widest text-text-muted">
-                  {t('spoof.targetContext')} {t('common.and')} {t('config.credentials')}
-                </span>
-              </div>
-
-              <AccountSwitcher accounts={config.accounts} />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <AvatarDropdown
-                    users={users}
-                    value={config.spoofing.selectedUser}
-                    onChange={handleSelectedUserChange}
-                    loading={false}
-                    audioQuota={audioQuota}
-                    showAudioQuota={true}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <GroupDropdown
-                    groups={groups}
-                    value={config.spoofing.selectedGroup}
-                    onChange={(value) => updateConfig('spoofing', 'selectedGroup', value)}
-                    loading={loadingGroups}
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2 mt-1">
-                <CredentialsSection />
-              </div>
-            </div>
-
-            <div className="col-span-1 lg:col-span-5 flex flex-col gap-3">
-              <div className="flex flex-col gap-2 p-3 bg-bg-surface border border-border-subtle rounded-lg shadow-sm">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <Wand2 size={14} className="text-primary" />
-                  <span className="text-2xs font-bold uppercase tracking-widest text-text-muted">
-                    {t('spoof.options')}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium text-text-primary">
-                      {t('settings.forcePlaceIds')}
-                    </Label>
-                    {config.advanced.forcePlaceIds && (
-                      <button
-                        onClick={() => updateConfig('advanced', 'forcePlaceIds', '')}
-                        className="text-2xs text-text-muted hover:text-primary transition-colors underline"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    value={config.advanced.forcePlaceIds}
-                    onChange={(e) => updateConfig('advanced', 'forcePlaceIds', e.target.value)}
-                    placeholder={t('settings.forcePlaceIdsPlaceholder')}
-                    className="w-full h-9 bg-bg-elevated text-text-primary text-sm rounded-md border border-border-strong px-3 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-text-muted"
-                  />
-                </div>
-
-                <div className="pt-2 flex flex-col gap-3">
-                  <div className="flex flex-row items-center justify-between rounded-lg border border-border-subtle bg-bg-base p-3">
-                    <div className="space-y-0.5">
-                      <Label className="text-base">{t('settings.downloadOnly')}</Label>
-                      <div className="text-sm text-text-secondary">
-                        {t('settings.downloadOnlyDesc')}
-                      </div>
-                    </div>
-                    <Switch
-                      checked={config.spoofing.downloadOnly}
-                      onCheckedChange={(checked) =>
-                        updateConfig('spoofing', 'downloadOnly', checked)
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <SpoofingCustomAssets />
-            </div>
-          </div>
-
-          <div className="flex-1 min-h-0 flex flex-col gap-4 mt-3">
-            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-              <ExecutionLogs
-                logs={logs}
-                setLogs={setLogs}
-                lastReplacements={lastReplacements}
-                setResultsModalOpen={setResultsModalOpen}
-                onOpenPasteIds={() => setPasteIdsOpen(true)}
-              />
-            </div>
-          </div>
-
-          <SpoofingControls
-            failedAssetIds={failedAssetIds}
-            failedReplacements={failedReplacements}
-            activeSpooferJobId={activeSpooferJobId}
-            isSpoofing={isSpoofing}
-            isReplacing={isReplacing}
-            isScanningStudio={isScanningStudio}
-            isJobPaused={isJobPaused}
-            replaceError={replaceError}
-            handleRetryFailedAssets={handleRetryFailedAssets}
-
-            handleScanStudio={() => setScanOptionsOpen(true)}
-            setIsJobPaused={setIsJobPaused}
-            handleRetryReplacement={handleRetryReplacement}
-            handleRunSpoofer={handleRunSpoofer}
-            SpoofProgressText={SpoofProgressText}
-            SpoofProgressOverlay={SpoofProgressOverlay}
-          />
-        </div>
-      </div>
-      <ResultsModal
-        isOpen={resultsModalOpen}
-        onClose={() => setResultsModalOpen(false)}
-        onRetryFailed={() => void handleRetryFailedAssets()}
-      />
-      <PasteIdsModal open={pasteIdsOpen} onOpenChange={setPasteIdsOpen} />
-      <ScanOptionsModal
-        open={scanOptionsOpen}
-        onOpenChange={setScanOptionsOpen}
-        onScanStart={(opts) => handleScanStudio(opts)}
-      />
-
-      <Dialog
-        open={Boolean(pendingQuotaRun)}
-        onOpenChange={(open) => !open && setPendingQuotaRun(null)}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('misc.audioQuotaExceeded')}</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="text-sm text-text-secondary">
-              {t('spoof.audioQuotaWarning')
-                .replace('{audioCount}', (pendingQuotaRun?.audioCount ?? 0).toString())
-                .replace('{remaining}', (pendingQuotaRun?.remaining ?? 0).toString())}
-            </div>
-          </div>
-          <DialogFooter className="flex justify-end gap-2 sm:justify-end">
-            <Button variant="outline" onClick={() => setPendingQuotaRun(null)}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="default"
-              onClick={() => {
-                const assetIds = pendingQuotaRun?.assetIds;
-                const runContext = pendingQuotaRun?.runContext;
-                setPendingQuotaRun(null);
-                if (assetIds) void handleRunSpooferRef.current(assetIds, true, runContext);
-              }}
-            >
-              {t('spoof.continueAnyway')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+  return {
+    // Overlay visibility, driven by the ValencyStudio-* document events.
+    resultsModalOpen,
+    closeResultsModal: () => setResultsModalOpen(false),
+    openResultsModal: () => setResultsModalOpen(true),
+    pasteIdsOpen,
+    setPasteIdsOpen,
+    scanOptionsOpen,
+    setScanOptionsOpen,
+    pendingQuotaRun,
+    continuePendingQuotaRun: () => {
+      const assetIds = pendingQuotaRun?.assetIds;
+      const runContext = pendingQuotaRun?.runContext;
+      setPendingQuotaRun(null);
+      if (assetIds) void handleRunSpooferRef.current(assetIds, true, runContext);
+    },
+    cancelPendingQuotaRun: () => setPendingQuotaRun(null),
+    scanStudio: handleScanStudio,
+    retryFailedAssets: handleRetryFailedAssets,
+    runSpoofer: handleRunSpoofer,
+    // Kept for the workspace UI rebuilt in a later phase.
+    selectedUser: config.spoofing.selectedUser,
+    selectedGroup: config.spoofing.selectedGroup,
+    changeSelectedUser: handleSelectedUserChange,
+    groups,
+    users,
+    loadingGroups,
+    audioQuota,
+    failedAssetIds,
+    failedReplacements,
+    isScanningStudio: _isScanningStudio,
+  };
 }
+
+export type SpooferController = ReturnType<typeof useSpooferController>;

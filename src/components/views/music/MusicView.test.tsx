@@ -6,13 +6,14 @@ import { ConfigProvider } from '../../../contexts/ConfigContext';
 import { useConfigStore } from '../../../stores/configStore';
 import { useMusicStore } from '../../../stores/musicStore';
 import * as music from '../../../utils/music';
-import MusicView from './MusicView';
+import MusicView, { HistoryRow } from './MusicView';
 
 vi.mock('../../../utils/music', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../utils/music')>();
   return {
     ...actual,
     checkMediaTools: vi.fn(),
+    ensureMediaTools: vi.fn(),
     fetchAudioQuota: vi.fn().mockResolvedValue(null),
     getUploadHistory: vi.fn().mockResolvedValue([]),
     installFfmpeg: vi.fn(),
@@ -53,7 +54,7 @@ describe('MusicView FFmpeg requirement', () => {
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'FFmpeg belum terpasang' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Install FFmpeg' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pasang FFmpeg' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Kembali ke Spoofer' })).toBeInTheDocument();
   });
 
@@ -75,8 +76,11 @@ describe('MusicView FFmpeg requirement', () => {
     renderMusicView();
     await screen.findByRole('dialog');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Install FFmpeg' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pasang FFmpeg' }));
 
+    // Installer output is collapsed so the license banner Winget prints first
+    // does not become the dialog's main content.
+    fireEvent.click(await screen.findByText('Keluaran Winget'));
     expect(await screen.findByRole('log')).toHaveTextContent('Successfully installed FFmpeg');
     expect(await screen.findByText(/Buka ulang aplikasi/)).toBeInTheDocument();
   });
@@ -86,10 +90,44 @@ describe('MusicView FFmpeg requirement', () => {
     renderMusicView();
     await screen.findByRole('dialog');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Install FFmpeg' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pasang FFmpeg' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Winget gagal memasang FFmpeg');
     expect(screen.getByRole('alert')).toHaveTextContent('Winget is unavailable');
+  });
+
+  it('shows only the readable half of a structured backend error', async () => {
+    // Rust serialises AppError as a JSON string, so a raw render would put the
+    // debug blob on screen.
+    vi.mocked(music.installFfmpeg).mockRejectedValue(
+      new Error(JSON.stringify({ message: 'Winget is unavailable', debug: 'at install_ffmpeg' })),
+    );
+    renderMusicView();
+    await screen.findByRole('dialog');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pasang FFmpeg' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Winget is unavailable');
+    expect(alert).not.toHaveTextContent('at install_ffmpeg');
+  });
+
+  it('offers a retry while yt-dlp is missing', async () => {
+    vi.mocked(music.checkMediaTools).mockResolvedValue({
+      ffmpeg: true,
+      ffprobe: true,
+      ytdlp: false,
+    });
+    vi.mocked(music.ensureMediaTools).mockResolvedValue({
+      tools: { ffmpeg: true, ffprobe: true, ytdlp: false },
+      ytdlpInstalled: false,
+    });
+
+    renderMusicView();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Coba lagi' }));
+
+    await waitFor(() => expect(music.ensureMediaTools).toHaveBeenCalled());
   });
 
   it('lets the user enter Music when FFmpeg is already installed', async () => {
@@ -105,5 +143,43 @@ describe('MusicView FFmpeg requirement', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
     expect(screen.getByText('Tambah lagu')).toBeInTheDocument();
+  });
+});
+
+describe('HistoryRow asset id', () => {
+  // 13 digits, which is what current Roblox ids run to and what `w-28` is sized
+  // for. A shorter id would pass even if the chip clipped.
+  const record: music.UploadRecord = {
+    id: 'rec-1',
+    title: 'Song',
+    uploadedAt: '2026-01-01T00:00:00.000Z',
+    wasSplit: false,
+    totalBytes: 1024,
+    pieces: [
+      {
+        name: 'song.mp3',
+        path: 'C:/tmp/song.mp3',
+        bytes: 1024,
+        assetId: 1234567890123,
+        status: 'accepted',
+      },
+    ],
+  };
+
+  beforeEach(() => {
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn(),
+      },
+    });
+  });
+
+  it('copies the id and confirms it on the chip', async () => {
+    render(<HistoryRow record={record} onDelete={() => {}} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Salin ID aset' }));
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('1234567890123');
+    expect(await screen.findByText('Tersalin')).toBeInTheDocument();
   });
 });

@@ -24,6 +24,7 @@ import {
   getUploadHistory,
   importLocalMedia,
   importMediaFromUrl,
+  installYtdlp,
   pickLocalAudio,
   previewSplit,
   probeMedia,
@@ -283,9 +284,11 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   refreshTools: async () => {
     try {
-      set({ tools: await checkMediaTools() });
-    } catch {
-      set({ tools: null });
+      set({ tools: await checkMediaTools(), toolError: null });
+    } catch (err) {
+      // `tools: null` alone left the view with nothing to say, so the probe
+      // failure itself is kept as the reason the tools look missing.
+      set({ tools: null, toolError: String(err) });
     }
   },
 
@@ -298,6 +301,12 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     try {
       const { tools } = await ensureMediaTools();
       set({ tools });
+      if (!tools.ytdlp) {
+        // `ensure_media_tools` swallows a failed download to keep startup
+        // alive, which throws away the reason. Asking again here surfaces it.
+        await installYtdlp();
+        await get().refreshTools();
+      }
     } catch (err) {
       set({ toolError: String(err) });
     }

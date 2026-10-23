@@ -79,7 +79,7 @@ describe('JsonViewer', () => {
 
     render(<JsonViewer data={data} />);
 
-    const copyBtn = screen.getByTitle('misc.copyJson');
+    const copyBtn = screen.getByLabelText('misc.copyJson');
     fireEvent.click(copyBtn);
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(JSON.stringify(data, null, 2));

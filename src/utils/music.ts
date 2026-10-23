@@ -87,6 +87,14 @@ export const installFfmpeg = async () => {
 export const ensureMediaTools = () =>
   invoke<{ tools: MediaTools; ytdlpInstalled: boolean }>('ensure_media_tools');
 
+/**
+ * Downloads yt-dlp, reporting whether it was installed.
+ *
+ * Unlike `ensureMediaTools` this propagates the download's own error, which is
+ * the only place the reason a first-run install failed is still available.
+ */
+export const installYtdlp = () => invoke<boolean>('ensure_ytdlp');
+
 export const probeMedia = (path: string) => invoke<MediaInfo>('probe_media', { path });
 
 export const importMediaFromUrl = (url: string) =>

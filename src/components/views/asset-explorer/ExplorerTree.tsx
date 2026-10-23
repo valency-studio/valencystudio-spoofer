@@ -13,6 +13,7 @@ import {
 import { memo, useMemo, useState } from 'react';
 
 import type { AppConfig } from '../../../contexts/ConfigContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { cn } from '../../../lib/utils';
 import { useSpooferStore } from '../../../stores/spooferStore';
 import type { ParsedAssetRef, RbxInstance } from '../../../utils/robloxPlaceParser/types';
@@ -29,12 +30,53 @@ if (typeof window !== 'undefined') {
   });
 }
 
-export const getAssetId = (
-  asset: ParsedAssetRef | { id?: string; assetId?: string; name?: string },
-) => {
-  if ('assetId' in asset && asset.assetId) return asset.assetId;
-  if ('id' in asset && asset.id) return asset.id;
-  return '';
+import { getAssetId } from '../../../utils/explorerTree';
+
+// One map for both the per-asset badge and the per-instance badge. `labelKey` is the
+// fallback only — callers prefer the live status message over it.
+// ponytail: the six distinct stage hues collapsed into the shared signal tokens;
+// add a per-stage token to index.css only if users actually need to tell them apart.
+const STAGE_BADGES: Record<string, { icon: React.ReactNode; color: string; labelKey: string }> = {
+  resolving_location: {
+    icon: <Loader2 size={10} className="animate-spin" />,
+    color: 'text-signal-info',
+    labelKey: 'explorer.checkingDirectPlaceIds',
+  },
+  discovering_usage: {
+    icon: <Loader2 size={10} className="animate-spin" />,
+    color: 'text-signal-info',
+    labelKey: 'explorer.discoveringUsage',
+  },
+  discovering_graph: {
+    icon: <Loader2 size={10} className="animate-spin" />,
+    color: 'text-signal-info',
+    labelKey: 'explorer.discoveringGraph',
+  },
+  downloading: {
+    icon: <Download size={10} />,
+    color: 'text-signal-info',
+    labelKey: 'explorer.downloading',
+  },
+  uploading: {
+    icon: <Upload size={10} />,
+    color: 'text-signal-warn',
+    labelKey: 'explorer.uploadingStage',
+  },
+  done: {
+    icon: <Check size={10} />,
+    color: 'text-signal-live',
+    labelKey: 'explorer.completed',
+  },
+  error: {
+    icon: <AlertCircle size={10} />,
+    color: 'text-danger',
+    labelKey: 'explorer.stageError',
+  },
+  skipped: {
+    icon: <SkipForward size={10} />,
+    color: 'text-muted-foreground',
+    labelKey: 'explorer.skipped',
+  },
 };
 
 export const getAssetKey = (
@@ -84,8 +126,6 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
   toggleNode,
   getAllAssetIds,
   getAllAssetKeys,
-  setEnlargedImage,
-  setPreviewingAnimation,
   activeAssetFilters,
   searchQuery = '',
   playingAudioId,
@@ -102,8 +142,6 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
   toggleNode: (node: RbxInstance, checked: boolean) => void;
   getAllAssetIds: (node: RbxInstance) => string[];
   getAllAssetKeys?: (node: RbxInstance) => string[];
-  setEnlargedImage: (value: { id: string; name: string } | null) => void;
-  setPreviewingAnimation: (value: { id: string; name: string } | null) => void;
   activeAssetFilters: string[];
   searchQuery?: string;
   playingAudioId: string | null;
@@ -111,6 +149,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
   onInspectAsset?: (asset: ParsedAssetRef) => void;
   activeInspectAssetId?: string | null;
 }) {
+  const { t } = useLanguage();
   const activeInspectAsset = useSpooferStore((s) => s.activeInspectAsset);
   const setActiveInspectAsset = useSpooferStore((s) => s.setActiveInspectAsset);
   const setIsInspectorOpen = useSpooferStore((s) => s.setIsInspectorOpen);
@@ -245,12 +284,21 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
 
     return (
       <div
+        role="button"
+        tabIndex={0}
         className={cn(
           'h-7 rounded-sm hover:bg-accent/60 group transition-colors flex items-center pr-2 cursor-pointer select-none',
           isInspected && 'bg-primary/15 font-semibold',
         )}
         style={{ paddingLeft: `${level * 16 + 20}px` }}
         onClick={handleRowClick}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleRowClick();
+          }
+        }}
         onMouseEnter={() => {
           if (isDragSelecting) {
             toggleAsset(asset, dragTargetChecked);
@@ -300,58 +348,17 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
         {(() => {
           const status = assetId ? assetStatuses[assetId] : undefined;
           if (!status || status.stage === 'idle') return null;
-          const config: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-            resolving_location: {
-              icon: <Loader2 size={10} className="animate-spin" />,
-              color: 'text-blue-400',
-              label: status.message || 'Checking direct Place IDs...',
-            },
-            discovering_usage: {
-              icon: <Loader2 size={10} className="animate-spin" />,
-              color: 'text-purple-400',
-              label: status.message || 'Discovering Place IDs (Asset Usage)...',
-            },
-            discovering_graph: {
-              icon: <Loader2 size={10} className="animate-spin" />,
-              color: 'text-indigo-400',
-              label: status.message || 'Discovering Place IDs (Creator Graph)...',
-            },
-            downloading: {
-              icon: <Download size={10} />,
-              color: 'text-cyan-400',
-              label: status.message || 'Downloading...',
-            },
-            uploading: {
-              icon: <Upload size={10} />,
-              color: 'text-amber-400',
-              label: status.message || 'Uploading...',
-            },
-            done: {
-              icon: <Check size={10} />,
-              color: 'text-signal-live',
-              label: status.message || 'Completed',
-            },
-            error: {
-              icon: <AlertCircle size={10} />,
-              color: 'text-red-400',
-              label: status.message || 'Error',
-            },
-            skipped: {
-              icon: <SkipForward size={10} />,
-              color: 'text-muted-foreground',
-              label: status.message || 'Skipped',
-            },
-          };
-          const cfg = config[status.stage];
+          const cfg = STAGE_BADGES[status.stage];
           if (!cfg) return null;
           const isError = status.stage === 'error';
           const isDiscoveryError = isError && status.message?.toLowerCase().includes('no place id');
+          const cfgLabel = t(cfg.labelKey);
           const badgeText = isError
             ? isDiscoveryError
-              ? 'Discovery failed'
-              : 'Download failed'
-            : status.message || cfg.label;
-          const fullMessage = status.message || cfg.label;
+              ? t('explorer.discoveryFailed')
+              : t('explorer.downloadFailed')
+            : status.message || cfgLabel;
+          const fullMessage = status.message || cfgLabel;
           return (
             <Tooltip>
               <TooltipTrigger
@@ -419,19 +426,17 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
           <Tooltip>
             <TooltipTrigger
               render={
-                <div className="flex items-center gap-1 justify-center h-5 px-1.5 rounded border border-purple-500/30 bg-purple-500/10 text-purple-400 shrink-0 text-2xs font-bold ml-1">
+                <div className="flex items-center gap-1 justify-center h-5 px-1.5 rounded border border-signal-spoofed/30 bg-signal-spoofed/10 text-signal-spoofed shrink-0 text-2xs font-bold ml-1">
                   <Ghost size={11} />
-                  <span>Ghost ID</span>
+                  <span>{t('explorer.ghostId')}</span>
                 </div>
               }
             />
             <TooltipContent className="whitespace-nowrap font-mono text-xs">
-              Ghost Asset (No instance in Studio)
+              {t('explorer.ghostAsset')}
             </TooltipContent>
           </Tooltip>
         )}
-
-        {}
       </div>
     );
   };
@@ -460,12 +465,22 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
   return (
     <div className="flex flex-col">
       <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={isLeafInstance ? undefined : expanded}
         className={cn(
           'flex items-center py-1 px-1 hover:bg-accent/40 cursor-pointer rounded-sm group select-none transition-colors',
           isInspected && 'bg-primary/15 font-semibold',
         )}
         style={{ paddingLeft: `${level * 16}px` }}
         onClick={handleNodeClick}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleNodeClick();
+          }
+        }}
       >
         <div
           className="mr-2 cursor-pointer flex items-center justify-center shrink-0"
@@ -528,51 +543,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
           const pinnedPid = primaryAssetId ? assetForcePlaceIds[primaryAssetId] : undefined;
           const replId = primaryAssetId ? lastReplacements[primaryAssetId] : undefined;
 
-          const stageConfigs: Record<
-            string,
-            { icon: React.ReactNode; color: string; label: string }
-          > = {
-            resolving_location: {
-              icon: <Loader2 size={10} className="animate-spin" />,
-              color: 'text-blue-400',
-              label: status?.message || 'Checking direct Place IDs...',
-            },
-            discovering_usage: {
-              icon: <Loader2 size={10} className="animate-spin" />,
-              color: 'text-purple-400',
-              label: status?.message || 'Discovering Place IDs (Asset Usage)...',
-            },
-            discovering_graph: {
-              icon: <Loader2 size={10} className="animate-spin" />,
-              color: 'text-indigo-400',
-              label: status?.message || 'Discovering Place IDs (Creator Graph)...',
-            },
-            downloading: {
-              icon: <Download size={10} />,
-              color: 'text-cyan-400',
-              label: status?.message || 'Downloading...',
-            },
-            uploading: {
-              icon: <Upload size={10} />,
-              color: 'text-amber-400',
-              label: status?.message || 'Uploading...',
-            },
-            done: {
-              icon: <Check size={10} />,
-              color: 'text-signal-live',
-              label: status?.message || 'Completed',
-            },
-            error: {
-              icon: <AlertCircle size={10} />,
-              color: 'text-red-400',
-              label: status?.message || 'Error',
-            },
-            skipped: {
-              icon: <SkipForward size={10} />,
-              color: 'text-muted-foreground',
-              label: status?.message || 'Skipped',
-            },
-          };
+          const stageConfigs = STAGE_BADGES;
 
           return (
             <div className="flex items-center gap-1 shrink-0 ml-1">
@@ -584,11 +555,12 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
                   const isError = status.stage === 'error';
                   const isDiscoveryError =
                     isError && status.message?.toLowerCase().includes('no place id');
+                  const cfgLabel = t(cfg.labelKey);
                   const badgeText = isError
                     ? isDiscoveryError
-                      ? 'Discovery failed'
-                      : 'Download failed'
-                    : status.message || cfg.label;
+                      ? t('explorer.discoveryFailed')
+                      : t('explorer.downloadFailed')
+                    : status.message || cfgLabel;
                   return (
                     <Tooltip>
                       <TooltipTrigger
@@ -605,7 +577,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
                         }
                       />
                       <TooltipContent className="text-xs max-w-xs break-words">
-                        {status.message || cfg.label}
+                        {status.message || cfgLabel}
                       </TooltipContent>
                     </Tooltip>
                   );
@@ -675,7 +647,10 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
                     className="h-6 px-2 text-2xs"
                     onClick={() => setRenderLimit((prev) => prev + ASSET_RENDER_CHUNK)}
                   >
-                    Show {Math.min(ASSET_RENDER_CHUNK, hiddenAssetCount)} more
+                    {t('explorer.showMore').replace(
+                      '{count}',
+                      String(Math.min(ASSET_RENDER_CHUNK, hiddenAssetCount)),
+                    )}
                   </Button>
                   {hiddenAssetCount > ASSET_RENDER_CHUNK && (
                     <Button
@@ -684,7 +659,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
                       className="h-6 px-2 text-2xs"
                       onClick={() => setRenderLimit(filteredAssets.length)}
                     >
-                      Show all
+                      {t('explorer.showAll')}
                     </Button>
                   )}
                 </div>
@@ -704,8 +679,6 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
               toggleNode={toggleNode}
               getAllAssetIds={getAllAssetIds}
               getAllAssetKeys={getAllAssetKeys}
-              setEnlargedImage={setEnlargedImage}
-              setPreviewingAnimation={setPreviewingAnimation}
               activeAssetFilters={activeAssetFilters}
               searchQuery={searchQuery}
               playingAudioId={playingAudioId}

@@ -64,13 +64,35 @@ struct ToolSpec {
 const FFMPEG: ToolSpec = ToolSpec { program: "ffmpeg", version_arg: "-version" };
 const FFPROBE: ToolSpec = ToolSpec { program: "ffprobe", version_arg: "-version" };
 const YTDLP: ToolSpec = ToolSpec { program: "yt-dlp", version_arg: "--version" };
-const WINGET_INSTALL_FFMPEG_ARGS: [&str; 5] = [
+/// `--id` + `--source winget` are load-bearing. A bare `install ffmpeg` search
+/// spans every configured source; when the `msstore` source is unreachable
+/// (certificate mismatch, offline Store) Winget reports the remaining matches
+/// as ambiguous, and `--disable-interactivity` turns that prompt into exit code
+/// 0x8A15005E even though the winget source has a valid package.
+const WINGET_INSTALL_FFMPEG_ARGS: [&str; 9] = [
     "install",
-    "ffmpeg",
+    "--id",
+    "Gyan.FFmpeg",
+    "--exact",
+    "--source",
+    "winget",
     "--accept-source-agreements",
     "--accept-package-agreements",
     "--disable-interactivity",
 ];
+
+/// The install exit code as Winget itself reports it.
+///
+/// A negative code is a Win32 HRESULT and Winget prints those in hex, so the
+/// decimal form would not line up with the line the user already sees in the
+/// installer output above.
+fn winget_exit_code(code: Option<i32>) -> String {
+    match code {
+        None => "unknown".to_string(),
+        Some(code) if code < 0 => format!("0x{:08X}", code as u32),
+        Some(code) => code.to_string(),
+    }
+}
 
 async fn forward_install_output<R>(app: AppHandle, output: R) -> std::io::Result<()>
 where
@@ -129,7 +151,7 @@ pub async fn install_ffmpeg(app: AppHandle) -> Result<()> {
         stderr_result?;
 
         if !status.success() {
-            let code = status.code().map_or_else(|| "unknown".to_string(), |code| code.to_string());
+            let code = winget_exit_code(status.code());
             return Err(AppError::Custom(format!(
                 "Winget could not install FFmpeg (exit code {code})."
             )));
@@ -171,22 +193,30 @@ pub struct ImportedMedia {
 /// what is missing instead of failing later with an opaque error.
 #[tauri::command]
 #[specta::specta]
-pub async fn check_media_tools() -> Result<MediaTools> {
-    let (ffmpeg, ffprobe, ytdlp) = tokio::join!(resolve(FFMPEG), resolve(FFPROBE), resolve(YTDLP));
+pub async fn check_media_tools(app: AppHandle) -> Result<MediaTools> {
+    // yt-dlp goes through `resolve_ytdlp`, not the plain PATH scan: the copy this
+    // app installs lives in its own data directory, so scanning the PATH alone
+    // reported it missing on the very next screen after a splash-time install
+    // had just succeeded.
+    let (ffmpeg, ffprobe, ytdlp) =
+        tokio::join!(resolve(FFMPEG), resolve(FFPROBE), resolve_ytdlp(&app));
 
     Ok(MediaTools { ffmpeg: ffmpeg.is_some(), ffprobe: ffprobe.is_some(), ytdlp: ytdlp.is_some() })
 }
 
-/// Locates a tool by walking PATH and confirms it runs.
+/// Locates a tool by walking PATH plus the machine-wide install locations that
+/// Winget does not always put on the PATH of an already-running process, and
+/// confirms it runs.
 ///
 /// Scanning PATH explicitly rather than relying on the child's own resolution
 /// keeps discovery and the later invocation consistent, and lets the error name
 /// the directories that were searched.
 async fn resolve(spec: ToolSpec) -> Option<std::path::PathBuf> {
-    let path_var = std::env::var_os("PATH")?;
     let candidates = candidate_names(spec.program);
+    let path_var = std::env::var_os("PATH").unwrap_or_default();
+    let dirs = std::env::split_paths(&path_var).chain(extra_search_dirs());
 
-    for dir in std::env::split_paths(&path_var) {
+    for dir in dirs {
         if dir.as_os_str().is_empty() {
             continue;
         }
@@ -217,6 +247,25 @@ async fn resolve(spec: ToolSpec) -> Option<std::path::PathBuf> {
     }
 
     None
+}
+
+/// Directories that hold tools we install but that never reach the PATH of a
+/// process that is already running: Winget writes shims into its `Links` folder
+/// without refreshing the environment, so a successful install would otherwise
+/// look missing until the app restarted.
+///
+/// ponytail: only the Winget shim dir. Add package `bin` folders or
+/// `~/.local/bin` if a tool ever lands there.
+fn extra_search_dirs() -> Vec<std::path::PathBuf> {
+    if !cfg!(windows) {
+        return Vec::new();
+    }
+
+    std::env::var_os("LOCALAPPDATA")
+        .map(|base| {
+            vec![std::path::Path::new(&base).join("Microsoft").join("WinGet").join("Links")]
+        })
+        .unwrap_or_default()
 }
 
 /// Candidate names to try for a program, covering the Windows resolution rules.
@@ -330,7 +379,10 @@ pub async fn ensure_ytdlp(app: AppHandle) -> Result<bool> {
     }
 
     let asset = ytdlp_asset();
-    let client = crate::utils::get_http_client();
+    // The shared client times out at 15 s, which is nowhere near enough for a
+    // ~17 MB release asset on a slow link: a first-run install would fail with a
+    // bare timeout and no way to tell it apart from a broken network.
+    let client = crate::utils::build_client_with_timeout(std::time::Duration::from_secs(180));
 
     let sums = client
         .get(format!("{YTDLP_RELEASE_BASE}/SHA2-256SUMS"))
@@ -1270,8 +1322,25 @@ mod tests {
     use std::path::Path;
 
     #[test]
+    fn winget_exit_code_matches_the_hex_winget_prints() {
+        use super::winget_exit_code;
+        // 0x8A15005E, the ambiguous-match failure, arrives as this negative i32.
+        assert_eq!(winget_exit_code(Some(-1978335138)), "0x8A15005E");
+        assert_eq!(winget_exit_code(Some(1)), "1");
+        assert_eq!(winget_exit_code(None), "unknown");
+    }
+
+    #[test]
     fn winget_install_targets_ffmpeg_without_interactive_prompts() {
-        assert_eq!(WINGET_INSTALL_FFMPEG_ARGS[0..2], ["install", "ffmpeg"]);
+        assert_eq!(WINGET_INSTALL_FFMPEG_ARGS[0..2], ["install", "--id"]);
+        assert!(WINGET_INSTALL_FFMPEG_ARGS.contains(&"Gyan.FFmpeg"));
+        assert!(WINGET_INSTALL_FFMPEG_ARGS.contains(&"--exact"));
+        // Pinning the source keeps an unreachable source (e.g. msstore) from
+        // turning the install into an interactive "which one?" prompt.
+        assert_eq!(
+            WINGET_INSTALL_FFMPEG_ARGS.windows(2).find(|pair| pair[0] == "--source"),
+            Some(["--source", "winget"].as_slice())
+        );
         assert!(WINGET_INSTALL_FFMPEG_ARGS.contains(&"--accept-source-agreements"));
         assert!(WINGET_INSTALL_FFMPEG_ARGS.contains(&"--accept-package-agreements"));
         assert!(WINGET_INSTALL_FFMPEG_ARGS.contains(&"--disable-interactivity"));
@@ -1842,6 +1911,17 @@ mod tests {
         })
         .await
         .is_none());
+    }
+
+    #[test]
+    fn winget_shim_directory_is_searched_outside_path() {
+        let dirs = super::extra_search_dirs();
+        if cfg!(windows) {
+            let expected = std::path::Path::new("Microsoft").join("WinGet").join("Links");
+            assert!(dirs.first().is_some_and(|dir| dir.ends_with(&expected)));
+        } else {
+            assert!(dirs.is_empty());
+        }
     }
 
     #[test]

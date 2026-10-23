@@ -31,7 +31,7 @@ export function JsonViewer({ data, name, defaultExpanded = false, level = 0 }: J
   const renderValue = (val: unknown) => {
     if (val === null) return <span className="text-danger/80">null</span>;
     if (val === undefined) return <span className="text-danger/80">undefined</span>;
-    if (typeof val === 'string') return <span className="text-success">"{val}"</span>;
+    if (typeof val === 'string') return <span className="text-signal-live">"{val}"</span>;
     if (typeof val === 'number') return <span className="text-[#f59e0b]">{val}</span>;
     if (typeof val === 'boolean')
       return <span className="text-[#3b82f6]">{val ? 'true' : 'false'}</span>;
@@ -62,8 +62,18 @@ export function JsonViewer({ data, name, defaultExpanded = false, level = 0 }: J
   return (
     <div className={cn('font-mono text-2xs leading-relaxed', level === 0 && 'py-1')}>
       <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
         className="flex items-center gap-1.5 cursor-pointer hover:bg-bg-elevated/40 rounded px-1 -mx-1 group select-none"
         onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
       >
         <div className={cn('text-text-muted shrink-0', isExpanded && 'rotate-90')}>
           <ChevronRight size={12} />
@@ -81,7 +91,7 @@ export function JsonViewer({ data, name, defaultExpanded = false, level = 0 }: J
           <button
             onClick={handleCopy}
             className="ml-auto opacity-0 group-hover:opacity-100 p-1 hover:bg-primary/10 hover:text-primary text-text-muted rounded transition-all"
-            title={t('misc.copyJson')}
+            aria-label={t('misc.copyJson')}
           >
             {isCopied ? <Check size={12} /> : <Copy size={12} />}
           </button>

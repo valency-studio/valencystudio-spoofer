@@ -5,9 +5,11 @@ import Titlebar from './components/layout/Titlebar';
 import { PortDiagnosticBanner } from './components/shared/PortDiagnosticBanner';
 import { RobloxStatusBanner } from './components/shared/RobloxStatusBanner';
 import { TutorialGate } from './components/tutorial/TutorialGate';
+import { SpooferOverlays } from './components/views/spoofing/SpooferOverlays';
 import { useConfig } from './contexts/ConfigContext';
 import { useLanguage } from './contexts/LanguageContext';
 import { useAppInitialization } from './hooks/useAppInitialization';
+import { useSpooferController } from './hooks/useSpooferController';
 
 const ActivityView = lazy(() => import('./components/views/ActivityView'));
 const AboutView = lazy(() => import('./components/views/AboutView'));
@@ -17,7 +19,6 @@ const MusicView = lazy(() => import('./components/views/music/MusicView'));
 const DebugConsole = lazy(() => import('./components/views/DebugConsole'));
 
 const SettingsView = lazy(() => import('./components/views/SettingsView'));
-const SpoofingView = lazy(() => import('./components/views/SpoofingView'));
 const AccountsView = lazy(() => import('./components/views/accounts/AccountsView'));
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
   const isExplorerOpen = config.ui.assetExplorerOpen;
 
   const { maintenance, isRobloxApiDown } = useAppInitialization();
+  const spooferController = useSpooferController();
 
   const setActiveTab = (tabId: string) => updateConfig('ui', 'activeTab', tabId);
   const setIsExplorerOpen = (isOpen: boolean) => updateConfig('ui', 'assetExplorerOpen', isOpen);
@@ -34,7 +36,7 @@ export default function App() {
   if (maintenance.mode) {
     return (
       <div className="flex flex-col items-center justify-center h-screen w-screen bg-background text-foreground p-8 text-center space-y-4 font-sans antialiased">
-        <div className="text-yellow-500 mb-4">
+        <div className="text-signal-warn mb-4">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="64"
@@ -58,7 +60,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden text-foreground relative font-sans selection:bg-signal-active/25 antialiased bg-background">
+    <div className="flex h-screen w-screen overflow-hidden text-foreground relative font-sans selection:bg-primary/25 antialiased bg-background">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="flex flex-col flex-1 min-w-0 h-full relative z-10">
@@ -77,9 +79,6 @@ export default function App() {
                     setIsOpen={setIsExplorerOpen}
                     mode="main"
                   />
-                  <div className="hidden" aria-hidden>
-                    <SpoofingView />
-                  </div>
                 </div>
               )}
               {activeTab === 'activity' && <ActivityView key="activity" />}
@@ -100,6 +99,7 @@ export default function App() {
         </div>
       </div>
 
+      <SpooferOverlays controller={spooferController} />
       <TutorialGate />
     </div>
   );

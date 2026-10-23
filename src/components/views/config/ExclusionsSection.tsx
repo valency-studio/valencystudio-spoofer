@@ -11,24 +11,20 @@ export default function ExclusionsSection() {
   return (
     <SettingCard
       icon={ShieldAlert}
-      title={t('config.exclusions') || 'Exclusions'}
-      description="Prevent specific Roblox users or groups from being spoofed or modified."
+      title={t('config.exclusions')}
+      description={t('settings.exclusionsDescription')}
     >
       <SettingFieldRow
-        label={t('settings.excludedUsers') || 'Excluded Users'}
-        description={
-          t('settings.excludedUsersPlaceholder') || 'Comma-separated user IDs (e.g. 12345, 67890)'
-        }
+        label={t('settings.excludedUsers')}
+        description={t('settings.excludedUsersPlaceholder')}
         value={config.advanced.excludedUserIds}
         onChange={(val) => updateConfig('advanced', 'excludedUserIds', val)}
         placeholder="12345, 67890"
       />
 
       <SettingFieldRow
-        label={t('settings.excludedGroups') || 'Excluded Groups'}
-        description={
-          t('settings.excludedGroupsPlaceholder') || 'Comma-separated group IDs (e.g. 54321, 98765)'
-        }
+        label={t('settings.excludedGroups')}
+        description={t('settings.excludedGroupsPlaceholder')}
         value={config.advanced.excludedGroupIds}
         onChange={(val) => updateConfig('advanced', 'excludedGroupIds', val)}
         placeholder="54321, 98765"

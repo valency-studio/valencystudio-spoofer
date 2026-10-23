@@ -31,13 +31,11 @@ export function AccountSwitcher({ accounts }: { accounts: AppConfig['accounts'] 
   };
 
   const active = accounts.find((a) => a.id === activeUserId);
-  const label = active?.name || t('accounts.selectedAccount') || 'Choose account';
+  const label = active?.name || t('accounts.selectedAccount');
 
   return (
     <div className="flex flex-col gap-1.5 mb-2">
-      <span className="text-xs font-medium text-text-secondary">
-        {t('accounts.title') || 'Active account'}
-      </span>
+      <span className="text-xs font-medium text-text-secondary">{t('accounts.title')}</span>
       <Select value={activeUserId} onValueChange={handleChange}>
         <SelectTrigger className="w-full h-10 bg-bg-surface border-border-strong text-text-primary hover:border-primary px-3 transition-colors">
           <div className="flex items-center gap-2 w-full min-w-0">

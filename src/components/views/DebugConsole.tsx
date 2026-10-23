@@ -18,6 +18,7 @@ import {
   type LogEntry,
   subscribeDebugLogs,
 } from '../../utils/debugLogger';
+import { EmptyState } from '../shared/EmptyState';
 import { Button } from '../ui/button';
 import { JsonViewer } from '../ui/JsonViewer';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
@@ -39,16 +40,16 @@ interface DebugConsoleProps {
 
 const LEVEL_CONFIG: Record<string, { color: string; bg: string; border: string; dot: string }> = {
   error: {
-    color: 'text-red-400',
-    bg: 'bg-red-500/5',
-    border: 'border-red-500/10',
-    dot: 'bg-red-500',
+    color: 'text-danger',
+    bg: 'bg-danger/5',
+    border: 'border-danger/10',
+    dot: 'bg-danger',
   },
   warn: {
-    color: 'text-yellow-400',
-    bg: 'bg-yellow-500/5',
-    border: 'border-yellow-500/10',
-    dot: 'bg-yellow-500',
+    color: 'text-signal-warn',
+    bg: 'bg-signal-warn/5',
+    border: 'border-signal-warn/10',
+    dot: 'bg-signal-warn',
   },
   success: {
     color: 'text-signal-live',
@@ -57,10 +58,10 @@ const LEVEL_CONFIG: Record<string, { color: string; bg: string; border: string; 
     dot: 'bg-signal-live',
   },
   info: {
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/5',
-    border: 'border-blue-500/10',
-    dot: 'bg-blue-500',
+    color: 'text-signal-info',
+    bg: 'bg-signal-info/5',
+    border: 'border-signal-info/10',
+    dot: 'bg-signal-info',
   },
 };
 
@@ -163,16 +164,16 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
   };
 
   const sources = [
-    { value: 'all', label: 'All' },
-    { value: 'ValencyStudio', label: 'ValencyStudio' },
-    { value: 'console', label: 'DEV' },
+    { value: 'all', label: t('debug.all') },
+    { value: 'ValencyStudio', label: t('debug.ValencyStudio') },
+    { value: 'console', label: t('debug.dev') },
   ];
 
   const levels = [
-    { value: 'info', label: 'Info' },
-    { value: 'success', label: 'Success' },
-    { value: 'warn', label: 'Warn' },
-    { value: 'error', label: 'Error' },
+    { value: 'info', label: t('debug.info') },
+    { value: 'success', label: t('debug.success') },
+    { value: 'warn', label: t('debug.warn') },
+    { value: 'error', label: t('debug.error') },
   ];
 
   if (!isOpen) return null;
@@ -190,7 +191,7 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
       <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle bg-bg-surface/50 shrink-0">
         <div className="flex items-center gap-3">
           {!fill && (
-            <div className="flex items-center gap-2 text-muted-foreground text-2xs font-bold uppercase tracking-widest">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Terminal size={14} className="text-primary" />
               {t('debug.title')}
             </div>
@@ -203,9 +204,9 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
                 type="button"
                 onClick={() => setFilterSource(src.value)}
                 className={cn(
-                  'px-2 h-6 rounded text-2xs font-bold uppercase tracking-wider transition-all',
+                  'px-2 h-6 rounded text-2xs font-semibold transition-all',
                   filterSource === src.value
-                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-text-primary',
                 )}
               >
@@ -242,7 +243,9 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
                     />
                     {lvl.label}
                   </TooltipTrigger>
-                  <TooltipContent>Toggle {lvl.label} logs</TooltipContent>
+                  <TooltipContent>
+                    {t('debug.toggleLevelLogs').replace('{level}', lvl.label)}
+                  </TooltipContent>
                 </Tooltip>
               );
             })}
@@ -250,8 +253,9 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
         </div>
 
         <div className="flex items-center gap-1">
-          <span className="text-2xs text-text-muted font-mono mr-2">
-            {filteredLogs.length} {filteredLogs.length === 1 ? 'entry' : 'entries'}
+          <span className="text-2xs text-text-muted tabular-nums mr-2">
+            {filteredLogs.length}{' '}
+            {filteredLogs.length === 1 ? t('debug.entryOne') : t('debug.entryMany')}
           </span>
 
           <Tooltip>
@@ -325,10 +329,11 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
         style={{ overflowAnchor: 'none' }}
       >
         {groupedLogs.length === 0 ? (
-          <div className="text-muted-foreground/50 italic flex flex-col items-center justify-center h-full gap-2">
-            <Terminal size={32} className="opacity-20" />
-            <span>{t('debug.noLogs')}</span>
-          </div>
+          <EmptyState
+            className="h-full"
+            icon={<Terminal size={32} className="opacity-20" />}
+            title={t('debug.noLogs')}
+          />
         ) : (
           groupedLogs.map((log, index) => {
             const config = LEVEL_CONFIG[log.level] ?? LEVEL_CONFIG.info;
@@ -346,14 +351,25 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
             return (
               <div
                 key={rowKey}
+                role={isExpandable ? 'button' : undefined}
+                tabIndex={isExpandable ? 0 : undefined}
+                aria-expanded={isExpandable ? isExpanded : undefined}
                 className={cn(
-                  'rounded border transition-colors cursor-default',
+                  'rounded border transition-colors',
+                  isExpandable ? 'cursor-pointer' : 'cursor-default',
                   config.bg,
                   config.border,
                   'hover:bg-bg-elevated/40',
                   isExpanded ? 'py-1 px-2' : 'h-7 py-0 px-2',
                 )}
                 onClick={() => isExpandable && toggleExpanded(rowKey)}
+                onKeyDown={(e) => {
+                  if (!isExpandable || e.target !== e.currentTarget) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleExpanded(rowKey);
+                  }
+                }}
               >
                 <div className="flex items-center gap-1.5 h-7 min-w-0">
                   {isExpandable &&

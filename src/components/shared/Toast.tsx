@@ -1,10 +1,12 @@
 import { CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import { useEffect } from 'react';
 
+import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 import { useSpooferStore } from '../../stores/spooferStore';
 
 export const Toast = () => {
+  const { t } = useLanguage();
   const toast = useSpooferStore((s) => s.toast);
   const dismiss = useSpooferStore((s) => s.dismissToast);
 
@@ -25,8 +27,8 @@ export const Toast = () => {
     level === 'success'
       ? 'border-signal-live/40 bg-signal-live/10 text-signal-live'
       : level === 'error'
-        ? 'border-red-500/40 bg-red-500/10 text-red-100'
-        : 'border-blue-500/40 bg-blue-500/10 text-blue-100';
+        ? 'border-danger/40 bg-danger/10 text-danger'
+        : 'border-signal-info/40 bg-signal-info/10 text-signal-info';
 
   return (
     <div
@@ -45,7 +47,7 @@ export const Toast = () => {
         <button
           onClick={dismiss}
           className="opacity-60 hover:opacity-100 transition-opacity shrink-0"
-          aria-label="Dismiss"
+          aria-label={t('common.dismiss')}
         >
           <X size={14} />
         </button>

@@ -2,6 +2,55 @@ import type { TranslationTree } from './index';
 
 export const fr: TranslationTree = {
   misc: {
+    startScan: "Lancer l'analyse",
+    typesToScan: "Types d'assets à analyser",
+    tutorialStep6Body:
+      'Cliquez sur Run Spoofer. Suivez la barre de progression et la notification à la fin. Vous pouvez relancer ce tutoriel depuis Settings.',
+    tutorialStep6Title: 'Lancez le spoofer',
+    tutorialStep5Hint: 'Cochez au moins une ressource pour continuer.',
+    tutorialStep5Body:
+      "Cochez les cases à côté des ressources dans l'arborescence. Vous pouvez sélectionner des lignes ou déplier un dossier et tout cocher.",
+    tutorialStep5Title: 'Sélectionnez quelques ressources',
+    tutorialStep4Hint: 'Cliquez sur Scan Studio ou Open File pour remplir la liste.',
+    tutorialStep4Body:
+      "Ouvrez un place Roblox Studio avec le plugin ValencyStudio - Spoofer chargé, puis cliquez sur Scan Studio. L'analyse remplit la liste des ressources : animations, sons, images, meshes et références de scripts du jeu en cours.",
+    tutorialStep4Title: 'Analyser Studio',
+    tutorialStep3Hint: 'Collez votre clé API Open Cloud dans Settings > Credentials.',
+    tutorialStep3Body:
+      "Allez dans Settings, ouvrez Credentials et collez une clé API Open Cloud avec l'autorisation Assets en lecture/écriture. C'est le téléverseur : sans elle, le spoofing ne peut que télécharger.",
+    tutorialStep3Title: 'Clé API Open Cloud',
+    tutorialStep2Hint: 'Ajoutez un compte ou détectez-en un depuis Studio pour continuer.',
+    tutorialStep2Body:
+      "Ouvrez l'onglet Accounts et ajoutez un profil Roblox. Vous pouvez coller un cookie .ROBLOSECURITY ou le détecter automatiquement depuis Studio. Ce compte sert de téléchargeur.",
+    tutorialStep2Title: 'Ajouter un compte Roblox',
+    tutorialStep1Body:
+      'Configurons tout en 6 étapes rapides. Vous allez ajouter un compte Roblox, coller une clé API Open Cloud, analyser Studio, puis sélectionner des ressources et lancer le spoofer.',
+    tutorialStep1Title: 'Bienvenue dans ValencyStudio - Spoofer',
+    tutorialFinish: 'Terminer',
+    tutorialNext: 'Suivant',
+    tutorialSkip: 'Ignorer le tutoriel',
+    tutorialStepOf: 'Étape {current} sur {total}',
+    tutorialLabel: 'Tutoriel',
+    pasteIdsAdded:
+      "Ajout de {single} ID à l'explorateur ({matched} trouvés dans Studio, {ghost} créés comme ID fantômes).",
+    pasteIdsSendToStudio: 'Envoyer vers Studio',
+    pasteIdsAddToExplorer: "Ajouter à l'explorateur",
+    pasteIdsProcessing: 'Traitement...',
+    pasteIdsLinesSkipped: '{count} ligne(s) ignorée(s) (deux ID par ligne requis)',
+    pasteIdsValidPairs: '{count} paire(s) valide(s)',
+    pasteIdsReady: '{count} ID prêt(s)',
+    pasteIdsReplaceBodyPost: ' sont ignorées.',
+    pasteIdsReplaceBodyMid: ' ou des espaces. Les lignes commençant par ',
+    pasteIdsReplaceBodyPre:
+      "Collez une liste de paires d'ID, une par ligne. Ces séparateurs fonctionnent tous : ",
+    pasteIdsAddBodyPost: ', autorisés à être découverts, remplacés ou enregistrés dans Studio.',
+    pasteIdsAddBodyPre:
+      "Collez une liste d'ID de ressources (un par ligne, séparés par des espaces ou des virgules). Les ID présents dans le scan Studio seront sélectionnés. Ceux absents de Studio seront ajoutés comme ",
+    pasteIdsReplaceMode: 'Remplacer des ID (paires)',
+    pasteIdsAddMode: 'Ajouter des ID (ID fantômes)',
+    pasteIdsTitle: 'Remplacer et ajouter des ID manuellement',
+    seek: 'Position de lecture',
+    playbackSpeed: 'Vitesse de lecture',
     toggleRigType: 'Toggle Rig Type',
     maintenanceBreak: 'Pause de Maintenance',
     maintenanceDesc:
@@ -13,9 +62,7 @@ export const fr: TranslationTree = {
     loadingHistory: "Chargement de l'historique...",
     noJobHistory: 'Aucun historique de travail trouvé.',
     jobsWillAppear: 'Les travaux que vous exécutez apparaîtront ici.',
-    dropRbxl: 'Déposez .rbxl / .rbxlx',
     scanningStudio: 'Analyse de Studio...',
-    dropOrClick: 'Déposez ou cliquez pour parcourir',
     rbxlOnly: 'Uniquement .rbxl & .rbxlx',
     audioQuotaExceeded: 'Quota audio dépassé',
     confirmVideoUploads: 'Êtes-vous absolument sûr de vouloir activer les envois de vidéos ?',
@@ -34,7 +81,7 @@ export const fr: TranslationTree = {
       "Impossible d'analyser les images clés de l'animation. Le format peut ne pas être pris en charge.",
     animation: 'Animation',
     keyframesCount: '{count} images clés',
-    dragToOrbit: 'Faites glisser pour tourner · Faites défiler pour zoomer',
+    dragToOrbit: 'Faites glisser pour tourner, faites défiler pour zoomer',
     speed: 'Vitesse',
     errorBoundaryTitle: "Oups, quelque chose s'est cassé.",
     errorBoundaryDesc:
@@ -48,6 +95,11 @@ export const fr: TranslationTree = {
     notificationsFailed: "Les notifications de bureau n'ont pas pu être affichées.",
     waitingForScan: "En attente de l'analyse de Studio...",
     noPlaceLoaded: 'Aucun lieu chargé',
+    portDiagnosticFailed:
+      "Impossible de démarrer la connexion au plugin Studio : les ports 14285–14289 sont utilisés par d'autres programmes. Fermez les instances dupliquées de l'application ou les applications en conflit, puis redémarrez ValencyStudio - Spoofer.",
+    portDiagnosticExtended:
+      "Le pont du plugin utilise un port non standard ({port}). Redémarrez l'application et Roblox Studio pour que les deux utilisent les ports standard 14285–14289.",
+    portDiagnosticOccupied: 'Processus en conflit utilisant ces ports : {processes}',
   },
 
   music: {
@@ -65,7 +117,6 @@ export const fr: TranslationTree = {
     pitch: 'Hauteur',
     format: 'Format',
     sampleRate: "Fréquence d'échantillonnage",
-    speedPresets: 'Réglages de vitesse',
     presetNormal: 'Normale',
     presetSlow: 'Lente',
     presetDefault: 'Par défaut',
@@ -95,10 +146,8 @@ export const fr: TranslationTree = {
     processing: 'Roblox est en cours de traitement...',
     rendering: 'Rendu de l’audio...',
     validating: 'Validation...',
-    acceptedTitle: 'Roblox a accepté l’envoi.',
     rejectedTitle: 'Roblox a refusé l’envoi.',
     dismiss: 'Fermer',
-    uploadHint: 'Éditez le morceau puis envoyez-le vers votre compte Roblox',
     noUploaderAccount: 'Sélectionnez un compte Roblox dans Comptes avant l’envoi.',
     quotaLeft: 'Il reste {remaining} téléversements audio sur {limit} ce mois-ci.',
     history: 'Historique des téléversements',
@@ -116,7 +165,6 @@ export const fr: TranslationTree = {
     copyId: 'Copier l’ID de l’actif',
     parts: '{count} parties',
     willSplit: 'Roblox limite les téléversements à 7 minutes, donc ceci devient {count} parties.',
-    exportedSplit: '{count} parties envoyées.',
     exported: 'Morceau envoyé sur Roblox.',
     exportedLabel: 'copie envoyée',
     editedNote:
@@ -125,9 +173,9 @@ export const fr: TranslationTree = {
     openSource: 'Ouvrir la source',
     ytdlpUnavailable:
       'yt-dlp n’a pas pu être installé automatiquement, l’import depuis un lien est donc indisponible.',
-    retryInstall: 'Réessayer l’installation',
-    missingFfmpeg:
-      "ffmpeg n'est pas dans votre PATH, l'envoi est donc indisponible. Installez ffmpeg puis rouvrez l'application.",
+    missingFfprobe:
+      "ffprobe manque à votre installation de FFmpeg, l'ouverture d'un fichier local est donc indisponible. Réinstallez FFmpeg puis rouvrez l'application.",
+    retryToolInstall: 'Réessayer',
     ffmpegRequiredTitle: "FFmpeg n'est pas installé",
     ffmpegRequiredDescription:
       'FFmpeg est requis pour utiliser Musique. Installez-le avec Winget ou retournez au Spoofer.',
@@ -135,44 +183,25 @@ export const fr: TranslationTree = {
     ffmpegReturnToSpoofer: 'Retour au Spoofer',
     ffmpegInstalling: 'Installation de FFmpeg avec Winget...',
     ffmpegInstallOutput: 'Sortie de Winget',
-    ffmpegInstallFailed: "Winget n'a pas pu installer FFmpeg : {error}",
+    ffmpegInstallFailedTitle: "Winget n'a pas pu installer FFmpeg",
+    ffmpegInstallHint:
+      "Cela peut prendre une minute. Gardez l'application ouverte — la fenêtre se fermera d'elle-même dès que FFmpeg est prêt.",
     ffmpegInstallComplete:
       "FFmpeg a été installé. Rouvrez l'application pour appliquer les changements du PATH.",
     missingYtDlp:
-      "yt-dlp n'est pas dans votre PATH, l'import depuis un lien est donc indisponible. Installez yt-dlp puis rouvrez l'application.",
+      "yt-dlp n'est pas dans votre PATH, l'import depuis un lien est donc indisponible. Réessayez ci-dessous, ou installez yt-dlp puis rouvrez l'application.",
   },
   nav: {
-    home: 'Accueil',
+    clearSearch: 'Effacer la recherche',
     spoofing: 'Usurpation',
     settings: 'Paramètres',
-    config: 'Configuration',
-    account: 'Compte',
-    quickSettings: 'Paramètres Rapides',
-    advanced: 'Avancé',
     activity: 'Activité',
-    experimental: 'Expérimental',
-    supportMe: 'Soutenez-moi',
     music: 'Musique',
     about: 'À propos',
     collapseSidebar: 'Réduire la barre latérale',
     expandSidebar: 'Agrandir la barre latérale',
-  },
-  home: {
-    title: 'Bienvenue sur ValencyStudio - Spoofer',
-    subtitle: 'Hub central de ValencyStudio - Spoofer.',
-    quickstartTitle: 'Guide de Démarrage Rapide',
-    quickstartBody:
-      "1. Allez dans l'onglet <strong>Usurpation</strong> pour configurer<br>2. Sélectionnez ce que vous voulez usurper<br>3. Entrez votre ID d'animation et vos identifiants<br>4. Cliquez sur \"Lancer l'Usurpation\"",
-    featuresTitle: 'Caractéristiques',
-    helpTitle: "Besoin d'aide ?",
-    helpBody: 'Rejoignez notre serveur Discord pour le support et les discussions.',
-    discordBtn: 'Rejoindre Discord',
-    tutorial: 'Tutoriel',
-    wiki: 'Wiki',
-    github: 'Github',
-    recentUpdates: 'Mises à Jour Récentes',
-    fetchingChangelogs: 'Chargement des changelogs...',
-    noUpdates: 'Aucune mise à jour récente trouvée.',
+    accounts: 'Comptes',
+    console: 'Console',
   },
   about: {
     title: 'À propos',
@@ -203,6 +232,10 @@ export const fr: TranslationTree = {
     madeWith: 'Fait avec soin par {team}.',
   },
   spoof: {
+    downloadAll: 'Tout télécharger ({count})',
+    downloadSelected: 'Télécharger la sélection ({count})',
+    assetPermissionsProgress: "Permissions d'assets",
+    manualReplace: 'Remplacement et ajout manuels',
     title: "Usurpation d'Assets",
     targets: 'Cibles',
     targetContext: 'Contexte Cible',
@@ -244,8 +277,93 @@ export const fr: TranslationTree = {
     audioQuotaUnavailable: 'Quota audio : indisponible',
     noGroupsFound:
       "Aucun groupe trouvé. Ajoutez des informations d'identification dans la Configuration, puis sélectionnez un utilisateur.",
+    spoofSelected: 'Usurper la sélection ({count})',
+    spoofAllAssets: 'Usurper tous les actifs ({count})',
   },
   settings: {
+    cookieHint:
+      "Un cookie de session qui permet à l'app d'agir en tant que votre compte Roblox. Traitez-le comme un mot de passe, ne le partagez jamais.",
+    permissions: 'Autorisations',
+    cacheClearFailed: 'Échec du vidage du cache',
+    cacheEnabled: 'Cache activé.',
+    cacheDisabled: "Cache désactivé. Les données d'exécution en cache ont été effacées.",
+    cacheCleared: 'Cache vidé.',
+    resetAllSettingsTitle: 'Réinitialiser tous les réglages',
+    openLogsFolderDescription: "Ouvre le dossier contenant les journaux de l'application.",
+    resetConfirmTitle: 'Réinitialiser les réglages',
+    resetConfirmBody:
+      'Réinitialiser tous les réglages aux valeurs par défaut ? Action irréversible.',
+    resetAllSettingsBody:
+      'Réinitialise tous les réglages et préférences aux valeurs par défaut. Action irréversible.',
+    tutorialDescription:
+      'Un parcours pas à pas : ajouter un compte, configurer les API keys, charger un place et lancer votre premier spoof.',
+    launchTutorial: 'Lancer le tutoriel',
+    languagePlaceholder: 'Langue',
+    cacheDescription:
+      'Stocke sur disque les meshes, images et audios téléchargés pour accélérer les analyses répétées.',
+    debugConsoleDescription:
+      'Affiche une console flottante en temps réel pour tracer les IPC et le réseau.',
+    debugDescription: 'Activez la console de débogage et gérez les fichiers de cache locaux.',
+    dangerDescription: 'Actions irréversibles et réinitialisation complète de la configuration.',
+    credentialsDescription:
+      "Gérez les cookies de session Roblox et les identifiants Open Cloud API pour le téléchargement et l'envoi.",
+    notificationsDescription:
+      'Affiche une notification système à la fin des téléchargements ou des spoofs.',
+    behaviorDescription:
+      'Configurez le comportement dans la zone de notification, les notifications de bureau et les tutoriels.',
+    appearanceDescription:
+      "Personnalisez les thèmes de couleur, les couleurs d'accent et la langue d'affichage.",
+    advancedDescription:
+      "Options d'injection expérimentales et déclencheurs d'automatisation système.",
+    assetProcessingDescription:
+      "Configurez la vérification de propriété, la conservation des métadonnées et la récupération d'archives.",
+    exclusionsDescription:
+      'Empêche le spoof ou la modification de certains utilisateurs ou groupes Roblox.',
+    batchSpeedMax: 'Vitesse maximale — vitesse de remplacement la plus élevée.',
+    batchSpeedFast: 'Rapide — lots de remplacement accélérés avec des pauses plus courtes.',
+    batchSpeedBalanced: 'Équilibré — débit et stabilité de remplacement standards.',
+    batchSpeedUltra:
+      'Ultra fluide — charge CPU réduite et rendu du viewport plus fluide pendant le remplacement.',
+    batchSizeSpeed: 'Taille de lot et vitesse',
+    uploadPollIntervalDescription:
+      "Fréquence de vérification de la fin de l'envoi sur Roblox Open Cloud (plus bas = plus rapide, 200-400 ms recommandé).",
+    uploadPollInterval: "Intervalle de vérification de l'envoi",
+    discoveryConcurrencyDescription: 'Threads parallèles pour la recherche des ID de place.',
+    discoveryConcurrency: 'Concurrence de découverte',
+    maxDownloadConcurrencyDescription:
+      "Flux parallèles pour télécharger les charges utiles d'assets Roblox.",
+    maxConcurrencyDescription: "Plafond de threads parallèles pour le pipeline de spoof d'assets.",
+    routingDescription:
+      "Configurez les proxys réseau et les niveaux de concurrence pour le téléchargement et l'envoi d'assets.",
+    accessActionBody:
+      "Accorde la permission {code} en jeu, permettant aux expériences, groupes ou utilisateurs indiqués d'utiliser et de lire les assets spoofés.",
+    accessActionTitle: "Action d'accès :",
+    targetSubjectIdsGroupPlaceholder: 'ex. 1089883489',
+    targetSubjectIdsUserPlaceholder: 'ex. 12345678',
+    targetSubjectIdsPlacePlaceholder: 'ex. 1818, 924364, 12345678',
+    targetSubjectIdsGroupDesc: 'Saisissez des ID de groupe séparés par des virgules.',
+    targetSubjectIdsUserDesc: 'Saisissez des ID utilisateur séparés par des virgules.',
+    targetSubjectIdsPlaceDesc: 'Saisissez des ID de Place ou d’Universe séparés par des virgules.',
+    targetSubjectIds: 'ID(s) de la cible',
+    subjectUser: 'Utilisateur Roblox (ID utilisateur)',
+    subjectGroup: 'Groupe Roblox (ID de groupe)',
+    subjectExperience: 'Experience (Place / Universe)',
+    selectType: 'Sélectionner le type',
+    targetSubjectTypeDescription:
+      'Choisissez si les permissions sont accordées à un Place/Experience, un groupe ou un utilisateur.',
+    autoGrantPermissionsDescription:
+      "Appelle automatiquement l'API Roblox Asset Permissions pour les assets créés à la fin du spoof.",
+    autoGrantPermissions: 'Accorder les permissions automatiquement après le spoof',
+    assetPermissionsDescription:
+      'Accordez automatiquement la permission des assets spoofés aux expériences, groupes ou utilisateurs pour éliminer les erreurs de « permission manquante ».',
+    assetPermissionsTitle: "Permissions d'assets (Open Cloud)",
+    targetSubjectType: 'Type de sujet cible',
+    onboardingTutorial: "Tutoriel d'accueil interactif",
+    resetToDefaults: 'Réinitialiser les valeurs par défaut',
+    languageDescription: "Choisissez la langue d'affichage des libellés de l'interface.",
+    accentColorDescription:
+      "Choisissez la couleur d'accent principale de l'interface et des boutons.",
+    themeDescription: "Basculez entre les thèmes clair et sombre de l'interface.",
     title: 'Paramètres',
     general: 'Paramètres généraux',
     appearance: 'Apparence et localisation',
@@ -303,9 +421,19 @@ export const fr: TranslationTree = {
     openLogsFolder: 'Ouvrir le Dossier des Logs',
     clipboardMonitoring: 'Surveillance du Presse-papiers',
     memoryInjection: 'Injection de Mémoire',
+    clipboardMonitoringDesc:
+      "Détecte automatiquement les liens d'actifs Roblox copiés dans votre presse-papiers et les met en file d'attente pour l'usurpation.",
+    memoryInjectionDescSupported:
+      "Windows uniquement. Patch mémoire direct pour les sessions Studio actives avec la même longueur d'ID. Pour les autres actifs, le pont du plugin Studio est utilisé automatiquement.",
+    memoryInjectionDescUnsupported:
+      "Le patch mémoire du processus n'est pris en charge que sous Windows. Le pont du plugin Studio sera utilisé sur cette plate-forme.",
     excludedUserIds: 'IDs Utilisateur Exclus',
     excludedGroupIds: 'IDs Groupe Exclus',
     debugDisplay: 'Débogage et Affichage',
+    concurrentDownloading: 'Téléchargement simultané',
+    concurrentDownloadingDescription:
+      'Télécharge plusieurs actifs en même temps pour accélérer le traitement.',
+    confirmResetTitle: 'Réinitialiser tous les paramètres ?',
   },
   config: {
     title: 'Configuration',
@@ -336,6 +464,9 @@ export const fr: TranslationTree = {
     iUnderstandEnableIt: 'Je Comprends, Activer',
   },
   debug: {
+    entryMany: 'entrées',
+    entryOne: 'entrée',
+    toggleLevelLogs: 'Basculer les journaux {level}',
     title: 'Console de Débogage',
     clear: 'Effacer',
     all: 'Tout',
@@ -361,6 +492,74 @@ export const fr: TranslationTree = {
     goToBottom: 'Aller en bas',
   },
   explorer: {
+    pinnedPlaceIdHint: 'Cet ID a été forcé sur un Place ID, ignorant la détection automatique.',
+    name: 'Nom',
+    downloadFailed: 'Échec du téléchargement',
+    clearFilters: 'Effacer les filtres',
+    assetTypeScripts: 'Scripts',
+    assetTypeMeshes: 'Meshes',
+    assetTypeImages: 'Images',
+    assetTypeAnimations: 'Animations',
+    assetTypeSounds: 'Sons',
+    discoveryFailed: 'Échec de la découverte',
+    skipped: 'Ignoré',
+    stageError: 'Erreur',
+    completed: 'Terminé',
+    uploadingStage: 'Envoi...',
+    downloading: 'Téléchargement...',
+    discoveringGraph: 'Découverte des ID de place (graphe de créateurs)...',
+    discoveringUsage: "Découverte des ID de place (usage d'assets)...",
+    checkingDirectPlaceIds: 'Vérification des ID de place directs...',
+    ghostIds: 'ID fantômes',
+    ghostId: 'ID fantôme',
+    dataModelPath: 'Chemin DataModel',
+    parent: 'Parent',
+    className: 'Nom de classe',
+    searchLogs: 'Rechercher dans les journaux par ID, statut ou asset...',
+    searchAssets: 'Rechercher des assets par nom ou ID...',
+    targetedPathPlaceholder: 'ex. game.Workspace.AKAnims ou Guns',
+    forceResetToast: 'État des boutons réinitialisé. Vous pouvez lancer un nouveau spoof.',
+    forceResetStuck: 'Forcer la réinitialisation (bloqué ?)',
+    reapplyReplacements: 'Réappliquer les remplacements',
+    downloadOnlyMode: 'Téléchargement seulement',
+    spoofUpload: 'Spoofer (envoyer)',
+    discoverPlaceIdsTooltip: 'Découvrir les ID de place (limite {secs}s par asset)',
+    discoveringPlaceIds: 'Découverte des ID de place...',
+    discover: 'Découvrir',
+    copyReplacedIdsOnly: 'Copier uniquement les ID remplacés',
+    copyReplacementPairs: 'Copier les paires de remplacement',
+    addManualGhostIds: 'Ajouter des ID manuels / fantômes',
+    reset: 'Réinitialiser',
+    clearExplorerBody: 'Cela supprimera les {count} ressources analysées.',
+    showMore: 'Afficher {count} de plus',
+    discovered: 'Détecté',
+    idAutoDetected: 'ID : {id}, détecté automatiquement',
+    studioNotConnectedToast: "Aucun plugin Roblox Studio connecté. Connectez d'abord Studio.",
+    instanceDetails: "Détails de l'instance",
+    appearanceAndValues: 'Apparence et valeurs',
+    scanSpecificPath: 'Analyser un chemin ou modèle précis',
+    scanPath: 'Analyser le chemin',
+    showAll: 'Tout afficher',
+    ghostAsset: 'Actif fantôme (aucune instance dans Studio)',
+    discoveryTimeout: 'Délai de découverte',
+    targetedPathScanBody:
+      'Analyse uniquement une instance ou un conteneur précis au lieu du jeu entier :',
+    targetedPathScan: 'Analyse de chemin ciblée',
+    assetTypes: "Types d'actifs",
+    previewUnavailable: 'Aucun aperçu disponible',
+    previewFailed: "Échec du chargement de l'aperçu",
+    noInstanceSelectedBody:
+      "Choisissez une instance dans l'arbre pour inspecter ses propriétés Roblox.",
+    noInstanceSelected: 'Aucune instance sélectionnée',
+    zoomIn: 'Zoom avant',
+    zoomOut: 'Zoom arrière',
+    zoomReset: 'Réinitialiser le zoom',
+    fileExtractionOptions: "Options d'extraction de fichiers",
+    popoutPreview: 'Ouvrir dans une fenêtre séparée toujours au-dessus',
+    dockPreview: 'Réancrer dans la fenêtre principale',
+    closePanel: 'Fermer le panneau',
+    previewAsset: 'Aperçu de cet actif',
+    copyPath: 'Copier le chemin complet',
     emptyTitle: 'Connectez un lieu pour commencer',
     emptyBody:
       'Scannez une session Roblox Studio en cours pour lister ses animations, sons, images et maillages, ou ouvrez un fichier de lieu depuis le disque.',
@@ -403,6 +602,9 @@ export const fr: TranslationTree = {
     unknownAsset: 'Actif Inconnu',
   },
   common: {
+    promise: 'Promise',
+    selectAll: 'Tout sélectionner',
+    or: 'ou',
     none: 'Aucun',
     cancel: 'Annuler',
     save: 'Sauvegarder',
@@ -414,32 +616,13 @@ export const fr: TranslationTree = {
     delete: 'Supprimer',
     copied: 'Copié !',
     done: 'Terminé',
+    restart: 'Redémarrer',
     and: '&',
-  },
-  experimental: {
-    title: 'Fonctionnalités Expérimentales',
-    description:
-      "Les fonctionnalités répertoriées ici sont en développement actif, instables et peuvent être supprimées à l'avenir.",
-    clipboardMonitoring: 'Surveillance du Presse-papiers',
-    clipboardMonitoringDesc:
-      "Surveille silencieusement votre presse-papiers pour les URL d'actifs Roblox et les met automatiquement en file d'attente pour l'usurpation.",
-    spoofPlugins: 'Usurper les Plugins',
-    spoofPluginsDesc: "[WIP] Tente d'usurper les actifs de plugins.",
-    memoryInjection: 'Injection de Mémoire',
-    memoryInjectionDescSupported:
-      "[DANGEREUX] Windows uniquement. Écrase les ID d'actifs numériques exacts dans la mémoire de Studio (même longueur de chiffres). Exécutez avec la même élévation que Studio. Le pont de plugin est utilisé pour d'autres cas.",
-    memoryInjectionDescUnsupported:
-      "L'injection de mémoire n'est disponible que sur Windows. Utilisez le pont de plugin sur cette plate-forme.",
-  },
-  credits: {
-    description: 'Un outil pour usurper des actifs de jeu Roblox',
-    developers: 'Développeurs',
-    mainDeveloper: 'Développeur Principal',
-    contributor: 'Contributeur',
-    supporters: 'Partisans',
-    boosters: 'Boosters',
+    clear: 'Effacer',
+    areYouSure: 'Voulez-vous vraiment continuer ?',
   },
   results: {
+    saveRbxlx: 'Enregistrer le .rbxlx remplacé',
     title: "Résultats d'Usurpation",
     assetsSpoofed: "{count} ID d'actifs ont été usurpés.",
     copyAll: 'Tout Copier',
@@ -449,6 +632,23 @@ export const fr: TranslationTree = {
       "Si le plugin ou l'injection en mémoire est actif, ces identifiants ont déjà été remplacés automatiquement dans votre Roblox Studio !",
   },
   accounts: {
+    avatar: 'Avatar',
+    profile: 'Profil',
+    groupApiKeyPlaceholder: 'Collez la clé API Open Cloud du groupe...',
+    userApiKeyPlaceholder: "Collez la clé API Open Cloud de l'utilisateur...",
+    userApiKeyBody:
+      'Clé API avec permissions de ressources pour téléverser animations et audio sur votre compte Roblox personnel.',
+    userApiKey: "Clé API Open Cloud de l'utilisateur",
+    discoveredAccounts: 'Comptes détectés',
+    robloxAccount: 'Compte Roblox.',
+    groupApiKeyBody:
+      "Utilisez une clé Open Cloud de groupe pour téléverser au nom d'un groupe, et non d'un compte personnel.",
+    groupApiKey: 'Clé API Open Cloud de groupe',
+    validated: 'Compte validé',
+    missingCookie: 'Aucun cookie enregistré pour ce compte',
+    missingApiKey: 'Aucune clé API Open Cloud enregistrée pour ce compte',
+    cookieRejected: "Le cookie enregistré a échoué à la validation — Roblox l'a rejeté",
+    apiKeyRejected: "La clé API enregistrée a échoué à la validation — Roblox l'a rejetée",
     title: 'Comptes',
     description: 'Gérez vos comptes Roblox pour télécharger et téléverser des ressources.',
     validateAll: 'Tout valider',
@@ -479,18 +679,5 @@ export const fr: TranslationTree = {
     anonymousDownloader: 'Téléchargeur anonyme',
     anonymousUploader: 'Téléverseur anonyme',
     selectedAccount: 'Account selected',
-  },
-  quickSettings: {
-    title: 'Paramètres Rapides',
-    noSettings: 'Aucun Paramètre Rapide',
-    addSettingsDesc: 'Ajoutez des éléments depuis la page des Paramètres.',
-    spoofingCookie: 'Cookie Roblox',
-    spoofingApiKey: 'Clé API OpenCloud',
-    advancedAutoCookieStudio: 'Auto-Cookie (Studio)',
-    advancedAutoCookieBrowser: 'Auto-Cookie (Navigateur)',
-    advancedForcePlaceIds: 'Forcer les IDs de Lieu',
-    advancedExcludedUserIds: "ID d'Utilisateurs Exclus",
-    advancedExcludedGroupIds: 'ID de Groupes Exclus',
-    generalDesktopNotifications: 'Notifications de Bureau',
   },
 };

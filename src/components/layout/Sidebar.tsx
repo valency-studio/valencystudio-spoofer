@@ -64,15 +64,25 @@ export default function Sidebar({
         >
           <div
             className={cn('flex items-center gap-2 min-w-0', isCollapsed && 'cursor-pointer')}
+            role={isCollapsed ? 'button' : undefined}
+            tabIndex={isCollapsed ? 0 : undefined}
+            aria-label={isCollapsed ? t('nav.expandSidebar') : undefined}
             onClick={() => {
               if (isCollapsed) {
                 setIsCollapsed(false);
                 setLogoHovered(false);
               }
             }}
+            onKeyDown={(e) => {
+              if (e.target !== e.currentTarget || !isCollapsed) return;
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setIsCollapsed(false);
+                setLogoHovered(false);
+              }
+            }}
             onMouseEnter={() => isCollapsed && setLogoHovered(true)}
             onMouseLeave={() => setLogoHovered(false)}
-            title={isCollapsed ? t('nav.expandSidebar') : undefined}
           >
             <div className="w-7 h-7 flex items-center justify-center shrink-0 relative">
               {isCollapsed && logoHovered ? (
@@ -95,13 +105,21 @@ export default function Sidebar({
                   ValencyStudio - Spoofer
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <span
-                    title={studioConnected ? t('misc.syncedToStudio') : t('misc.notSyncedToStudio')}
-                    className={cn(
-                      'w-1.5 h-1.5 rounded-full shrink-0',
-                      studioConnected ? 'bg-signal-live' : 'bg-danger',
-                    )}
-                  />
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <span
+                          className={cn(
+                            'w-1.5 h-1.5 rounded-full shrink-0 cursor-help',
+                            studioConnected ? 'bg-signal-live' : 'bg-danger',
+                          )}
+                        />
+                      }
+                    />
+                    <TooltipContent side="right" className="text-xs">
+                      {studioConnected ? t('misc.syncedToStudio') : t('misc.notSyncedToStudio')}
+                    </TooltipContent>
+                  </Tooltip>
                   <span className="text-2xs text-muted-foreground truncate tabular-nums">
                     {appVersion ? `v${appVersion}` : 'v?'}
                   </span>
@@ -145,7 +163,7 @@ export default function Sidebar({
                 {!isCollapsed && (
                   <span
                     className={cn(
-                      'text-sm tracking-wide whitespace-nowrap overflow-hidden',
+                      'text-sm whitespace-nowrap overflow-hidden',
                       isActive ? 'font-semibold' : 'font-medium',
                     )}
                   >

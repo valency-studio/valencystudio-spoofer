@@ -17,7 +17,9 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { queueSpoofRetry, type SpoofJob } from '../../utils/jobTypes';
 import { deleteUploadRecord, getUploadHistory, type UploadRecord } from '../../utils/music';
 import { logValencyStudio } from '../../utils/robloxProfiles';
+import { EmptyState } from '../shared/EmptyState';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { HistoryRow } from './music/MusicView';
 
 export default function ActivityView() {
@@ -136,11 +138,12 @@ export default function ActivityView() {
               <span className="text-muted-foreground">{t('misc.loadingHistory')}</span>
             </div>
           ) : jobs.length === 0 && musicHistory.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground space-y-3">
-              <Clock size={48} className="opacity-20" />
-              <p>{t('misc.noJobHistory')}</p>
-              <p className="text-sm opacity-70">{t('misc.jobsWillAppear')}</p>
-            </div>
+            <EmptyState
+              className="h-full"
+              icon={<Clock size={48} className="opacity-20" />}
+              title={t('misc.noJobHistory')}
+              description={t('misc.jobsWillAppear')}
+            />
           ) : (
             <div className="space-y-8 pb-8 w-full">
               {jobs.length > 0 && (
@@ -161,7 +164,7 @@ export default function ActivityView() {
                       <AccordionItem
                         key={job.id}
                         value={job.id}
-                        className="bg-bg-surface/40 border border-border-subtle shadow-xs rounded-xl overflow-hidden mb-3"
+                        className="bg-bg-surface/40 border border-border-subtle rounded-xl overflow-hidden mb-3"
                       >
                         <AccordionTrigger className="hover:no-underline py-2.5 pr-3 pl-2 data-[state=open]:border-b data-[state=open]:border-border-subtle/30">
                           <div className="flex items-center justify-between w-full">
@@ -171,10 +174,10 @@ export default function ActivityView() {
                                   <img
                                     src={job.account.avatarUrl}
                                     alt=""
-                                    className="w-9 h-9 rounded-full border border-border-subtle object-cover bg-bg-base shadow-xs"
+                                    className="w-9 h-9 rounded-full border border-border-subtle object-cover bg-bg-base"
                                   />
                                 ) : (
-                                  <div className="w-9 h-9 rounded-full border border-border-subtle bg-bg-base flex items-center justify-center shadow-xs">
+                                  <div className="w-9 h-9 rounded-full border border-border-subtle bg-bg-base flex items-center justify-center">
                                     <User2 size={16} className="text-muted-foreground" />
                                   </div>
                                 )}
@@ -182,7 +185,7 @@ export default function ActivityView() {
                                   <img
                                     src={job.group.iconUrl}
                                     alt=""
-                                    className="w-4.5 h-4.5 rounded-full border-[2px] border-bg-surface absolute -bottom-0.5 -right-0.5 object-cover bg-bg-base shadow-xs"
+                                    className="w-4.5 h-4.5 rounded-full border-[2px] border-bg-base absolute -bottom-0.5 -right-0.5 object-cover bg-bg-base"
                                   />
                                 )}
                               </div>
@@ -225,7 +228,7 @@ export default function ActivityView() {
                                 <button
                                   type="button"
                                   onClick={(e) => handleRetryFailed(job, e)}
-                                  className="flex items-center text-xs font-semibold text-text-muted hover:text-yellow-500 transition-colors cursor-pointer"
+                                  className="flex items-center text-xs font-semibold text-text-muted hover:text-signal-warn transition-colors cursor-pointer"
                                 >
                                   <RotateCcw size={12} className="mr-1.5" />
                                   {t('activity.retryFailed').replace(
@@ -267,8 +270,8 @@ export default function ActivityView() {
                                         className="text-signal-live shrink-0"
                                       />
                                     ) : res.skipped ? (
-                                      <div className="w-3.5 h-3.5 rounded-full border border-yellow-500/50 flex items-center justify-center shrink-0">
-                                        <div className="w-1.5 h-0.5 bg-yellow-500/50 rounded-full" />
+                                      <div className="w-3.5 h-3.5 rounded-full border border-signal-warn/50 flex items-center justify-center shrink-0">
+                                        <div className="w-1.5 h-0.5 bg-signal-warn/50 rounded-full" />
                                       </div>
                                     ) : (
                                       <XCircle size={14} className="text-destructive shrink-0" />
@@ -287,15 +290,21 @@ export default function ActivityView() {
                                       </span>
                                     )}
                                     {res.errorReason && (
-                                      <span
-                                        className="text-destructive max-w-50 truncate"
-                                        title={res.errorReason}
-                                      >
-                                        {res.errorReason}
-                                      </span>
+                                      <Tooltip>
+                                        <TooltipTrigger
+                                          render={
+                                            <span className="text-destructive max-w-50 truncate">
+                                              {res.errorReason}
+                                            </span>
+                                          }
+                                        />
+                                        <TooltipContent className="max-w-xs break-words">
+                                          {res.errorReason}
+                                        </TooltipContent>
+                                      </Tooltip>
                                     )}
                                     {res.reason && res.skipped && (
-                                      <span className="text-yellow-500/80 max-w-50 truncate">
+                                      <span className="text-signal-warn/80 max-w-50 truncate">
                                         {res.reason}
                                       </span>
                                     )}

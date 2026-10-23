@@ -16,6 +16,7 @@ import {
   saveCachedGroups,
   validateCookieProfile,
 } from '../../utils/robloxProfiles';
+import { SectionLabel } from '../shared/SectionLabel';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 export default function ProfilePopup({ collapsed = false }: { collapsed?: boolean }) {
@@ -130,7 +131,7 @@ export default function ProfilePopup({ collapsed = false }: { collapsed?: boolea
                 ? 'flex items-center justify-start w-full h-10 px-3 rounded-md hover:bg-bg-elevated transition-colors shrink-0'
                 : 'flex items-center gap-3 w-full h-11 px-3 rounded-md hover:bg-bg-elevated transition-colors border border-border-subtle bg-bg-surface/40 shrink-0'
             }
-            aria-label="Profile"
+            aria-label={t('accounts.profile')}
           >
             {avatarUrl ? (
               <img
@@ -158,9 +159,7 @@ export default function ProfilePopup({ collapsed = false }: { collapsed?: boolea
       />
       <PopoverContent align="start" sideOffset={8} className="w-72 p-2">
         <div className="flex flex-col gap-1">
-          <div className="px-2 py-1 text-2xs font-bold uppercase tracking-widest text-text-muted">
-            {t('spoof.targetContext')}
-          </div>
+          <SectionLabel className="px-2 py-1">{t('spoof.targetContext')}</SectionLabel>
 
           {(() => {
             const configIds = new Set(config.accounts.map((a) => normalizeId(a.id)));
@@ -228,7 +227,7 @@ export default function ProfilePopup({ collapsed = false }: { collapsed?: boolea
           <div className="h-px bg-border my-1.5" />
 
           <div className="flex flex-col gap-1 px-1">
-            <div className="flex items-center justify-between text-2xs font-semibold uppercase tracking-widest text-text-muted">
+            <div className="flex items-center justify-between text-2xs font-semibold text-text-muted">
               <span>{t('spoof.selectedGroup')}</span>
               {loadingGroups && <Loader2 size={11} className="animate-spin text-text-muted" />}
             </div>
