@@ -427,6 +427,7 @@ export const id: TranslationTree = {
     delete: 'Hapus',
     copied: 'Disalin ke clipboard',
     done: 'Selesai',
+    restart: 'Ulangi',
   },
   results: {
     title: 'Hasil Spoofing',

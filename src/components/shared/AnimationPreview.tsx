@@ -707,6 +707,7 @@ export default function AnimationPreview({
               variant="secondary"
               className="h-7 w-7 min-w-7 shrink-0"
               onClick={() => setPlaying((p) => !p)}
+              aria-label={playing ? t('music.pause') : t('music.play')}
             >
               {playing ? <Pause size={13} /> : <Play size={13} fill="currentColor" />}
             </Button>
@@ -715,6 +716,7 @@ export default function AnimationPreview({
               size="icon"
               variant="ghost"
               className="h-7 w-7 min-w-7 shrink-0"
+              aria-label={t('common.restart')}
               onClick={() => {
                 currentTimeRef.current = 0;
               }}

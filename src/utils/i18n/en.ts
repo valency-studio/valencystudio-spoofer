@@ -426,6 +426,7 @@ export const en: TranslationTree = {
     delete: 'Delete',
     copied: 'Copied to clipboard',
     done: 'Done',
+    restart: 'Restart',
   },
   results: {
     title: 'Spoofing Results',

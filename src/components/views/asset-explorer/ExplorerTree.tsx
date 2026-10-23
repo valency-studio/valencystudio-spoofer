@@ -37,6 +37,52 @@ export const getAssetId = (
   return '';
 };
 
+// One map for both the per-asset badge and the per-instance badge. `label` is the
+// fallback only — callers prefer the live status message over it.
+// ponytail: colours stay raw palette because index.css has no token for each stage.
+const STAGE_BADGES: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
+  resolving_location: {
+    icon: <Loader2 size={10} className="animate-spin" />,
+    color: 'text-blue-400',
+    label: 'Checking direct Place IDs...',
+  },
+  discovering_usage: {
+    icon: <Loader2 size={10} className="animate-spin" />,
+    color: 'text-purple-400',
+    label: 'Discovering Place IDs (Asset Usage)...',
+  },
+  discovering_graph: {
+    icon: <Loader2 size={10} className="animate-spin" />,
+    color: 'text-indigo-400',
+    label: 'Discovering Place IDs (Creator Graph)...',
+  },
+  downloading: {
+    icon: <Download size={10} />,
+    color: 'text-cyan-400',
+    label: 'Downloading...',
+  },
+  uploading: {
+    icon: <Upload size={10} />,
+    color: 'text-amber-400',
+    label: 'Uploading...',
+  },
+  done: {
+    icon: <Check size={10} />,
+    color: 'text-signal-live',
+    label: 'Completed',
+  },
+  error: {
+    icon: <AlertCircle size={10} />,
+    color: 'text-red-400',
+    label: 'Error',
+  },
+  skipped: {
+    icon: <SkipForward size={10} />,
+    color: 'text-muted-foreground',
+    label: 'Skipped',
+  },
+};
+
 export const getAssetKey = (
   asset:
     | ParsedAssetRef
@@ -84,8 +130,6 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
   toggleNode,
   getAllAssetIds,
   getAllAssetKeys,
-  setEnlargedImage,
-  setPreviewingAnimation,
   activeAssetFilters,
   searchQuery = '',
   playingAudioId,
@@ -102,8 +146,6 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
   toggleNode: (node: RbxInstance, checked: boolean) => void;
   getAllAssetIds: (node: RbxInstance) => string[];
   getAllAssetKeys?: (node: RbxInstance) => string[];
-  setEnlargedImage: (value: { id: string; name: string } | null) => void;
-  setPreviewingAnimation: (value: { id: string; name: string } | null) => void;
   activeAssetFilters: string[];
   searchQuery?: string;
   playingAudioId: string | null;
@@ -300,49 +342,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
         {(() => {
           const status = assetId ? assetStatuses[assetId] : undefined;
           if (!status || status.stage === 'idle') return null;
-          const config: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-            resolving_location: {
-              icon: <Loader2 size={10} className="animate-spin" />,
-              color: 'text-blue-400',
-              label: status.message || 'Checking direct Place IDs...',
-            },
-            discovering_usage: {
-              icon: <Loader2 size={10} className="animate-spin" />,
-              color: 'text-purple-400',
-              label: status.message || 'Discovering Place IDs (Asset Usage)...',
-            },
-            discovering_graph: {
-              icon: <Loader2 size={10} className="animate-spin" />,
-              color: 'text-indigo-400',
-              label: status.message || 'Discovering Place IDs (Creator Graph)...',
-            },
-            downloading: {
-              icon: <Download size={10} />,
-              color: 'text-cyan-400',
-              label: status.message || 'Downloading...',
-            },
-            uploading: {
-              icon: <Upload size={10} />,
-              color: 'text-amber-400',
-              label: status.message || 'Uploading...',
-            },
-            done: {
-              icon: <Check size={10} />,
-              color: 'text-signal-live',
-              label: status.message || 'Completed',
-            },
-            error: {
-              icon: <AlertCircle size={10} />,
-              color: 'text-red-400',
-              label: status.message || 'Error',
-            },
-            skipped: {
-              icon: <SkipForward size={10} />,
-              color: 'text-muted-foreground',
-              label: status.message || 'Skipped',
-            },
-          };
-          const cfg = config[status.stage];
+          const cfg = STAGE_BADGES[status.stage];
           if (!cfg) return null;
           const isError = status.stage === 'error';
           const isDiscoveryError = isError && status.message?.toLowerCase().includes('no place id');
@@ -528,51 +528,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
           const pinnedPid = primaryAssetId ? assetForcePlaceIds[primaryAssetId] : undefined;
           const replId = primaryAssetId ? lastReplacements[primaryAssetId] : undefined;
 
-          const stageConfigs: Record<
-            string,
-            { icon: React.ReactNode; color: string; label: string }
-          > = {
-            resolving_location: {
-              icon: <Loader2 size={10} className="animate-spin" />,
-              color: 'text-blue-400',
-              label: status?.message || 'Checking direct Place IDs...',
-            },
-            discovering_usage: {
-              icon: <Loader2 size={10} className="animate-spin" />,
-              color: 'text-purple-400',
-              label: status?.message || 'Discovering Place IDs (Asset Usage)...',
-            },
-            discovering_graph: {
-              icon: <Loader2 size={10} className="animate-spin" />,
-              color: 'text-indigo-400',
-              label: status?.message || 'Discovering Place IDs (Creator Graph)...',
-            },
-            downloading: {
-              icon: <Download size={10} />,
-              color: 'text-cyan-400',
-              label: status?.message || 'Downloading...',
-            },
-            uploading: {
-              icon: <Upload size={10} />,
-              color: 'text-amber-400',
-              label: status?.message || 'Uploading...',
-            },
-            done: {
-              icon: <Check size={10} />,
-              color: 'text-signal-live',
-              label: status?.message || 'Completed',
-            },
-            error: {
-              icon: <AlertCircle size={10} />,
-              color: 'text-red-400',
-              label: status?.message || 'Error',
-            },
-            skipped: {
-              icon: <SkipForward size={10} />,
-              color: 'text-muted-foreground',
-              label: status?.message || 'Skipped',
-            },
-          };
+          const stageConfigs = STAGE_BADGES;
 
           return (
             <div className="flex items-center gap-1 shrink-0 ml-1">
@@ -704,8 +660,6 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
               toggleNode={toggleNode}
               getAllAssetIds={getAllAssetIds}
               getAllAssetKeys={getAllAssetKeys}
-              setEnlargedImage={setEnlargedImage}
-              setPreviewingAnimation={setPreviewingAnimation}
               activeAssetFilters={activeAssetFilters}
               searchQuery={searchQuery}
               playingAudioId={playingAudioId}

@@ -49,6 +49,7 @@ import { playRobloxAudio, stopRobloxAudio } from '../../utils/robloxAudio';
 import type { ParsedAssetRef, RbxInstance } from '../../utils/robloxPlaceParser/types';
 import { logValencyStudio } from '../../utils/robloxProfiles';
 import { isTauriRuntime } from '../../utils/tauriRuntime';
+import { AssetTypePicker, SCAN_ASSET_TYPES } from '../shared/AssetTypePicker';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
@@ -206,11 +207,6 @@ export default function AssetExplorer({
   mode: _mode = 'drawer',
 }: AssetExplorerProps) {
   const { t } = useLanguage();
-  const [, setEnlargedImage] = useState<{ id: string; name: string } | null>(null);
-  const [, setPreviewingAnimation] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
   const searchQuery = useSpooferStore((s) => s.searchQuery);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const activeAssetFilters = useSpooferStore((s) => s.activeAssetFilters);
@@ -223,9 +219,7 @@ export default function AssetExplorer({
   const [placeIdInput, setPlaceIdInput] = useState('');
   const [confirmClearPins, setConfirmClearPins] = useState(false);
   const [spoofModeOpen, setSpoofModeOpen] = useState(false);
-  const [scanTypes, setScanTypes] = useState<Set<string>>(
-    new Set(['sounds', 'animations', 'images', 'meshes', 'scripts']),
-  );
+  const [scanTypes, setScanTypes] = useState<Set<string>>(new Set(SCAN_ASSET_TYPES));
   const [showScanOptions, setShowScanOptions] = useState(false);
 
   const toggleScanType = (key: string) => {
@@ -250,9 +244,7 @@ export default function AssetExplorer({
   const handleRunTargetedScan = (pathOverride?: string) => {
     const p = pathOverride || targetedPath;
     if (!p.trim()) return;
-    const types = ['sounds', 'animations', 'images', 'meshes', 'scripts'].filter((k) =>
-      scanTypes.has(k),
-    );
+    const types = SCAN_ASSET_TYPES.filter((k) => scanTypes.has(k));
     document.dispatchEvent(
       new CustomEvent('ValencyStudio-start-scan', {
         detail: { scanTypes: types, scanPath: p.trim() },
@@ -881,32 +873,7 @@ export default function AssetExplorer({
                           <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-2 block">
                             Asset Types
                           </span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {[
-                              { key: 'sounds', label: 'Sounds' },
-                              { key: 'animations', label: 'Animations' },
-                              { key: 'images', label: 'Images' },
-                              { key: 'meshes', label: 'Meshes' },
-                              { key: 'scripts', label: 'Scripts' },
-                            ].map((type) => (
-                              <button
-                                key={type.key}
-                                type="button"
-                                onClick={() => toggleScanType(type.key)}
-                                className={cn(
-                                  'px-2.5 py-1 rounded-full text-2xs font-semibold border transition-colors cursor-pointer',
-                                  scanTypes.has(type.key)
-                                    ? 'bg-primary/15 border-primary/40 text-primary'
-                                    : 'bg-bg-base border-border-subtle text-text-muted hover:text-text-primary hover:border-border',
-                                )}
-                              >
-                                {scanTypes.has(type.key) && (
-                                  <Check size={9} className="inline mr-1" />
-                                )}
-                                {type.label}
-                              </button>
-                            ))}
-                          </div>
+                          <AssetTypePicker scanTypes={scanTypes} onToggle={toggleScanType} />
                         </div>
                       </div>
                     </PopoverContent>
@@ -921,9 +888,7 @@ export default function AssetExplorer({
                         showToast('error', t('explorer.studioNotConnectedAction'));
                         return;
                       }
-                      const types = ['sounds', 'animations', 'images', 'meshes', 'scripts'].filter(
-                        (k) => scanTypes.has(k),
-                      );
+                      const types = SCAN_ASSET_TYPES.filter((k) => scanTypes.has(k));
                       document.dispatchEvent(
                         new CustomEvent('ValencyStudio-start-scan', {
                           detail: { scanTypes: types },
@@ -965,32 +930,7 @@ export default function AssetExplorer({
                           <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-2 block">
                             Asset Types
                           </span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {[
-                              { key: 'sounds', label: 'Sounds' },
-                              { key: 'animations', label: 'Animations' },
-                              { key: 'images', label: 'Images' },
-                              { key: 'meshes', label: 'Meshes' },
-                              { key: 'scripts', label: 'Scripts' },
-                            ].map((type) => (
-                              <button
-                                key={type.key}
-                                type="button"
-                                onClick={() => toggleScanType(type.key)}
-                                className={cn(
-                                  'px-2.5 py-1 rounded-full text-2xs font-semibold border transition-colors',
-                                  scanTypes.has(type.key)
-                                    ? 'bg-primary/15 border-primary/40 text-primary'
-                                    : 'bg-bg-base border-border-subtle text-text-muted hover:text-text-primary hover:border-border',
-                                )}
-                              >
-                                {scanTypes.has(type.key) && (
-                                  <Check size={9} className="inline mr-1" />
-                                )}
-                                {type.label}
-                              </button>
-                            ))}
-                          </div>
+                          <AssetTypePicker scanTypes={scanTypes} onToggle={toggleScanType} />
                         </div>
                       </div>
                     </PopoverContent>
@@ -1114,13 +1054,7 @@ export default function AssetExplorer({
                             <button
                               type="button"
                               onClick={() => {
-                                const types = [
-                                  'sounds',
-                                  'animations',
-                                  'images',
-                                  'meshes',
-                                  'scripts',
-                                ].filter((k) => scanTypes.has(k));
+                                const types = SCAN_ASSET_TYPES.filter((k) => scanTypes.has(k));
                                 document.dispatchEvent(
                                   new CustomEvent('ValencyStudio-start-scan', {
                                     detail: { scanTypes: types },
@@ -1156,32 +1090,11 @@ export default function AssetExplorer({
                                     <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-2 block">
                                       Asset Types
                                     </span>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {[
-                                        { key: 'sounds', label: 'Sounds' },
-                                        { key: 'animations', label: 'Animations' },
-                                        { key: 'images', label: 'Images' },
-                                        { key: 'meshes', label: 'Meshes' },
-                                        { key: 'scripts', label: 'Scripts' },
-                                      ].map((type) => (
-                                        <button
-                                          key={type.key}
-                                          type="button"
-                                          onClick={() => toggleScanType(type.key)}
-                                          className={cn(
-                                            'px-2 py-0.5 rounded-full text-2xs font-semibold border transition-colors cursor-pointer',
-                                            scanTypes.has(type.key)
-                                              ? 'bg-primary/15 border-primary/40 text-primary'
-                                              : 'bg-bg-base border-border-subtle text-text-muted hover:text-text-primary hover:border-border',
-                                          )}
-                                        >
-                                          {scanTypes.has(type.key) && (
-                                            <Check size={8} className="inline mr-1" />
-                                          )}
-                                          {type.label}
-                                        </button>
-                                      ))}
-                                    </div>
+                                    <AssetTypePicker
+                                      scanTypes={scanTypes}
+                                      onToggle={toggleScanType}
+                                      size="sm"
+                                    />
                                   </div>
                                 </div>
                               </PopoverContent>
@@ -1227,32 +1140,11 @@ export default function AssetExplorer({
                                   <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-1.5 block">
                                     Asset Types
                                   </span>
-                                  <div className="flex flex-wrap gap-1">
-                                    {[
-                                      { key: 'sounds', label: 'Sounds' },
-                                      { key: 'animations', label: 'Animations' },
-                                      { key: 'images', label: 'Images' },
-                                      { key: 'meshes', label: 'Meshes' },
-                                      { key: 'scripts', label: 'Scripts' },
-                                    ].map((type) => (
-                                      <button
-                                        key={type.key}
-                                        type="button"
-                                        onClick={() => toggleScanType(type.key)}
-                                        className={cn(
-                                          'px-2 py-0.5 rounded-full text-2xs font-semibold border transition-colors cursor-pointer',
-                                          scanTypes.has(type.key)
-                                            ? 'bg-primary/15 border-primary/40 text-primary'
-                                            : 'bg-bg-base border-border-subtle text-text-muted hover:text-text-primary hover:border-border',
-                                        )}
-                                      >
-                                        {scanTypes.has(type.key) && (
-                                          <Check size={8} className="inline mr-1" />
-                                        )}
-                                        {type.label}
-                                      </button>
-                                    ))}
-                                  </div>
+                                  <AssetTypePicker
+                                    scanTypes={scanTypes}
+                                    onToggle={toggleScanType}
+                                    size="sm"
+                                  />
                                 </div>
 
                                 <div className="flex justify-end gap-2 pt-1 border-t border-border-subtle/50">
@@ -1306,8 +1198,6 @@ export default function AssetExplorer({
                         toggleNode={toggleNode}
                         getAllAssetIds={getAllAssetIds}
                         getAllAssetKeys={getAllAssetKeys}
-                        setEnlargedImage={setEnlargedImage}
-                        setPreviewingAnimation={setPreviewingAnimation}
                         activeAssetFilters={activeAssetFilters}
                         searchQuery={deferredSearchQuery}
                         playingAudioId={playingAudioId}

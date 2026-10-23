@@ -429,6 +429,7 @@ export const ru: TranslationTree = {
     delete: 'Удалить',
     copied: 'Скопировано!',
     done: 'Готово',
+    restart: 'Заново',
     and: '&',
   },
   experimental: {

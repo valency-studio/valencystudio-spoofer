@@ -425,6 +425,7 @@ export const fr: TranslationTree = {
     delete: 'Supprimer',
     copied: 'Copié !',
     done: 'Terminé',
+    restart: 'Redémarrer',
     and: '&',
   },
   experimental: {
