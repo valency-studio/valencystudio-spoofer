@@ -316,9 +316,7 @@ export default function AccountsView() {
           <div className="flex flex-col items-center justify-center h-[calc(100vh-140px)] text-center text-muted-foreground space-y-4">
             <User2 size={48} className="opacity-20 text-primary" />
             <div className="space-y-1">
-              <p className="text-base font-semibold text-foreground">
-                {t('accounts.noAccounts') ?? 'No Accounts Configured'}
-              </p>
+              <p className="text-base font-semibold text-foreground">{t('accounts.noAccounts')}</p>
               <p className="text-xs text-muted-foreground max-w-sm">{t('accounts.description')}</p>
             </div>
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -492,7 +490,6 @@ export default function AccountsView() {
                           )}
                         </div>
                       )}
-                      {}
                       {secretsLoaded && !secrets?.cookie && acc.isDownloader && (
                         <Tooltip>
                           <TooltipTrigger

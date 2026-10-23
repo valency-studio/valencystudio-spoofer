@@ -167,6 +167,16 @@ export default function AnimationPreview({
     speedRef.current = speed;
   }, [speed]);
 
+  // ponytail: Escape only closes the modal form; upgrade to a focus trap if a11y audit demands it.
+  useEffect(() => {
+    if (inline || !onClose) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [inline, onClose]);
+
   useEffect(() => {
     let cancelled = false;
     setStatus('loading');
@@ -540,6 +550,7 @@ export default function AnimationPreview({
         const pct = (wt / dur) * 100;
         if (progressBarRef.current) progressBarRef.current.style.width = `${pct}%`;
         if (scrubThumbRef.current) scrubThumbRef.current.style.left = `${pct}%`;
+        if (scrubBarRef.current) scrubBarRef.current.setAttribute('aria-valuenow', wt.toFixed(2));
         if (timeDisplayRef.current)
           timeDisplayRef.current.textContent = `${wt.toFixed(2)}s / ${dur.toFixed(2)}s`;
       }
@@ -576,7 +587,6 @@ export default function AnimationPreview({
           : 'w-150 max-w-[calc(100vw-48px)] h-125 max-h-[calc(100vh-48px)] shadow-floating',
       )}
     >
-      {}
       {!inline && (
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border-subtle bg-bg-elevated shrink-0">
           <Clapperboard size={15} className="text-primary shrink-0" />
@@ -616,7 +626,6 @@ export default function AnimationPreview({
         </div>
       )}
 
-      {}
       <div className="relative flex-1 overflow-hidden bg-bg-base">
         <div ref={mountRef} className="w-full h-full" />
 
@@ -652,13 +661,36 @@ export default function AnimationPreview({
         )}
       </div>
 
-      {}
       {status === 'ready' && (
         <div className="shrink-0 px-4 py-3 bg-bg-elevated border-t border-border-subtle flex flex-col gap-2.5">
-          {}
           <div
             className="relative w-full h-2 bg-bg-base hover:h-2.5 rounded-full cursor-pointer select-none transition-all group flex items-center"
             ref={scrubBarRef}
+            role="slider"
+            tabIndex={0}
+            aria-label={t('misc.seek')}
+            aria-valuemin={0}
+            aria-valuemax={Math.round(duration * 100) / 100}
+            aria-valuenow={0}
+            onKeyDown={(e) => {
+              const step = e.shiftKey ? 1 : 0.1;
+              if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                currentTimeRef.current = Math.min(
+                  durationRef.current,
+                  currentTimeRef.current + step,
+                );
+              } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                currentTimeRef.current = Math.max(0, currentTimeRef.current - step);
+              } else if (e.key === 'Home') {
+                e.preventDefault();
+                currentTimeRef.current = 0;
+              } else if (e.key === 'End') {
+                e.preventDefault();
+                currentTimeRef.current = durationRef.current;
+              }
+            }}
             onPointerDown={(e) => {
               isScrubbing.current = true;
               e.currentTarget.setPointerCapture(e.pointerId);
@@ -677,7 +709,6 @@ export default function AnimationPreview({
               e.currentTarget.releasePointerCapture(e.pointerId);
             }}
           >
-            {}
             {duration > 0 &&
               keyframeTimes.map((t, i) => (
                 <div
@@ -686,7 +717,6 @@ export default function AnimationPreview({
                   style={{ left: `${(t / duration) * 100}%` }}
                 />
               ))}
-            {}
             <div
               ref={progressBarRef}
               className="absolute top-0 left-0 bottom-0 bg-primary rounded-full z-10 pointer-events-none"
@@ -700,7 +730,6 @@ export default function AnimationPreview({
             />
           </div>
 
-          {}
           <div className="flex items-center gap-2">
             <Button
               size="icon"
@@ -724,7 +753,6 @@ export default function AnimationPreview({
               <RotateCcw size={12} />
             </Button>
 
-            {}
             <span ref={timeDisplayRef} className="text-2xs font-mono text-text-muted ml-1">
               0.00s / {duration.toFixed(2)}s
             </span>
@@ -738,7 +766,7 @@ export default function AnimationPreview({
                     aria-label={t('misc.playbackSpeed')}
                   >
                     <span className="text-2xs text-text-muted font-bold uppercase mr-0.5">
-                      {t('misc.speed') || 'Speed'}
+                      {t('misc.speed')}
                     </span>
                     <span>{speed}×</span>
                     <ChevronDown size={11} className="text-muted-foreground" />

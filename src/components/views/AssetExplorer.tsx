@@ -855,7 +855,11 @@ export default function AssetExplorer({
                     }}
                   />
                 </div>
-                <div className="absolute top-1.5 right-3 px-2.5 py-0.5 rounded bg-bg-surface/90 border border-border-subtle text-2xs text-text-primary font-mono shadow-sm pointer-events-auto flex items-center gap-1.5">
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="absolute top-1.5 right-3 px-2.5 py-0.5 rounded bg-bg-surface/90 border border-border-subtle text-2xs text-text-primary font-mono shadow-sm pointer-events-auto flex items-center gap-1.5"
+                >
                   <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   <span>
                     {isSpoofing
@@ -1104,7 +1108,7 @@ export default function AssetExplorer({
                         {t('explorer.clearExplorer')}
                       </div>
                       <div className="text-xs text-text-secondary leading-normal">
-                        {t('common.areYouSure') ?? 'Are you sure?'}{' '}
+                        {t('common.areYouSure')}{' '}
                         <span className="text-text-muted">
                           This will remove all {stats.total} scanned assets.
                         </span>
@@ -1136,7 +1140,7 @@ export default function AssetExplorer({
                             setClearConfirmOpen(false);
                           }}
                         >
-                          {t('common.clear') ?? 'Clear'}
+                          {t('common.clear')}
                         </Button>
                       </div>
                     </div>
@@ -1195,7 +1199,7 @@ export default function AssetExplorer({
                             value={placeIdInput}
                             onChange={(e) => setPlaceIdInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && applyPin()}
-                            placeholder={t('settings.forcePlaceIdsPlaceholder') || 'e.g. 123456789'}
+                            placeholder={t('settings.forcePlaceIdsPlaceholder')}
                             className="h-8 text-xs bg-bg-base font-mono"
                           />
                           <div className="flex items-center justify-between gap-2">
@@ -1506,7 +1510,7 @@ export default function AssetExplorer({
                         <Play size={13} fill="currentColor" />
                       )}
                       {isSpoofing
-                        ? (t('spoof.runSpoofer') ?? 'Run Spoofer') + '…'
+                        ? t('spoof.runSpoofer') + '…'
                         : config.spoofing.downloadOnly
                           ? selectedCount > 0
                             ? `Download Selected (${selectedCount})`
@@ -1634,7 +1638,7 @@ export default function AssetExplorer({
             <DialogTitle>{t('settings.forcePlaceIds')}</DialogTitle>
           </DialogHeader>
           <div className="py-2 text-sm text-text-secondary">
-            {t('common.areYouSure') ?? 'Are you sure?'}{' '}
+            {t('common.areYouSure')}{' '}
             <span className="text-text-muted">
               ({pinnedCount} pinned asset{pinnedCount === 1 ? '' : 's'})
             </span>

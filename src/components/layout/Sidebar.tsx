@@ -64,9 +64,19 @@ export default function Sidebar({
         >
           <div
             className={cn('flex items-center gap-2 min-w-0', isCollapsed && 'cursor-pointer')}
+            role={isCollapsed ? 'button' : undefined}
+            tabIndex={isCollapsed ? 0 : undefined}
             aria-label={isCollapsed ? t('nav.expandSidebar') : undefined}
             onClick={() => {
               if (isCollapsed) {
+                setIsCollapsed(false);
+                setLogoHovered(false);
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.target !== e.currentTarget || !isCollapsed) return;
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
                 setIsCollapsed(false);
                 setLogoHovered(false);
               }

@@ -2,6 +2,7 @@ import type { TranslationTree } from './index';
 
 export const ru: TranslationTree = {
   misc: {
+    seek: 'Позиция воспроизведения',
     playbackSpeed: 'Скорость воспроизведения',
     toggleRigType: 'Toggle Rig Type',
     maintenanceBreak: 'Перерыв на Техническое Обслуживание',
@@ -49,6 +50,11 @@ export const ru: TranslationTree = {
     notificationsFailed: 'Не удалось отобразить уведомления на рабочем столе.',
     waitingForScan: 'Ожидание сканирования Studio...',
     noPlaceLoaded: 'Плейс не загружен',
+    portDiagnosticFailed:
+      'Не удалось запустить подключение к плагину Studio: порты 14285–14289 заняты другими программами. Закройте дублирующиеся экземпляры приложения или конфликтующие программы и перезапустите ValencyStudio - Spoofer.',
+    portDiagnosticExtended:
+      'Мост плагина работает на нестандартном порту ({port}). Перезапустите приложение и Roblox Studio, чтобы оба использовали стандартные порты 14285–14289.',
+    portDiagnosticOccupied: 'Конфликтующие процессы, использующие эти порты: {processes}',
   },
 
   music: {
@@ -143,39 +149,15 @@ export const ru: TranslationTree = {
       'yt-dlp не найден в PATH, поэтому импорт по ссылке недоступен. Установите yt-dlp и снова откройте приложение.',
   },
   nav: {
-    home: 'Главная',
     spoofing: 'Подмена',
     settings: 'Настройки',
-    config: 'Конфигурация',
-    account: 'Аккаунт',
-    quickSettings: 'Быстрые настройки',
-    advanced: 'Расширенные',
     activity: 'Активность',
     accounts: 'Аккаунты',
     console: 'Консоль',
-    experimental: 'Экспериментально',
     music: 'Музыка',
     collapseSidebar: 'Свернуть боковую панель',
     expandSidebar: 'Развернуть боковую панель',
-    supportMe: 'Поддержать меня',
-  },
-  home: {
-    title: 'Добро пожаловать в ValencyStudio - Spoofer',
-    subtitle: 'Центральный hub ValencyStudio - Spoofer.',
-    quickstartTitle: 'Краткое руководство',
-    quickstartBody:
-      '1. Перейдите на вкладку <strong>Подмена</strong> для настройки и запуска<br>2. Выберите, что хотите подменить (Анимации, Аудио, Изображения и т.д.)<br>3. Введите ID анимации и учётные данные<br>4. Нажмите «Запустить подмену» для начала процесса',
-    featuresTitle: 'Возможности',
-    helpTitle: 'Нужна помощь?',
-    helpBody:
-      'Присоединяйтесь к нашему серверу Discord для получения поддержки, обновлений и общения.',
-    discordBtn: 'Присоединиться к Discord',
-    tutorial: 'Обучение',
-    wiki: 'Вики',
-    github: 'Github',
-    recentUpdates: 'Последние Обновления',
-    fetchingChangelogs: 'Загрузка changelogs...',
-    noUpdates: 'Последние обновления не найдены или ошибка загрузки.',
+    about: 'О программе',
   },
   about: {
     title: 'О программе',
@@ -207,8 +189,6 @@ export const ru: TranslationTree = {
   spoof: {
     manualReplace: 'Ручная замена и добавление ID',
     title: 'Обозреватель',
-    resolvingScriptRefs: 'Разрешение ссылок на скрипты',
-    clearExplorer: 'Очистить обозреватель',
     targets: 'Цели',
     targetContext: 'Целевой контекст',
     options: 'Опции',
@@ -310,9 +290,18 @@ export const ru: TranslationTree = {
     openLogsFolder: 'Открыть Папку Логов',
     clipboardMonitoring: 'Мониторинг Буфера Обмена',
     memoryInjection: 'Инъекция Памяти',
+    clipboardMonitoringDesc:
+      'Автоматически находит ссылки на ресурсы Roblox, скопированные в буфер обмена, и ставит их в очередь на подмену.',
+    memoryInjectionDescSupported:
+      'Только Windows. Прямое изменение памяти активных сессий Studio при совпадении длины ID. Для остальных ресурсов автоматически используется мост плагина Studio.',
+    memoryInjectionDescUnsupported:
+      'Изменение памяти процесса поддерживается только в Windows. На этой платформе будет использоваться мост плагина Studio.',
     excludedUserIds: 'Исключенные ID Пользователей',
     excludedGroupIds: 'Исключенные ID Групп',
     confirmResetTitle: 'Подтвердить Сброс',
+    concurrentDownloading: 'Одновременная загрузка',
+    concurrentDownloadingDescription:
+      'Загружает несколько ресурсов одновременно, чтобы ускорить обработку.',
   },
   config: {
     title: 'Конфигурация',
@@ -406,6 +395,8 @@ export const ru: TranslationTree = {
     playAudio: 'Воспроизвести аудио',
     previewMeshThumbnail: 'Предпросмотр миниатюры меша',
     previewImage: 'Предпросмотр изображения',
+    resolvingScriptRefs: 'Обработка ссылок на скрипты',
+    clearExplorer: 'Очистить Проводник',
   },
   activity: {
     spoofedTo: 'Подменено на {name}',
@@ -431,29 +422,6 @@ export const ru: TranslationTree = {
     done: 'Готово',
     restart: 'Заново',
     and: '&',
-  },
-  experimental: {
-    title: 'Экспериментальные Функции',
-    description:
-      'Перечисленные здесь функции находятся в активной разработке, нестабильны и могут быть удалены в будущем.',
-    clipboardMonitoring: 'Мониторинг Буфера Обмена',
-    clipboardMonitoringDesc:
-      'Незаметно отслеживает ваш буфер обмена на наличие URL-адресов ресурсов Roblox и автоматически добавляет их в очередь на подмену.',
-    spoofPlugins: 'Подмена Плагинов',
-    spoofPluginsDesc: '[В РАЗРАБОТКЕ] Попытка подмены ресурсов плагинов.',
-    memoryInjection: 'Внедрение в Память',
-    memoryInjectionDescSupported:
-      '[ОПАСНО] Только для Windows. Перезаписывает точные числовые идентификаторы ресурсов в памяти Studio (такой же длины). Запускайте с теми же правами, что и Studio. Для других случаев используется мост плагина.',
-    memoryInjectionDescUnsupported:
-      'Внедрение в память доступно только на Windows. Используйте мост плагина на этой платформе.',
-  },
-  credits: {
-    description: 'Инструмент для подмены игровых ресурсов Roblox',
-    developers: 'Разработчики',
-    mainDeveloper: 'Главный Разработчик',
-    contributor: 'Участник',
-    supporters: 'Сторонники',
-    boosters: 'Бустеры',
   },
   results: {
     title: 'Результаты Подмены',
@@ -500,18 +468,5 @@ export const ru: TranslationTree = {
     anonymousDownloader: 'Анонимный загрузчик',
     anonymousUploader: 'Анонимный выгрузчик',
     selectedAccount: 'Account selected',
-  },
-  quickSettings: {
-    title: 'Быстрые Настройки',
-    noSettings: 'Нет Быстрых Настроек',
-    addSettingsDesc: 'Добавьте элементы со страницы Настроек.',
-    spoofingCookie: 'Cookie Roblox',
-    spoofingApiKey: 'API Ключ OpenCloud',
-    advancedAutoCookieStudio: 'Авто-Cookie (Studio)',
-    advancedAutoCookieBrowser: 'Авто-Cookie (Браузер)',
-    advancedForcePlaceIds: 'Принудительные ID Мест',
-    advancedExcludedUserIds: 'Исключенные ID Пользователей',
-    advancedExcludedGroupIds: 'Исключенные ID Групп',
-    generalDesktopNotifications: 'Уведомления на Рабочем Столе',
   },
 };

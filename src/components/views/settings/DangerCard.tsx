@@ -13,7 +13,7 @@ export default function DangerCard() {
   return (
     <SettingCard
       icon={<TriangleAlert size={16} className="text-danger" />}
-      title={t('settings.dangerZone') || 'Danger Zone'}
+      title={t('settings.dangerZone')}
       description="Irreversible actions and complete configuration reset."
       className="bg-danger/5 border-danger/20"
     >

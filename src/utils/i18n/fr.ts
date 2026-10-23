@@ -2,6 +2,7 @@ import type { TranslationTree } from './index';
 
 export const fr: TranslationTree = {
   misc: {
+    seek: 'Position de lecture',
     playbackSpeed: 'Vitesse de lecture',
     toggleRigType: 'Toggle Rig Type',
     maintenanceBreak: 'Pause de Maintenance',
@@ -49,6 +50,11 @@ export const fr: TranslationTree = {
     notificationsFailed: "Les notifications de bureau n'ont pas pu être affichées.",
     waitingForScan: "En attente de l'analyse de Studio...",
     noPlaceLoaded: 'Aucun lieu chargé',
+    portDiagnosticFailed:
+      "Impossible de démarrer la connexion au plugin Studio : les ports 14285–14289 sont utilisés par d'autres programmes. Fermez les instances dupliquées de l'application ou les applications en conflit, puis redémarrez ValencyStudio - Spoofer.",
+    portDiagnosticExtended:
+      "Le pont du plugin utilise un port non standard ({port}). Redémarrez l'application et Roblox Studio pour que les deux utilisent les ports standard 14285–14289.",
+    portDiagnosticOccupied: 'Processus en conflit utilisant ces ports : {processes}',
   },
 
   music: {
@@ -143,37 +149,15 @@ export const fr: TranslationTree = {
       "yt-dlp n'est pas dans votre PATH, l'import depuis un lien est donc indisponible. Installez yt-dlp puis rouvrez l'application.",
   },
   nav: {
-    home: 'Accueil',
     spoofing: 'Usurpation',
     settings: 'Paramètres',
-    config: 'Configuration',
-    account: 'Compte',
-    quickSettings: 'Paramètres Rapides',
-    advanced: 'Avancé',
     activity: 'Activité',
-    experimental: 'Expérimental',
-    supportMe: 'Soutenez-moi',
     music: 'Musique',
     about: 'À propos',
     collapseSidebar: 'Réduire la barre latérale',
     expandSidebar: 'Agrandir la barre latérale',
-  },
-  home: {
-    title: 'Bienvenue sur ValencyStudio - Spoofer',
-    subtitle: 'Hub central de ValencyStudio - Spoofer.',
-    quickstartTitle: 'Guide de Démarrage Rapide',
-    quickstartBody:
-      "1. Allez dans l'onglet <strong>Usurpation</strong> pour configurer<br>2. Sélectionnez ce que vous voulez usurper<br>3. Entrez votre ID d'animation et vos identifiants<br>4. Cliquez sur \"Lancer l'Usurpation\"",
-    featuresTitle: 'Caractéristiques',
-    helpTitle: "Besoin d'aide ?",
-    helpBody: 'Rejoignez notre serveur Discord pour le support et les discussions.',
-    discordBtn: 'Rejoindre Discord',
-    tutorial: 'Tutoriel',
-    wiki: 'Wiki',
-    github: 'Github',
-    recentUpdates: 'Mises à Jour Récentes',
-    fetchingChangelogs: 'Chargement des changelogs...',
-    noUpdates: 'Aucune mise à jour récente trouvée.',
+    accounts: 'Comptes',
+    console: 'Console',
   },
   about: {
     title: 'À propos',
@@ -246,6 +230,8 @@ export const fr: TranslationTree = {
     audioQuotaUnavailable: 'Quota audio : indisponible',
     noGroupsFound:
       "Aucun groupe trouvé. Ajoutez des informations d'identification dans la Configuration, puis sélectionnez un utilisateur.",
+    spoofSelected: 'Usurper la sélection',
+    spoofAllAssets: 'Usurper tous les actifs ({count})',
   },
   settings: {
     title: 'Paramètres',
@@ -305,9 +291,19 @@ export const fr: TranslationTree = {
     openLogsFolder: 'Ouvrir le Dossier des Logs',
     clipboardMonitoring: 'Surveillance du Presse-papiers',
     memoryInjection: 'Injection de Mémoire',
+    clipboardMonitoringDesc:
+      "Détecte automatiquement les liens d'actifs Roblox copiés dans votre presse-papiers et les met en file d'attente pour l'usurpation.",
+    memoryInjectionDescSupported:
+      "Windows uniquement. Patch mémoire direct pour les sessions Studio actives avec la même longueur d'ID. Pour les autres actifs, le pont du plugin Studio est utilisé automatiquement.",
+    memoryInjectionDescUnsupported:
+      "Le patch mémoire du processus n'est pris en charge que sous Windows. Le pont du plugin Studio sera utilisé sur cette plate-forme.",
     excludedUserIds: 'IDs Utilisateur Exclus',
     excludedGroupIds: 'IDs Groupe Exclus',
     debugDisplay: 'Débogage et Affichage',
+    concurrentDownloading: 'Téléchargement simultané',
+    concurrentDownloadingDescription:
+      'Télécharge plusieurs actifs en même temps pour accélérer le traitement.',
+    confirmResetTitle: 'Réinitialiser tous les paramètres ?',
   },
   config: {
     title: 'Configuration',
@@ -427,29 +423,8 @@ export const fr: TranslationTree = {
     done: 'Terminé',
     restart: 'Redémarrer',
     and: '&',
-  },
-  experimental: {
-    title: 'Fonctionnalités Expérimentales',
-    description:
-      "Les fonctionnalités répertoriées ici sont en développement actif, instables et peuvent être supprimées à l'avenir.",
-    clipboardMonitoring: 'Surveillance du Presse-papiers',
-    clipboardMonitoringDesc:
-      "Surveille silencieusement votre presse-papiers pour les URL d'actifs Roblox et les met automatiquement en file d'attente pour l'usurpation.",
-    spoofPlugins: 'Usurper les Plugins',
-    spoofPluginsDesc: "[WIP] Tente d'usurper les actifs de plugins.",
-    memoryInjection: 'Injection de Mémoire',
-    memoryInjectionDescSupported:
-      "[DANGEREUX] Windows uniquement. Écrase les ID d'actifs numériques exacts dans la mémoire de Studio (même longueur de chiffres). Exécutez avec la même élévation que Studio. Le pont de plugin est utilisé pour d'autres cas.",
-    memoryInjectionDescUnsupported:
-      "L'injection de mémoire n'est disponible que sur Windows. Utilisez le pont de plugin sur cette plate-forme.",
-  },
-  credits: {
-    description: 'Un outil pour usurper des actifs de jeu Roblox',
-    developers: 'Développeurs',
-    mainDeveloper: 'Développeur Principal',
-    contributor: 'Contributeur',
-    supporters: 'Partisans',
-    boosters: 'Boosters',
+    clear: 'Effacer',
+    areYouSure: 'Voulez-vous vraiment continuer ?',
   },
   results: {
     title: "Résultats d'Usurpation",
@@ -496,18 +471,5 @@ export const fr: TranslationTree = {
     anonymousDownloader: 'Téléchargeur anonyme',
     anonymousUploader: 'Téléverseur anonyme',
     selectedAccount: 'Account selected',
-  },
-  quickSettings: {
-    title: 'Paramètres Rapides',
-    noSettings: 'Aucun Paramètre Rapide',
-    addSettingsDesc: 'Ajoutez des éléments depuis la page des Paramètres.',
-    spoofingCookie: 'Cookie Roblox',
-    spoofingApiKey: 'Clé API OpenCloud',
-    advancedAutoCookieStudio: 'Auto-Cookie (Studio)',
-    advancedAutoCookieBrowser: 'Auto-Cookie (Navigateur)',
-    advancedForcePlaceIds: 'Forcer les IDs de Lieu',
-    advancedExcludedUserIds: "ID d'Utilisateurs Exclus",
-    advancedExcludedGroupIds: 'ID de Groupes Exclus',
-    generalDesktopNotifications: 'Notifications de Bureau',
   },
 };

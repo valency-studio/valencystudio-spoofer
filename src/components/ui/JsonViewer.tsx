@@ -62,8 +62,18 @@ export function JsonViewer({ data, name, defaultExpanded = false, level = 0 }: J
   return (
     <div className={cn('font-mono text-2xs leading-relaxed', level === 0 && 'py-1')}>
       <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
         className="flex items-center gap-1.5 cursor-pointer hover:bg-bg-elevated/40 rounded px-1 -mx-1 group select-none"
         onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
       >
         <div className={cn('text-text-muted shrink-0', isExpanded && 'rotate-90')}>
           <ChevronRight size={12} />

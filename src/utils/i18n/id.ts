@@ -2,6 +2,7 @@ import type { TranslationTree } from './index';
 
 export const id: TranslationTree = {
   misc: {
+    seek: 'Posisi putar',
     playbackSpeed: 'Kecepatan putar',
     toggleRigType: 'Ubah Tipe Rig',
     maintenanceBreak: 'Pemeliharaan Terjadwal',
@@ -150,9 +151,6 @@ export const id: TranslationTree = {
   nav: {
     spoofing: 'Spoofer',
     settings: 'Pengaturan',
-    config: 'Konfigurasi',
-    account: 'Akun',
-    advanced: 'Lanjutan',
     activity: 'Aktivitas',
     accounts: 'Akun',
     console: 'Konsol',

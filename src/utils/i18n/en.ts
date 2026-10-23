@@ -2,6 +2,7 @@ import type { TranslationTree } from './index';
 
 export const en: TranslationTree = {
   misc: {
+    seek: 'Seek position',
     playbackSpeed: 'Playback speed',
     toggleRigType: 'Toggle Rig Type',
     maintenanceBreak: 'Maintenance Break',
@@ -149,9 +150,6 @@ export const en: TranslationTree = {
   nav: {
     spoofing: 'Spoofer',
     settings: 'Settings',
-    config: 'Config',
-    account: 'Account',
-    advanced: 'Advanced',
     activity: 'Activity',
     accounts: 'Accounts',
     console: 'Console',

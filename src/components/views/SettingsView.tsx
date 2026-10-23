@@ -31,7 +31,7 @@ export default function SettingsView() {
   const isManualScroll = useRef(false);
 
   const tabs = [
-    { id: 'credentials', label: t('spoof.options') || 'Credentials', icon: <KeyRound size={15} /> },
+    { id: 'credentials', label: t('spoof.options'), icon: <KeyRound size={15} /> },
     { id: 'permissions', label: 'Permissions', icon: <ShieldCheck size={15} /> },
     { id: 'appearance', label: t('settings.appearance'), icon: <Palette size={15} /> },
     { id: 'behavior', label: t('settings.behavior'), icon: <Laptop size={15} /> },

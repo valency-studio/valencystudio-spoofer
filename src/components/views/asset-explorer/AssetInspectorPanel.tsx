@@ -481,7 +481,16 @@ export default function AssetInspectorPanel({
                   return (
                     <div
                       key={`${p.path}:${p.propertyName}:${propAssetId}`}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => setSelectedAssetRef(p)}
+                      onKeyDown={(e) => {
+                        if (e.target !== e.currentTarget) return;
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedAssetRef(p);
+                        }
+                      }}
                       className={cn(
                         'flex items-center min-h-[28px] px-2 py-1 gap-2 cursor-pointer transition-colors group',
                         isCurrentActive ? 'bg-primary/10' : 'hover:bg-accent/40',

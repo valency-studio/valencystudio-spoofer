@@ -60,7 +60,7 @@ export default function AppearanceCard() {
   return (
     <SettingCard
       icon={Palette}
-      title={t('settings.appearance') || 'Appearance & Localization'}
+      title={t('settings.appearance')}
       description="Customize color themes, accent colors, and display language."
     >
       <div className="px-4 py-3 flex items-center justify-between gap-4 hover:bg-bg-elevated/20 transition-colors">
@@ -105,7 +105,11 @@ export default function AppearanceCard() {
           <span className="text-xs font-mono text-text-muted">
             {(accentColor || '#3B82F6').toUpperCase()}
           </span>
-          <div
+          <button
+            type="button"
+            aria-label={t('settings.accentColor')}
+            aria-haspopup="dialog"
+            aria-expanded={isColorPickerOpen}
             className="w-7 h-7 rounded-full border border-border cursor-pointer shadow-xs shrink-0"
             style={{ backgroundColor: accentColor || '#3B82F6' }}
             onClick={(e: React.MouseEvent) => {

@@ -18,27 +18,22 @@ export default function AdvancedSection() {
   return (
     <SettingCard
       icon={Wrench}
-      title={t('settings.advanced') || 'Advanced Options'}
+      title={t('settings.advanced')}
       description="Experimental injection options and system automation triggers."
     >
       <SettingSwitchRow
-        label={t('settings.clipboardMonitoring') || 'Auto-Detect Clipboard Asset IDs'}
-        description={
-          t('settings.clipboardMonitoringDesc') ||
-          'Automatically add copied Roblox asset URLs from clipboard into the queue.'
-        }
+        label={t('settings.clipboardMonitoring')}
+        description={t('settings.clipboardMonitoringDesc')}
         checked={config.advanced.clipboardMonitoring}
         onCheckedChange={(v) => updateConfig('advanced', 'clipboardMonitoring', v)}
       />
 
       <SettingSwitchRow
-        label={t('settings.memoryInjection') || 'Process Memory Injection'}
+        label={t('settings.memoryInjection')}
         description={
           memoryInjectionSupported
-            ? t('settings.memoryInjectionDescSupported') ||
-              'Direct high-speed process memory bridge for Studio replacements.'
-            : t('settings.memoryInjectionDescUnsupported') ||
-              'Process memory injection is unavailable on this OS/architecture.'
+            ? t('settings.memoryInjectionDescSupported')
+            : t('settings.memoryInjectionDescUnsupported')
         }
         disabled={!memoryInjectionSupported}
         checked={memoryInjectionSupported ? config.advanced.memoryInjectionEnabled : false}

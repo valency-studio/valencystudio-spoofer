@@ -346,14 +346,25 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
             return (
               <div
                 key={rowKey}
+                role={isExpandable ? 'button' : undefined}
+                tabIndex={isExpandable ? 0 : undefined}
+                aria-expanded={isExpandable ? isExpanded : undefined}
                 className={cn(
-                  'rounded border transition-colors cursor-default',
+                  'rounded border transition-colors',
+                  isExpandable ? 'cursor-pointer' : 'cursor-default',
                   config.bg,
                   config.border,
                   'hover:bg-bg-elevated/40',
                   isExpanded ? 'py-1 px-2' : 'h-7 py-0 px-2',
                 )}
                 onClick={() => isExpandable && toggleExpanded(rowKey)}
+                onKeyDown={(e) => {
+                  if (!isExpandable || e.target !== e.currentTarget) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleExpanded(rowKey);
+                  }
+                }}
               >
                 <div className="flex items-center gap-1.5 h-7 min-w-0">
                   {isExpandable &&

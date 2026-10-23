@@ -141,7 +141,7 @@ export default function Titlebar() {
                             ? 'text-primary bg-primary/15'
                             : 'text-muted-foreground hover:text-foreground hover:bg-bg-surface',
                         )}
-                        aria-label={t('explorer.allAssetTypes') ?? 'Filter asset types'}
+                        aria-label={t('explorer.allAssetTypes')}
                       />
                     }
                   >
@@ -158,17 +158,16 @@ export default function Titlebar() {
                   >
                     <div className="flex flex-col divide-y divide-border-subtle/20 overflow-hidden rounded-md">
                       {ASSET_TYPE_OPTIONS.map((opt) => {
-                        const label =
-                          t(
-                            'explorer.' +
-                              (opt.value === 'image'
-                                ? 'images'
-                                : opt.value === 'animation'
-                                  ? 'animations'
-                                  : opt.value === 'mesh'
-                                    ? 'meshes'
-                                    : opt.value),
-                          ) || opt.label;
+                        const label = t(
+                          'explorer.' +
+                            (opt.value === 'image'
+                              ? 'images'
+                              : opt.value === 'animation'
+                                ? 'animations'
+                                : opt.value === 'mesh'
+                                  ? 'meshes'
+                                  : opt.value),
+                        );
                         const active = activeAssetFilters.includes(opt.value);
                         const Icon = opt.icon;
                         return (
@@ -286,7 +285,7 @@ export default function Titlebar() {
         <>
           <div className="flex items-center gap-2 text-xs font-semibold text-text-primary shrink-0">
             <Activity size={14} className="text-primary" />
-            <span>{t('nav.activity') ?? 'Activity Logs'}</span>
+            <span>{t('nav.activity')}</span>
           </div>
 
           <div className="flex-1 min-w-0 mx-4 relative" data-tauri-drag-region={false}>
@@ -320,7 +319,7 @@ export default function Titlebar() {
         <>
           <div className="flex items-center gap-2 text-xs font-semibold text-text-primary shrink-0">
             <Settings size={14} className="text-primary" />
-            <span>{t('nav.settings') ?? 'Settings'}</span>
+            <span>{t('nav.settings')}</span>
           </div>
           <div className="flex-1" data-tauri-drag-region />
         </>
@@ -332,7 +331,7 @@ export default function Titlebar() {
         <>
           <div className="flex items-center gap-2 text-xs font-semibold text-text-primary shrink-0">
             <Users size={14} className="text-primary" />
-            <span>{t('nav.accounts') ?? 'Accounts'}</span>
+            <span>{t('nav.accounts')}</span>
           </div>
           <div className="flex-1" data-tauri-drag-region />
         </>
@@ -344,7 +343,7 @@ export default function Titlebar() {
         <>
           <div className="flex items-center gap-2 text-xs font-semibold text-text-primary shrink-0">
             <Terminal size={14} className="text-primary" />
-            <span>{t('nav.console') ?? 'Console'}</span>
+            <span>{t('nav.console')}</span>
           </div>
           <div className="flex-1" data-tauri-drag-region />
         </>

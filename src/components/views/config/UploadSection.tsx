@@ -11,35 +11,26 @@ export default function UploadSection() {
   return (
     <SettingCard
       icon={ArrowDownUp}
-      title={t('config.assetProcessing') || 'Asset Processing & Spoofing'}
+      title={t('config.assetProcessing')}
       description="Configure asset ownership checks, metadata preservation, and archive recovery."
     >
       <SettingSwitchRow
-        label={t('settings.skipOwned') || 'Skip Owned Assets'}
-        description={
-          t('settings.skipOwnedDescription') ||
-          'Skip assets already present in target inventory to save upload quotas.'
-        }
+        label={t('settings.skipOwned')}
+        description={t('settings.skipOwnedDescription')}
         checked={config.advanced.skipOwned}
         onCheckedChange={(value) => updateConfig('advanced', 'skipOwned', value)}
       />
 
       <SettingSwitchRow
-        label={t('settings.preserveMetadata') || 'Preserve Original Names & Details'}
-        description={
-          t('config.preserveMetadataDesc') ||
-          'Keep original asset titles and descriptions instead of placeholder names.'
-        }
+        label={t('settings.preserveMetadata')}
+        description={t('config.preserveMetadataDesc')}
         checked={config.spoofing.preserveMetadata}
         onCheckedChange={(value) => updateConfig('spoofing', 'preserveMetadata', value)}
       />
 
       <SettingSwitchRow
-        label={t('settings.archiveRecovery') || 'Roblox Archive Recovery'}
-        description={
-          t('config.archiveRecoveryDesc') ||
-          'Attempt to recover deleted or archived asset payloads from historical endpoints.'
-        }
+        label={t('settings.archiveRecovery')}
+        description={t('config.archiveRecoveryDesc')}
         checked={config.advanced.enableArchiveRecovery}
         onCheckedChange={(value) => updateConfig('advanced', 'enableArchiveRecovery', value)}
       />

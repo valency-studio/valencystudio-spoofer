@@ -51,18 +51,18 @@ export default function DebugCard() {
   return (
     <SettingCard
       icon={Bug}
-      title={t('debug.title') || 'Debug & Diagnostics'}
+      title={t('debug.title')}
       description="Enable developer debug console and manage local cache files."
     >
       <SettingSwitchRow
-        label={t('settings.debugMode') || 'Developer Debug Mode'}
+        label={t('settings.debugMode')}
         description="Show floating real-time debug console for IPC and network tracing."
         checked={config.debug.debugMode}
         onCheckedChange={(v) => updateConfig('debug', 'debugMode', v)}
       />
 
       <SettingSwitchRow
-        label={t('settings.enableCache') || 'Persistent File & Asset Cache'}
+        label={t('settings.enableCache')}
         description="Store downloaded meshes, images, and audio payloads on disk to speed up repeated scans."
         checked={config.debug.enableCache}
         onCheckedChange={handleCacheChange}
@@ -76,7 +76,7 @@ export default function DebugCard() {
           onClick={() => void handleClearCache()}
         >
           <Trash2 size={13} className="text-muted-foreground" />
-          <span>{t('settings.clearCache') || 'Clear Local Cache'}</span>
+          <span>{t('settings.clearCache')}</span>
         </Button>
 
         <Button
@@ -90,7 +90,7 @@ export default function DebugCard() {
           }
         >
           <FolderOpen size={13} className="text-muted-foreground" />
-          <span>{t('settings.openLogsFolder') || 'Open Logs Folder'}</span>
+          <span>{t('settings.openLogsFolder')}</span>
         </Button>
       </div>
     </SettingCard>

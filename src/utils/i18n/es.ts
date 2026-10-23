@@ -2,6 +2,7 @@ import type { TranslationTree } from './index';
 
 export const es: TranslationTree = {
   misc: {
+    seek: 'Posición de reproducción',
     playbackSpeed: 'Velocidad de reproducción',
     toggleRigType: 'Toggle Rig Type',
     maintenanceBreak: 'Pausa de Mantenimiento',
@@ -49,6 +50,11 @@ export const es: TranslationTree = {
     notificationsFailed: 'No se pudieron mostrar las notificaciones de escritorio.',
     waitingForScan: 'Esperando escaneo de Studio...',
     noPlaceLoaded: 'Ningún lugar cargado',
+    portDiagnosticFailed:
+      'No se pudo iniciar la conexión con el plugin de Studio: los puertos 14285–14289 están en uso por otros programas. Cierra las instancias duplicadas de la aplicación o las aplicaciones en conflicto y reinicia ValencyStudio - Spoofer.',
+    portDiagnosticExtended:
+      'El puente del plugin se ejecuta en un puerto no estándar ({port}). Reinicia la aplicación y Roblox Studio para que ambos usen los puertos estándar 14285–14289.',
+    portDiagnosticOccupied: 'Procesos en conflicto que usan estos puertos: {processes}',
   },
 
   music: {
@@ -140,38 +146,15 @@ export const es: TranslationTree = {
       'yt-dlp no está en tu PATH, así que importar desde un enlace no está disponible. Instala yt-dlp y vuelve a abrir la aplicación.',
   },
   nav: {
-    home: 'Inicio',
     spoofing: 'Suplantación',
     settings: 'Ajustes',
-    config: 'Configuración',
-    account: 'Cuenta',
-    quickSettings: 'Ajustes Rápidos',
-    advanced: 'Avanzado',
     activity: 'Actividad',
-    experimental: 'Experimental',
-    supportMe: 'Apóyame',
     music: 'Música',
     about: 'Acerca de',
     collapseSidebar: 'Contraer barra lateral',
     expandSidebar: 'Expandir barra lateral',
-  },
-  home: {
-    title: 'Bienvenido a ValencyStudio - Spoofer',
-    subtitle: 'Centro de control de ValencyStudio - Spoofer.',
-    quickstartTitle: 'Guía de inicio rápido',
-    quickstartBody:
-      '1. Ve a la pestaña <strong>Suplantación</strong> para configurar y ejecutar el suplantador<br>2. Selecciona qué quieres suplantar (Animación, Audio, Imágenes, etc.)<br>3. Introduce tu ID de animación y credenciales<br>4. Haz clic en "Ejecutar Suplantador" para iniciar el proceso',
-    featuresTitle: 'Características',
-    helpTitle: '¿Necesitas ayuda?',
-    helpBody:
-      'Únete a nuestro servidor de Discord para obtener soporte, actualizaciones y discusiones de la comunidad.',
-    discordBtn: 'Unirse a Discord',
-    tutorial: 'Tutorial',
-    wiki: 'Wiki',
-    github: 'Github',
-    recentUpdates: 'Actualizaciones Recientes',
-    fetchingChangelogs: 'Cargando changelogs...',
-    noUpdates: 'No se encontraron actualizaciones recientes.',
+    accounts: 'Cuentas',
+    console: 'Consola',
   },
   about: {
     title: 'Acerca de',
@@ -244,6 +227,8 @@ export const es: TranslationTree = {
     audioQuotaUnavailable: 'Cuota de audio: no disponible',
     noGroupsFound:
       'No se encontraron grupos. Agrega credenciales en Configuración, luego selecciona un usuario.',
+    spoofSelected: 'Falsificar seleccionados',
+    spoofAllAssets: 'Falsificar todos los activos ({count})',
   },
   settings: {
     title: 'Ajustes',
@@ -303,9 +288,19 @@ export const es: TranslationTree = {
     openLogsFolder: 'Abrir Carpeta de Logs',
     clipboardMonitoring: 'Monitoreo del Portapapeles',
     memoryInjection: 'Inyección de Memoria',
+    clipboardMonitoringDesc:
+      'Detecta automáticamente los enlaces de activos de Roblox copiados al portapapeles y los pone en cola para su falsificación.',
+    memoryInjectionDescSupported:
+      'Solo Windows. Parcheo directo de memoria para sesiones activas de Studio con la misma longitud de ID. Para otros activos, se usa automáticamente el puente del plugin de Studio.',
+    memoryInjectionDescUnsupported:
+      'El parcheo de memoria del proceso solo es compatible con Windows. En esta plataforma se usará el puente del plugin de Studio.',
     excludedUserIds: 'IDs de Usuario Excluidos',
     excludedGroupIds: 'IDs de Grupo Excluidos',
     debugDisplay: 'Depuración y Pantalla',
+    concurrentDownloading: 'Descarga simultánea',
+    concurrentDownloadingDescription:
+      'Descarga varios activos a la vez para acelerar el procesamiento.',
+    confirmResetTitle: '¿Restablecer todos los ajustes?',
   },
   config: {
     title: 'Configuración',
@@ -424,29 +419,8 @@ export const es: TranslationTree = {
     done: 'Hecho',
     restart: 'Reiniciar',
     and: '&',
-  },
-  experimental: {
-    title: 'Funciones Experimentales',
-    description:
-      'Las funciones enumeradas aquí están en desarrollo activo, son inestables y pueden eliminarse en el futuro.',
-    clipboardMonitoring: 'Monitoreo del Portapapeles',
-    clipboardMonitoringDesc:
-      'Monitorea silenciosamente tu portapapeles en busca de URLs de activos de Roblox y ponlos en cola automáticamente para falsificación.',
-    spoofPlugins: 'Falsificar Plugins',
-    spoofPluginsDesc: '[WIP] Intenta falsificar activos de plugins.',
-    memoryInjection: 'Inyección de Memoria',
-    memoryInjectionDescSupported:
-      '[PELIGROSO] Solo Windows. Sobrescribe IDs numéricos exactos de activos en la memoria de Studio (misma longitud de dígitos). Ejecuta con la misma elevación que Studio. El puente del plugin se usa para otros casos.',
-    memoryInjectionDescUnsupported:
-      'La inyección de memoria solo está disponible en Windows. Usa el puente del plugin en esta plataforma.',
-  },
-  credits: {
-    description: 'Una herramienta para falsificar activos de juegos de Roblox',
-    developers: 'Desarrolladores',
-    mainDeveloper: 'Desarrollador Principal',
-    contributor: 'Contribuyente',
-    supporters: 'Partidarios',
-    boosters: 'Impulsores',
+    clear: 'Limpiar',
+    areYouSure: '¿Seguro que quieres continuar?',
   },
   results: {
     title: 'Resultados de Falsificación',
@@ -493,18 +467,5 @@ export const es: TranslationTree = {
     anonymousDownloader: 'Descargador anónimo',
     anonymousUploader: 'Subidor anónimo',
     selectedAccount: 'Account selected',
-  },
-  quickSettings: {
-    title: 'Ajustes Rápidos',
-    noSettings: 'Sin Ajustes Rápidos',
-    addSettingsDesc: 'Agrega elementos desde la página de Ajustes.',
-    spoofingCookie: 'Cookie de Roblox',
-    spoofingApiKey: 'Clave API de OpenCloud',
-    advancedAutoCookieStudio: 'Auto-Cookie (Studio)',
-    advancedAutoCookieBrowser: 'Auto-Cookie (Navegador)',
-    advancedForcePlaceIds: 'Forzar IDs de Lugar',
-    advancedExcludedUserIds: 'IDs de Usuario Excluidos',
-    advancedExcludedGroupIds: 'IDs de Grupo Excluidos',
-    generalDesktopNotifications: 'Notificaciones de Escritorio',
   },
 };

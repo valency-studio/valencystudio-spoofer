@@ -16,26 +16,20 @@ export default function RoutingSection() {
   return (
     <SettingCard
       icon={Gauge}
-      title={t('config.routingLimits') || 'Routing and Limits'}
+      title={t('config.routingLimits')}
       description="Configure network proxies and concurrency levels for downloading and uploading assets."
     >
       <SettingFieldRow
-        label={t('settings.proxyUrl') || 'HTTP / SOCKS5 Proxy URL'}
-        description={
-          t('settings.proxyUrlPlaceholder') ||
-          'e.g. http://127.0.0.1:8080 or socks5://user:pass@host:1080'
-        }
+        label={t('settings.proxyUrl')}
+        description={t('settings.proxyUrlPlaceholder')}
         value={config.advanced.proxyUrl}
         onChange={(val) => updateConfig('advanced', 'proxyUrl', val)}
         placeholder="http://127.0.0.1:8080"
       />
 
       <SettingSwitchRow
-        label={t('settings.concurrentSpoofing') || 'Concurrent Processing'}
-        description={
-          t('settings.concurrentSpoofingDescription') ||
-          'Spoof and download multiple assets simultaneously to speed up processing.'
-        }
+        label={t('settings.concurrentSpoofing')}
+        description={t('settings.concurrentSpoofingDescription')}
         checked={config.advanced.concurrentSpoofing}
         onCheckedChange={(val) => updateConfig('advanced', 'concurrentSpoofing', val)}
       />
@@ -43,7 +37,7 @@ export default function RoutingSection() {
       {config.advanced.concurrentSpoofing && (
         <>
           <SettingSliderItem
-            label={t('settings.maxConcurrency') || 'Max Concurrency'}
+            label={t('settings.maxConcurrency')}
             description="Parallel thread ceiling for asset spoofing pipeline."
             value={config.advanced.maxConcurrency}
             onChange={(val) => updateConfig('advanced', 'maxConcurrency', val)}
@@ -53,7 +47,7 @@ export default function RoutingSection() {
           />
 
           <SettingSliderItem
-            label={t('settings.maxDownloadConcurrency') || 'Max Download Concurrency'}
+            label={t('settings.maxDownloadConcurrency')}
             description="Parallel streams for downloading Roblox asset payloads."
             value={config.advanced.maxDownloadConcurrency}
             onChange={(val) => updateConfig('advanced', 'maxDownloadConcurrency', val)}

@@ -282,12 +282,21 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
 
     return (
       <div
+        role="button"
+        tabIndex={0}
         className={cn(
           'h-7 rounded-sm hover:bg-accent/60 group transition-colors flex items-center pr-2 cursor-pointer select-none',
           isInspected && 'bg-primary/15 font-semibold',
         )}
         style={{ paddingLeft: `${level * 16 + 20}px` }}
         onClick={handleRowClick}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleRowClick();
+          }
+        }}
         onMouseEnter={() => {
           if (isDragSelecting) {
             toggleAsset(asset, dragTargetChecked);
@@ -425,8 +434,6 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
             </TooltipContent>
           </Tooltip>
         )}
-
-        {}
       </div>
     );
   };
@@ -455,12 +462,22 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
   return (
     <div className="flex flex-col">
       <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={isLeafInstance ? undefined : expanded}
         className={cn(
           'flex items-center py-1 px-1 hover:bg-accent/40 cursor-pointer rounded-sm group select-none transition-colors',
           isInspected && 'bg-primary/15 font-semibold',
         )}
         style={{ paddingLeft: `${level * 16}px` }}
         onClick={handleNodeClick}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleNodeClick();
+          }
+        }}
       >
         <div
           className="mr-2 cursor-pointer flex items-center justify-center shrink-0"
