@@ -30,6 +30,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { Switch } from '../../ui/switch';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
 
 type ApiKeyOwnerDetectResult = {
   ok: boolean;
@@ -562,15 +563,19 @@ export default function AccountsView() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3
-                          className="font-semibold truncate flex items-center gap-1.5"
-                          title={acc.name}
-                        >
+                        <h3 className="font-semibold truncate flex items-center gap-1.5">
                           {acc.name}
                           {(acc.cookieValidated === true || acc.apiKeyValidated === true) && (
-                            <span title={t('accounts.validated') || 'Validated Account'}>
-                              <CheckCircle2 size={14} className="text-signal-live" />
-                            </span>
+                            <Tooltip>
+                              <TooltipTrigger
+                                render={
+                                  <span className="inline-flex">
+                                    <CheckCircle2 size={14} className="text-signal-live" />
+                                  </span>
+                                }
+                              />
+                              <TooltipContent>{t('accounts.validated')}</TooltipContent>
+                            </Tooltip>
                           )}
                         </h3>
                         <p className="text-xs text-muted-foreground">
@@ -585,7 +590,7 @@ export default function AccountsView() {
                         {isSelected ? t('accounts.selected') : t('accounts.select')}
                       </Button>
                       <Button
-                        title={t('accounts.deleteAccount')}
+                        aria-label={t('accounts.deleteAccount')}
                         variant="ghost"
                         size="icon"
                         className="text-red-500 hover:bg-red-500/10 hover:text-red-600"
@@ -601,9 +606,16 @@ export default function AccountsView() {
                           <Cookie size={13} className="text-signal-live" />
                           <span className="text-signal-live">{t('accounts.downloader')}</span>
                           {secrets?.cookie && acc.cookieValidated === true && (
-                            <span title={t('accounts.cookieValid')}>
-                              <CheckCircle2 size={13} className="text-signal-live" />
-                            </span>
+                            <Tooltip>
+                              <TooltipTrigger
+                                render={
+                                  <span className="inline-flex">
+                                    <CheckCircle2 size={13} className="text-signal-live" />
+                                  </span>
+                                }
+                              />
+                              <TooltipContent>{t('accounts.cookieValid')}</TooltipContent>
+                            </Tooltip>
                           )}
                         </div>
                       )}
@@ -612,50 +624,73 @@ export default function AccountsView() {
                           <Key size={13} className="text-blue-500" />
                           <span className="text-blue-500">{t('accounts.uploader')}</span>
                           {secrets?.apiKey && acc.apiKeyValidated === true && (
-                            <span title={t('accounts.apiKeyValid')}>
-                              <CheckCircle2 size={13} className="text-blue-400" />
-                            </span>
+                            <Tooltip>
+                              <TooltipTrigger
+                                render={
+                                  <span className="inline-flex">
+                                    <CheckCircle2 size={13} className="text-blue-400" />
+                                  </span>
+                                }
+                              />
+                              <TooltipContent>{t('accounts.apiKeyValid')}</TooltipContent>
+                            </Tooltip>
                           )}
                         </div>
                       )}
                       {}
                       {secretsLoaded && !secrets?.cookie && acc.isDownloader && (
-                        <div
-                          className="text-xs text-red-500 flex items-center gap-1"
-                          title="No cookie is saved for this account"
-                        >
-                          <ShieldAlert size={12} /> Missing cookie
-                        </div>
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <div className="text-xs text-red-500 flex items-center gap-1">
+                                <ShieldAlert size={12} /> Missing cookie
+                              </div>
+                            }
+                          />
+                          <TooltipContent>{t('accounts.missingCookie')}</TooltipContent>
+                        </Tooltip>
                       )}
                       {secretsLoaded && !secrets?.apiKey && acc.isUploader && (
-                        <div
-                          className="text-xs text-yellow-500 flex items-center gap-1"
-                          title="No Open Cloud API key is saved for this account"
-                        >
-                          <ShieldAlert size={12} /> Missing API key
-                        </div>
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <div className="text-xs text-yellow-500 flex items-center gap-1">
+                                <ShieldAlert size={12} /> Missing API key
+                              </div>
+                            }
+                          />
+                          <TooltipContent>{t('accounts.missingApiKey')}</TooltipContent>
+                        </Tooltip>
                       )}
                       {secretsLoaded &&
                         acc.isDownloader &&
                         secrets?.cookie &&
                         acc.cookieValidated === false && (
-                          <div
-                            className="text-xs text-red-500 flex items-center gap-1"
-                            title="The saved cookie failed validation — Roblox rejected it"
-                          >
-                            <ShieldAlert size={12} /> Cookie rejected by Roblox
-                          </div>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <div className="text-xs text-red-500 flex items-center gap-1">
+                                  <ShieldAlert size={12} /> Cookie rejected by Roblox
+                                </div>
+                              }
+                            />
+                            <TooltipContent>{t('accounts.cookieRejected')}</TooltipContent>
+                          </Tooltip>
                         )}
                       {secretsLoaded &&
                         acc.isUploader &&
                         secrets?.apiKey &&
                         acc.apiKeyValidated === false && (
-                          <div
-                            className="text-xs text-yellow-500 flex items-center gap-1"
-                            title="The saved API key failed validation — Roblox rejected it"
-                          >
-                            <ShieldAlert size={12} /> API key rejected by Roblox
-                          </div>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <div className="text-xs text-yellow-500 flex items-center gap-1">
+                                  <ShieldAlert size={12} /> API key rejected by Roblox
+                                </div>
+                              }
+                            />
+                            <TooltipContent>{t('accounts.apiKeyRejected')}</TooltipContent>
+                          </Tooltip>
                         )}
                     </div>
                   </Card>

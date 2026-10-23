@@ -16,6 +16,7 @@ import { useSpooferStore } from '../../stores/spooferStore';
 import { appendSpoofingLog } from '../../utils/spoofingLogs';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
 export default function ResultsModal({
   isOpen,
@@ -131,12 +132,24 @@ export default function ResultsModal({
                     className="flex items-center justify-between p-3 rounded-md bg-muted border border-border gap-4"
                   >
                     <div className="flex flex-col flex-1 min-w-0">
-                      <span
-                        className="text-xs text-muted-foreground font-medium truncate"
-                        title={meta?.name}
-                      >
-                        {meta ? `${meta.type.toUpperCase()} • ${meta.name}` : t('misc.originalId')}
-                      </span>
+                      {meta?.name ? (
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <span className="text-xs text-muted-foreground font-medium truncate">
+                                {meta.type.toUpperCase()} • {meta.name}
+                              </span>
+                            }
+                          />
+                          <TooltipContent className="max-w-xs break-words">
+                            {meta.name}
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <span className="text-xs text-muted-foreground font-medium truncate">
+                          {t('misc.originalId')}
+                        </span>
+                      )}
                       <span className="text-sm font-mono font-semibold text-destructive">
                         {oldId}
                       </span>

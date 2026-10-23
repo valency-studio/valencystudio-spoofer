@@ -177,7 +177,7 @@ function PreviewApp() {
                 ? 'bg-primary text-primary-foreground shadow-xs'
                 : 'text-muted-foreground hover:text-foreground hover:bg-bg-surface',
             )}
-            title={isPinned ? 'Unpin Window' : 'Always On Top (Pinned)'}
+            aria-label={isPinned ? 'Unpin window' : 'Keep window always on top'}
           >
             {isPinned ? <Pin size={11} /> : <PinOff size={11} />}
             <span>{isPinned ? 'Pinned' : 'Pin'}</span>
@@ -186,7 +186,7 @@ function PreviewApp() {
             type="button"
             onClick={handleMinimize}
             className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-bg-surface transition-colors cursor-pointer"
-            title="Minimize window"
+            aria-label="Minimize window"
           >
             <Minus size={12} />
           </button>
@@ -194,7 +194,7 @@ function PreviewApp() {
             type="button"
             onClick={handleClose}
             className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-            title="Close / Dock Preview"
+            aria-label="Close and dock preview"
           >
             <X size={12} />
           </button>
@@ -276,7 +276,7 @@ function PreviewApp() {
                   type="button"
                   onClick={() => setImageZoom((prev) => Math.max(0.25, +(prev - 0.25).toFixed(2)))}
                   className="h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-foreground text-xs font-bold rounded cursor-pointer"
-                  title="Zoom Out"
+                  aria-label="Zoom out"
                 >
                   -
                 </button>
@@ -324,7 +324,7 @@ function PreviewApp() {
                   type="button"
                   onClick={() => setImageZoom((prev) => Math.min(8, +(prev + 0.25).toFixed(2)))}
                   className="h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-foreground text-xs font-bold rounded cursor-pointer"
-                  title="Zoom In"
+                  aria-label="Zoom in"
                 >
                   +
                 </button>
@@ -335,7 +335,7 @@ function PreviewApp() {
                     setPan({ x: 0, y: 0 });
                   }}
                   className="h-5 px-1 flex items-center justify-center text-muted-foreground hover:text-foreground text-2xs font-medium border-l border-border-subtle/50 ml-0.5 cursor-pointer"
-                  title="Reset Zoom"
+                  aria-label="Reset zoom"
                 >
                   Reset
                 </button>

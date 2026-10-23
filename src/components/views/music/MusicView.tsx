@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from '../../../components/ui/dialog';
 import { Input } from '../../../components/ui/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/tooltip';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { cn } from '../../../lib/utils';
@@ -470,8 +471,8 @@ function AssetId({ value }: { value?: number | null }) {
     <button
       type="button"
       onClick={() => void navigator.clipboard.writeText(String(value))}
+      aria-label={t('music.copyId')}
       className="w-24 shrink-0 truncate rounded border border-border-subtle px-1.5 py-0.5 text-right font-mono text-xs text-text-muted hover:text-text-primary"
-      title={t('music.copyId')}
     >
       {copied ? t('music.copied') : value}
     </button>
@@ -501,19 +502,27 @@ function StatusPill({ status, detail }: { status: string; detail?: string }) {
   // honest if the backend ever grows a status the view does not know.
   const text = label ?? status;
 
-  return (
+  const pill = (
     <span
       className={cn(
         'flex w-28 shrink-0 items-center justify-center gap-1 rounded border px-1.5 py-0.5 text-xs',
         tone ?? 'border-border-subtle bg-bg-elevated text-text-muted',
       )}
-      title={detail}
     >
       {status !== 'accepted' && status !== 'rejected' && (
         <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-current" />
       )}
       <span className="truncate">{text}</span>
     </span>
+  );
+
+  if (!detail) return pill;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger render={pill} />
+      <TooltipContent className="max-w-xs break-words">{detail}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -828,7 +837,6 @@ function TrackEditor({
           }}
           disabled={renaming || busy}
           aria-label={t('music.rename')}
-          title={t('music.renameHint')}
         >
           <Pencil size={15} />
         </Button>
@@ -1034,7 +1042,6 @@ export function RobloxHint({
               setCopied(true);
             }}
             aria-label={t('music.copyPlaybackSpeed')}
-            title={t('music.copyPlaybackSpeed')}
           >
             {copied ? <Check size={15} /> : <Copy size={15} />}
           </Button>

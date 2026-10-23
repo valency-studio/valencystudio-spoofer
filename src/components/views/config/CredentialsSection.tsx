@@ -296,7 +296,6 @@ export default function CredentialsSection() {
               onClick={() => void handleValidateApiKey('user')}
               className="p-1 rounded text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 cursor-pointer"
               aria-label={t('common.apply')}
-              title={t('misc.validateOpenCloudKey')}
               disabled={userApiKeyStatus === 'loading'}
             >
               {userApiKeyStatus === 'loading' ? (
@@ -319,7 +318,6 @@ export default function CredentialsSection() {
               onClick={() => void handleOpenApiDashboard()}
               className="p-1 rounded text-muted-foreground hover:text-primary transition-colors cursor-pointer"
               aria-label={t('spoof.openApiDashboard')}
-              title={t('spoof.openApiDashboard')}
             >
               <ExternalLink size={15} />
             </button>
@@ -354,7 +352,6 @@ export default function CredentialsSection() {
               onClick={() => void handleValidateApiKey('group')}
               className="p-1 rounded text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 cursor-pointer"
               aria-label={t('common.apply')}
-              title={t('misc.validateOpenCloudKey')}
               disabled={groupApiKeyStatus === 'loading'}
             >
               {groupApiKeyStatus === 'loading' ? (
@@ -377,7 +374,6 @@ export default function CredentialsSection() {
               onClick={() => void handleOpenApiDashboard()}
               className="p-1 rounded text-muted-foreground hover:text-primary transition-colors cursor-pointer"
               aria-label={t('spoof.openApiDashboard')}
-              title={t('spoof.openApiDashboard')}
             >
               <ExternalLink size={15} />
             </button>

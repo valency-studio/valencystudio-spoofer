@@ -2,6 +2,7 @@ import type { TranslationTree } from './index';
 
 export const fr: TranslationTree = {
   misc: {
+    playbackSpeed: 'Vitesse de lecture',
     toggleRigType: 'Toggle Rig Type',
     maintenanceBreak: 'Pause de Maintenance',
     maintenanceDesc:
@@ -203,6 +204,7 @@ export const fr: TranslationTree = {
     madeWith: 'Fait avec soin par {team}.',
   },
   spoof: {
+    manualReplace: 'Remplacement et ajout manuels',
     title: "Usurpation d'Assets",
     targets: 'Cibles',
     targetContext: 'Contexte Cible',
@@ -361,6 +363,15 @@ export const fr: TranslationTree = {
     goToBottom: 'Aller en bas',
   },
   explorer: {
+    zoomIn: 'Zoom avant',
+    zoomOut: 'Zoom arrière',
+    zoomReset: 'Réinitialiser le zoom',
+    fileExtractionOptions: "Options d'extraction de fichiers",
+    popoutPreview: 'Ouvrir dans une fenêtre séparée toujours au-dessus',
+    dockPreview: 'Réancrer dans la fenêtre principale',
+    closePanel: 'Fermer le panneau',
+    previewAsset: 'Aperçu de cet actif',
+    copyPath: 'Copier le chemin complet',
     emptyTitle: 'Connectez un lieu pour commencer',
     emptyBody:
       'Scannez une session Roblox Studio en cours pour lister ses animations, sons, images et maillages, ou ouvrez un fichier de lieu depuis le disque.',
@@ -449,6 +460,11 @@ export const fr: TranslationTree = {
       "Si le plugin ou l'injection en mémoire est actif, ces identifiants ont déjà été remplacés automatiquement dans votre Roblox Studio !",
   },
   accounts: {
+    validated: 'Compte validé',
+    missingCookie: 'Aucun cookie enregistré pour ce compte',
+    missingApiKey: 'Aucune clé API Open Cloud enregistrée pour ce compte',
+    cookieRejected: "Le cookie enregistré a échoué à la validation — Roblox l'a rejeté",
+    apiKeyRejected: "La clé API enregistrée a échoué à la validation — Roblox l'a rejetée",
     title: 'Comptes',
     description: 'Gérez vos comptes Roblox pour télécharger et téléverser des ressources.',
     validateAll: 'Tout valider',

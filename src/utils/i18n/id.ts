@@ -2,6 +2,7 @@ import type { TranslationTree } from './index';
 
 export const id: TranslationTree = {
   misc: {
+    playbackSpeed: 'Kecepatan putar',
     toggleRigType: 'Ubah Tipe Rig',
     maintenanceBreak: 'Pemeliharaan Terjadwal',
     maintenanceDesc:
@@ -190,6 +191,7 @@ export const id: TranslationTree = {
     madeWith: 'Dibuat dengan hati oleh {team}.',
   },
   spoof: {
+    manualReplace: 'Ganti & tambah ID manual',
     title: 'Asset Spoofer',
     targets: 'Target',
     targetContext: 'Konteks Target',
@@ -360,6 +362,15 @@ export const id: TranslationTree = {
     goToBottom: 'Ke Bawah',
   },
   explorer: {
+    zoomIn: 'Perbesar',
+    zoomOut: 'Perkecil',
+    zoomReset: 'Reset zoom',
+    fileExtractionOptions: 'Opsi ekstraksi file',
+    popoutPreview: 'Buka di jendela terpisah (selalu di atas)',
+    dockPreview: 'Kembalikan ke jendela utama',
+    closePanel: 'Tutup panel',
+    previewAsset: 'Pratinjau aset ini',
+    copyPath: 'Salin path lengkap',
     title: 'Explorer',
     emptyTitle: 'Hubungkan sebuah place untuk memulai',
     emptyBody:
@@ -427,6 +438,11 @@ export const id: TranslationTree = {
       'Jika plugin Studio terhubung, ID ini sudah diganti di place Roblox Studio yang Anda buka.',
   },
   accounts: {
+    validated: 'Akun tervalidasi',
+    missingCookie: 'Cookie belum disimpan untuk akun ini',
+    missingApiKey: 'API key Open Cloud belum disimpan untuk akun ini',
+    cookieRejected: 'Cookie gagal divalidasi — ditolak Roblox',
+    apiKeyRejected: 'API key gagal divalidasi — ditolak Roblox',
     title: 'Akun',
     description: 'Kelola akun Roblox Anda untuk mengunduh dan mengunggah aset.',
     validateAll: 'Validasi Semua',

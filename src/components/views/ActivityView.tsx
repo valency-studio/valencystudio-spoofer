@@ -18,6 +18,7 @@ import { queueSpoofRetry, type SpoofJob } from '../../utils/jobTypes';
 import { deleteUploadRecord, getUploadHistory, type UploadRecord } from '../../utils/music';
 import { logValencyStudio } from '../../utils/robloxProfiles';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { HistoryRow } from './music/MusicView';
 
 export default function ActivityView() {
@@ -287,12 +288,18 @@ export default function ActivityView() {
                                       </span>
                                     )}
                                     {res.errorReason && (
-                                      <span
-                                        className="text-destructive max-w-50 truncate"
-                                        title={res.errorReason}
-                                      >
-                                        {res.errorReason}
-                                      </span>
+                                      <Tooltip>
+                                        <TooltipTrigger
+                                          render={
+                                            <span className="text-destructive max-w-50 truncate">
+                                              {res.errorReason}
+                                            </span>
+                                          }
+                                        />
+                                        <TooltipContent className="max-w-xs break-words">
+                                          {res.errorReason}
+                                        </TooltipContent>
+                                      </Tooltip>
                                     )}
                                     {res.reason && res.skipped && (
                                       <span className="text-yellow-500/80 max-w-50 truncate">

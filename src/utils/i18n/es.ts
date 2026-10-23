@@ -2,6 +2,7 @@ import type { TranslationTree } from './index';
 
 export const es: TranslationTree = {
   misc: {
+    playbackSpeed: 'Velocidad de reproducción',
     toggleRigType: 'Toggle Rig Type',
     maintenanceBreak: 'Pausa de Mantenimiento',
     maintenanceDesc:
@@ -201,6 +202,7 @@ export const es: TranslationTree = {
     madeWith: 'Hecho con cariño por {team}.',
   },
   spoof: {
+    manualReplace: 'Reemplazo y añadir ID manual',
     title: 'Suplantador de Assets',
     targets: 'Objetivos',
     targetContext: 'Contexto de Destino',
@@ -358,6 +360,15 @@ export const es: TranslationTree = {
     goToBottom: 'Ir al fondo',
   },
   explorer: {
+    zoomIn: 'Acercar',
+    zoomOut: 'Alejar',
+    zoomReset: 'Restablecer zoom',
+    fileExtractionOptions: 'Opciones de extracción de archivos',
+    popoutPreview: 'Abrir en una ventana aparte siempre visible',
+    dockPreview: 'Volver a la ventana principal',
+    closePanel: 'Cerrar panel',
+    previewAsset: 'Vista previa de este activo',
+    copyPath: 'Copiar ruta completa',
     emptyTitle: 'Conecta un lugar para empezar',
     emptyBody:
       'Escanea una sesión de Roblox Studio en marcha para listar sus animaciones, sonidos, imágenes y mallas, o abre un archivo de lugar desde el disco.',
@@ -446,6 +457,11 @@ export const es: TranslationTree = {
       '¡Si el plugin o la inyección de memoria están activos, estos IDs ya se han reemplazado en tu Roblox Studio automáticamente!',
   },
   accounts: {
+    validated: 'Cuenta validada',
+    missingCookie: 'No hay cookie guardada para esta cuenta',
+    missingApiKey: 'No hay clave API de Open Cloud guardada para esta cuenta',
+    cookieRejected: 'La cookie guardada no superó la validación — Roblox la rechazó',
+    apiKeyRejected: 'La clave API guardada no superó la validación — Roblox la rechazó',
     title: 'Cuentas',
     description: 'Administra tus cuentas de Roblox para descargar y subir recursos.',
     validateAll: 'Validar todo',

@@ -2,6 +2,7 @@ import type { TranslationTree } from './index';
 
 export const en: TranslationTree = {
   misc: {
+    playbackSpeed: 'Playback speed',
     toggleRigType: 'Toggle Rig Type',
     maintenanceBreak: 'Maintenance Break',
     maintenanceDesc:
@@ -188,6 +189,7 @@ export const en: TranslationTree = {
     madeWith: 'Made with care by {team}.',
   },
   spoof: {
+    manualReplace: 'Manual Replace & Add IDs',
     title: 'Asset Spoofer',
     targets: 'Targets',
     targetContext: 'Target Context',
@@ -359,6 +361,15 @@ export const en: TranslationTree = {
     goToBottom: 'Go to Bottom',
   },
   explorer: {
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    zoomReset: 'Reset zoom',
+    fileExtractionOptions: 'File extraction options',
+    popoutPreview: 'Open in a separate always-on-top window',
+    dockPreview: 'Dock back into the main window',
+    closePanel: 'Close panel',
+    previewAsset: 'Preview this asset',
+    copyPath: 'Copy full path',
     title: 'Explorer',
     emptyTitle: 'Connect a place to begin',
     emptyBody:
@@ -426,6 +437,11 @@ export const en: TranslationTree = {
       'If the Studio plugin is connected, these IDs have already been replaced in your open Roblox Studio place.',
   },
   accounts: {
+    validated: 'Validated account',
+    missingCookie: 'No cookie is saved for this account',
+    missingApiKey: 'No Open Cloud API key is saved for this account',
+    cookieRejected: 'The saved cookie failed validation — Roblox rejected it',
+    apiKeyRejected: 'The saved API key failed validation — Roblox rejected it',
     title: 'Accounts',
     description: 'Manage your Roblox accounts for downloading and uploading assets.',
     validateAll: 'Validate All',

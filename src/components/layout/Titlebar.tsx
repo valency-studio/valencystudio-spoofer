@@ -141,7 +141,7 @@ export default function Titlebar() {
                             ? 'text-primary bg-primary/15'
                             : 'text-muted-foreground hover:text-foreground hover:bg-bg-surface',
                         )}
-                        title={t('explorer.allAssetTypes') ?? 'Filter asset types'}
+                        aria-label={t('explorer.allAssetTypes') ?? 'Filter asset types'}
                       />
                     }
                   >

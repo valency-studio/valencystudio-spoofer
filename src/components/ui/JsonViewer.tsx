@@ -81,7 +81,7 @@ export function JsonViewer({ data, name, defaultExpanded = false, level = 0 }: J
           <button
             onClick={handleCopy}
             className="ml-auto opacity-0 group-hover:opacity-100 p-1 hover:bg-primary/10 hover:text-primary text-text-muted rounded transition-all"
-            title={t('misc.copyJson')}
+            aria-label={t('misc.copyJson')}
           >
             {isCopied ? <Check size={12} /> : <Copy size={12} />}
           </button>

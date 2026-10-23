@@ -130,9 +130,9 @@ export default function ExecutionLogs({
             </span>
           )}
           <div className="ml-2 flex items-center gap-2 text-2xs text-text-secondary bg-bg-elevated px-2 py-0.5 rounded border border-border-subtle">
-            <span title={t('accounts.downloader')}>↓ {downloaderName}</span>
+            <span>↓ {downloaderName}</span>
             <span className="opacity-40">|</span>
-            <span title={t('accounts.uploader')}>↑ {uploaderName}</span>
+            <span>↑ {uploaderName}</span>
           </div>
         </span>
         <div className="flex items-center gap-3">
@@ -140,7 +140,6 @@ export default function ExecutionLogs({
             <button
               onClick={onOpenPasteIds}
               className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary hover:text-primary transition-colors"
-              title="Manual Replace & Add IDs"
             >
               <ClipboardPaste size={14} /> Manual Replace
             </button>
@@ -158,7 +157,6 @@ export default function ExecutionLogs({
                     .showToast('success', 'Copied replacement pairs to clipboard!');
                 }}
                 className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
-                title="Copy all replacement pairs in original -> replaced format"
               >
                 <Copy size={14} /> Copy Replacements
               </button>

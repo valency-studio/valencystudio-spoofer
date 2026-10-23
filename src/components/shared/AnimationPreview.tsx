@@ -595,7 +595,7 @@ export default function AnimationPreview({
                     })
                   }
                   className="px-1.5 py-0.5 rounded text-2xs font-bold tracking-wider uppercase border border-border-subtle hover:border-primary hover:text-primary transition-colors text-text-muted"
-                  title={t('misc.toggleRigType')}
+                  aria-label={t('misc.toggleRigType')}
                 >
                   {rigType}
                 </button>
@@ -733,7 +733,7 @@ export default function AnimationPreview({
                   <button
                     type="button"
                     className="ml-auto flex items-center gap-1 h-7 px-2 bg-bg-base/80 hover:bg-bg-elevated border border-border-subtle rounded-md text-xs font-semibold text-text-primary transition-colors select-none shrink-0"
-                    title="Playback speed"
+                    aria-label={t('misc.playbackSpeed')}
                   >
                     <span className="text-2xs text-text-muted font-bold uppercase mr-0.5">
                       {t('misc.speed') || 'Speed'}

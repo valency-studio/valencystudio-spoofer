@@ -863,8 +863,8 @@ export default function AssetExplorer({
                       render={
                         <button
                           type="button"
+                          aria-label={t('explorer.fileExtractionOptions')}
                           className="h-11 w-10 text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors border-l border-border flex items-center justify-center cursor-pointer"
-                          title="File extraction options"
                         >
                           <Settings2 size={16} />
                         </button>
@@ -932,11 +932,11 @@ export default function AssetExplorer({
                     }}
                     data-tutorial-target="explorer-scan-studio"
                     disabled={scanTypes.size === 0}
+                    aria-label={t('spoof.scanStudio')}
                     className={cn(
                       'flex items-center justify-center gap-2 px-6 h-11 bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors',
                       !studioConnected && 'opacity-70',
                     )}
-                    title={!studioConnected ? t('explorer.studioNotConnected') : undefined}
                   >
                     <ScanSearch size={18} />
                     {t('spoof.scanStudio')}
@@ -947,6 +947,7 @@ export default function AssetExplorer({
                       render={
                         <button
                           type="button"
+                          aria-label={t('explorer.allAssetTypes')}
                           className="h-11 w-10 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors border-l border-primary-foreground/20 flex items-center justify-center"
                         >
                           <Settings2 size={16} />
@@ -1028,7 +1029,6 @@ export default function AssetExplorer({
                   'text-sm text-text-muted hover:text-primary underline font-medium transition-colors cursor-pointer',
                   !studioConnected && 'opacity-60 cursor-not-allowed hover:text-text-muted',
                 )}
-                title={!studioConnected ? t('explorer.studioNotConnected') : undefined}
               >
                 {t('explorer.connectWithoutScanning')}
               </button>
@@ -1348,8 +1348,8 @@ export default function AssetExplorer({
                       <Button
                         variant="outline"
                         size="icon"
+                        aria-label={t('explorer.clearExplorer')}
                         className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 border-border-subtle"
-                        title={t('explorer.clearExplorer') ?? 'Clear Explorer'}
                       />
                     }
                   >
@@ -1708,7 +1708,7 @@ export default function AssetExplorer({
                         </button>
                       }
                     />
-                    <TooltipContent>Manual Replace & Add IDs</TooltipContent>
+                    <TooltipContent>{t('spoof.manualReplace')}</TooltipContent>
                   </Tooltip>
 
                   {storedReplacementsCount > 0 && (
@@ -1957,6 +1957,7 @@ function AssetInspectorPanel({
   showProperties?: boolean;
 }) {
   const { config } = useConfig();
+  const { t } = useLanguage();
   const [selectedAssetRef, setSelectedAssetRef] = useState<ParsedAssetRef | null>(asset);
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -2201,8 +2202,8 @@ function AssetInspectorPanel({
               <button
                 type="button"
                 onClick={() => setImageZoom((prev) => Math.max(0.25, +(prev - 0.25).toFixed(2)))}
+                aria-label={t('explorer.zoomOut')}
                 className="h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-foreground text-xs font-bold rounded cursor-pointer"
-                title="Zoom Out"
               >
                 -
               </button>
@@ -2249,8 +2250,8 @@ function AssetInspectorPanel({
               <button
                 type="button"
                 onClick={() => setImageZoom((prev) => Math.min(8, +(prev + 0.25).toFixed(2)))}
+                aria-label={t('explorer.zoomIn')}
                 className="h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-foreground text-xs font-bold rounded cursor-pointer"
-                title="Zoom In"
               >
                 +
               </button>
@@ -2261,7 +2262,7 @@ function AssetInspectorPanel({
                   setPan({ x: 0, y: 0 });
                 }}
                 className="h-5 px-1 flex items-center justify-center text-muted-foreground hover:text-foreground text-2xs font-medium border-l border-border-subtle/50 ml-0.5 cursor-pointer"
-                title="Reset Zoom"
+                aria-label={t('explorer.zoomReset')}
               >
                 Reset
               </button>
@@ -2316,7 +2317,7 @@ function AssetInspectorPanel({
               isPoppedOut ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
             )}
             onClick={() => void handleTogglePopout()}
-            title={isPoppedOut ? 'Dock Preview' : 'Popout to Secondary OS Window (Always on Top)'}
+            aria-label={isPoppedOut ? t('explorer.dockPreview') : t('explorer.popoutPreview')}
           >
             {isPoppedOut ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
           </Button>
@@ -2324,8 +2325,8 @@ function AssetInspectorPanel({
             variant="ghost"
             size="icon"
             onClick={onClose}
+            aria-label={t('explorer.closePanel')}
             className="h-6 w-6 text-muted-foreground hover:text-foreground"
-            title="Close panel"
           >
             <X size={13} />
           </Button>
@@ -2396,7 +2397,7 @@ function AssetInspectorPanel({
                               ? 'text-primary bg-primary/20'
                               : 'text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100',
                           )}
-                          title="Preview this asset"
+                          aria-label={t('explorer.previewAsset')}
                         >
                           <Eye size={11} />
                         </button>
@@ -2408,7 +2409,7 @@ function AssetInspectorPanel({
                             void handleCopy(propAssetId, `prop-${p.propertyName}`);
                           }}
                           className="h-5 w-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Copy Asset ID"
+                          aria-label={t('explorer.copyAssetId')}
                         >
                           {copiedField === `prop-${p.propertyName}` ? (
                             <Check size={11} className="text-primary" />
@@ -2418,26 +2419,40 @@ function AssetInspectorPanel({
                         </button>
 
                         {pinnedPid && (
-                          <div
-                            className="h-4 px-1 rounded text-2xs font-mono flex items-center gap-0.5 shrink-0"
-                            style={{
-                              color: getBrightPlaceIdColor(pinnedPid),
-                              backgroundColor: `${getBrightPlaceIdColor(pinnedPid)}18`,
-                            }}
-                            title={`Pinned Place ID: ${pinnedPid}`}
-                          >
-                            <Lock size={9} />
-                            <span>{formatShortId(pinnedPid)}</span>
-                          </div>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <div
+                                  className="h-4 px-1 rounded text-2xs font-mono flex items-center gap-0.5 shrink-0 cursor-help"
+                                  style={{
+                                    color: getBrightPlaceIdColor(pinnedPid),
+                                    backgroundColor: `${getBrightPlaceIdColor(pinnedPid)}18`,
+                                  }}
+                                >
+                                  <Lock size={9} />
+                                  <span>{formatShortId(pinnedPid)}</span>
+                                </div>
+                              }
+                            />
+                            <TooltipContent className="whitespace-nowrap font-mono text-xs">
+                              Pinned Place ID: {pinnedPid}
+                            </TooltipContent>
+                          </Tooltip>
                         )}
 
                         {replId && (
-                          <div
-                            className="h-4 px-1 rounded text-2xs font-mono flex items-center gap-0.5 text-signal-spoofed bg-signal-spoofed/10 border border-signal-spoofed/20 shrink-0"
-                            title={`Spoofed to: rbxassetid://${replId}`}
-                          >
-                            <Inbox size={9} />
-                          </div>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <div className="h-4 px-1 rounded text-2xs font-mono flex items-center gap-0.5 text-signal-spoofed bg-signal-spoofed/10 border border-signal-spoofed/20 shrink-0 cursor-help">
+                                  <Inbox size={9} />
+                                </div>
+                              }
+                            />
+                            <TooltipContent className="whitespace-nowrap font-mono text-xs">
+                              Spoofed to: rbxassetid://{replId}
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                       </div>
                     </div>
@@ -2488,7 +2503,7 @@ function AssetInspectorPanel({
                       type="button"
                       onClick={() => void handleCopy(asset.path, 'path')}
                       className="h-5 w-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Copy full path"
+                      aria-label={t('explorer.copyPath')}
                     >
                       {copiedField === 'path' ? (
                         <Check size={11} className="text-primary" />

@@ -2,6 +2,7 @@ import type { TranslationTree } from './index';
 
 export const ru: TranslationTree = {
   misc: {
+    playbackSpeed: 'Скорость воспроизведения',
     toggleRigType: 'Toggle Rig Type',
     maintenanceBreak: 'Перерыв на Техническое Обслуживание',
     maintenanceDesc:
@@ -204,6 +205,7 @@ export const ru: TranslationTree = {
     madeWith: 'Сделано с любовью {team}.',
   },
   spoof: {
+    manualReplace: 'Ручная замена и добавление ID',
     title: 'Обозреватель',
     resolvingScriptRefs: 'Разрешение ссылок на скрипты',
     clearExplorer: 'Очистить обозреватель',
@@ -365,6 +367,15 @@ export const ru: TranslationTree = {
     goToBottom: 'Вниз',
   },
   explorer: {
+    zoomIn: 'Увеличить',
+    zoomOut: 'Уменьшить',
+    zoomReset: 'Сбросить масштаб',
+    fileExtractionOptions: 'Параметры извлечения файлов',
+    popoutPreview: 'Открыть в отдельном окне поверх остальных',
+    dockPreview: 'Вернуть в главное окно',
+    closePanel: 'Закрыть панель',
+    previewAsset: 'Предпросмотр этого актива',
+    copyPath: 'Скопировать полный путь',
     emptyTitle: 'Подключите место, чтобы начать',
     emptyBody:
       'Просканируйте запущенный сеанс Roblox Studio, чтобы получить список анимаций, звуков, изображений и мешей, или откройте файл места с диска.',
@@ -453,6 +464,11 @@ export const ru: TranslationTree = {
       'Если активен плагин или внедрение в память, эти идентификаторы уже были автоматически заменены в вашем Roblox Studio!',
   },
   accounts: {
+    validated: 'Аккаунт подтверждён',
+    missingCookie: 'Для этого аккаунта не сохранён cookie',
+    missingApiKey: 'Для этого аккаунта не сохранён ключ API Open Cloud',
+    cookieRejected: 'Сохранённый cookie не прошёл проверку — Roblox его отклонил',
+    apiKeyRejected: 'Сохранённый ключ API не прошёл проверку — Roblox его отклонил',
     title: 'Аккаунты',
     description: 'Управляйте своими аккаунтами Roblox для загрузки и выгрузки ассетов.',
     validateAll: 'Проверить все',
