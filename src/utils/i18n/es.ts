@@ -180,7 +180,9 @@ export const es: TranslationTree = {
     ffmpegReturnToSpoofer: 'Volver a Spoofer',
     ffmpegInstalling: 'Instalando FFmpeg con Winget...',
     ffmpegInstallOutput: 'Salida de Winget',
-    ffmpegInstallFailed: 'Winget no pudo instalar FFmpeg: {error}',
+    ffmpegInstallFailedTitle: 'Winget no pudo instalar FFmpeg',
+    ffmpegInstallHint:
+      'Esto puede tardar un minuto. Mantén la aplicación abierta: el diálogo se cerrará solo cuando FFmpeg esté listo.',
     ffmpegInstallComplete: 'FFmpeg se instaló. Reinicia la aplicación para que se actualice PATH.',
     missingYtDlp:
       'yt-dlp no está en tu PATH, así que importar desde un enlace no está disponible. Instala yt-dlp y vuelve a abrir la aplicación.',

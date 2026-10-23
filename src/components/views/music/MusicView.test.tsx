@@ -53,7 +53,7 @@ describe('MusicView FFmpeg requirement', () => {
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'FFmpeg belum terpasang' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Install FFmpeg' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pasang FFmpeg' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Kembali ke Spoofer' })).toBeInTheDocument();
   });
 
@@ -75,8 +75,11 @@ describe('MusicView FFmpeg requirement', () => {
     renderMusicView();
     await screen.findByRole('dialog');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Install FFmpeg' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pasang FFmpeg' }));
 
+    // Installer output is collapsed so the license banner Winget prints first
+    // does not become the dialog's main content.
+    fireEvent.click(await screen.findByText('Keluaran Winget'));
     expect(await screen.findByRole('log')).toHaveTextContent('Successfully installed FFmpeg');
     expect(await screen.findByText(/Buka ulang aplikasi/)).toBeInTheDocument();
   });
@@ -86,7 +89,7 @@ describe('MusicView FFmpeg requirement', () => {
     renderMusicView();
     await screen.findByRole('dialog');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Install FFmpeg' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pasang FFmpeg' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Winget gagal memasang FFmpeg');
     expect(screen.getByRole('alert')).toHaveTextContent('Winget is unavailable');

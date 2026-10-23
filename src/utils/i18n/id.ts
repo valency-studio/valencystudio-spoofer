@@ -178,11 +178,13 @@ export const id: TranslationTree = {
     ffmpegRequiredTitle: 'FFmpeg belum terpasang',
     ffmpegRequiredDescription:
       'FFmpeg wajib dipasang untuk menggunakan menu Musik. Instal sekarang dengan Winget atau kembali ke Spoofer.',
-    ffmpegInstall: 'Install FFmpeg',
+    ffmpegInstall: 'Pasang FFmpeg',
     ffmpegReturnToSpoofer: 'Kembali ke Spoofer',
     ffmpegInstalling: 'Sedang memasang FFmpeg melalui Winget...',
     ffmpegInstallOutput: 'Keluaran Winget',
-    ffmpegInstallFailed: 'Winget gagal memasang FFmpeg: {error}',
+    ffmpegInstallFailedTitle: 'Winget gagal memasang FFmpeg',
+    ffmpegInstallHint:
+      'Proses ini bisa memakan waktu sebentar. Biarkan aplikasi tetap terbuka — dialog akan menutup sendiri setelah FFmpeg siap.',
     ffmpegInstallComplete:
       'FFmpeg berhasil dipasang. Buka ulang aplikasi agar PATH FFmpeg terbaca.',
     missingYtDlp:

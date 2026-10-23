@@ -182,7 +182,9 @@ export const ru: TranslationTree = {
     ffmpegReturnToSpoofer: 'Вернуться в Spoofer',
     ffmpegInstalling: 'Установка FFmpeg через Winget...',
     ffmpegInstallOutput: 'Вывод Winget',
-    ffmpegInstallFailed: 'Winget не удалось установить FFmpeg: {error}',
+    ffmpegInstallFailedTitle: 'Winget не удалось установить FFmpeg',
+    ffmpegInstallHint:
+      'Это может занять минуту. Не закрывайте приложение — окно закроется само, когда FFmpeg будет готов.',
     ffmpegInstallComplete:
       'FFmpeg установлен. Перезапустите приложение, чтобы применить изменения PATH.',
     missingYtDlp:

@@ -47,7 +47,11 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-sm',
+          // The default width is a single `max-w-*` on purpose. Tailwind-merge
+          // treats a responsive variant (`sm:max-w-sm`) as a different group
+          // from `max-w-lg`, so a caller's width would be silently overridden
+          // at >=640px instead of replacing the default.
+          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[min(calc(100%-2rem),24rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none',
           className,
         )}
         {...props}

@@ -7,6 +7,7 @@ import {
   FileAudio,
   Info,
   Link2,
+  Loader2,
   Pencil,
   Play,
   Square,
@@ -158,31 +159,28 @@ export default function MusicView() {
             <DialogDescription>{t('music.ffmpegRequiredDescription')}</DialogDescription>
           </DialogHeader>
 
-          {ffmpegInstallOutput.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <p className="text-xs font-medium text-text-secondary">
-                {t('music.ffmpegInstallOutput')}
-              </p>
-              <pre
-                role="log"
-                aria-live="polite"
-                className="max-h-48 overflow-auto rounded-md bg-background p-3 text-xs text-text-secondary"
-              >
-                {ffmpegInstallOutput.join('\n')}
-              </pre>
+          {installingFfmpeg && (
+            <div role="status" className="flex items-start gap-3 rounded-lg bg-bg-elevated p-3">
+              <Loader2 size={16} className="mt-0.5 shrink-0 animate-spin text-primary" />
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-medium text-text-primary">
+                  {t('music.ffmpegInstalling')}
+                </p>
+                <p className="text-xs text-text-secondary">{t('music.ffmpegInstallHint')}</p>
+              </div>
             </div>
           )}
 
-          {installingFfmpeg && (
-            <p role="status" className="text-sm text-text-secondary">
-              {t('music.ffmpegInstalling')}
-            </p>
-          )}
-
           {ffmpegInstallError && (
-            <p role="alert" className="text-sm text-danger">
-              {t('music.ffmpegInstallFailed').replace('{error}', ffmpegInstallError)}
-            </p>
+            <div role="alert" className="flex items-start gap-3 rounded-lg bg-danger/10 p-3">
+              <CircleAlert size={16} className="mt-0.5 shrink-0 text-danger" />
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-medium text-danger">
+                  {t('music.ffmpegInstallFailedTitle')}
+                </p>
+                <p className="text-xs break-words text-text-secondary">{ffmpegInstallError}</p>
+              </div>
+            </div>
           )}
 
           {ffmpegInstalled && (
@@ -191,9 +189,27 @@ export default function MusicView() {
             </p>
           )}
 
+          {/* Raw installer output is evidence, not the main story: collapsed
+              unless the install failed, where it is the only clue the user has. */}
+          {ffmpegInstallOutput.length > 0 && (
+            <details open={!!ffmpegInstallError} className="group">
+              <summary className="cursor-pointer text-xs text-text-muted select-none hover:text-text-secondary">
+                {t('music.ffmpegInstallOutput')}
+              </summary>
+              <pre
+                role="log"
+                aria-live="polite"
+                className="mt-2 max-h-40 overflow-auto rounded-md bg-bg-surface p-3 text-xs leading-relaxed text-text-secondary"
+              >
+                {ffmpegInstallOutput.join('\n')}
+              </pre>
+            </details>
+          )}
+
           <DialogFooter>
             {!ffmpegInstalled && (
               <Button onClick={() => void handleInstallFfmpeg()} disabled={installingFfmpeg}>
+                {installingFfmpeg && <Loader2 className="animate-spin" />}
                 {installingFfmpeg ? t('music.ffmpegInstalling') : t('music.ffmpegInstall')}
               </Button>
             )}
