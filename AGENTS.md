@@ -29,7 +29,7 @@ Focused runs:
 
 Run these separately when you touch the relevant code.
 
-- **Selene** (Luau linter) — CI only: `cd plugin && selene .`. Installed via `aftman` (`aftman.toml` pins 0.31.0) or `cargo install selene --version 0.31.0`. Rules are relaxed in `plugin/selene.toml`.
+- **Selene** (Luau linter) — CI only: `cd plugin && selene .`. CI installs it with `cargo install selene --version 0.31.0`; locally use `rokit install` (`rokit.toml` pins 0.31.0) or the same cargo command. Rules are relaxed in `plugin/selene.toml`.
 - **`plugin/tests/run_tests.luau`** — not referenced by any package script or workflow. Run it manually; it is not a safety net.
 - **Playwright e2e** — see above.
 
