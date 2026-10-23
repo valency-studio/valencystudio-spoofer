@@ -193,8 +193,13 @@ pub struct ImportedMedia {
 /// what is missing instead of failing later with an opaque error.
 #[tauri::command]
 #[specta::specta]
-pub async fn check_media_tools() -> Result<MediaTools> {
-    let (ffmpeg, ffprobe, ytdlp) = tokio::join!(resolve(FFMPEG), resolve(FFPROBE), resolve(YTDLP));
+pub async fn check_media_tools(app: AppHandle) -> Result<MediaTools> {
+    // yt-dlp goes through `resolve_ytdlp`, not the plain PATH scan: the copy this
+    // app installs lives in its own data directory, so scanning the PATH alone
+    // reported it missing on the very next screen after a splash-time install
+    // had just succeeded.
+    let (ffmpeg, ffprobe, ytdlp) =
+        tokio::join!(resolve(FFMPEG), resolve(FFPROBE), resolve_ytdlp(&app));
 
     Ok(MediaTools { ffmpeg: ffmpeg.is_some(), ffprobe: ffprobe.is_some(), ytdlp: ytdlp.is_some() })
 }
@@ -374,7 +379,10 @@ pub async fn ensure_ytdlp(app: AppHandle) -> Result<bool> {
     }
 
     let asset = ytdlp_asset();
-    let client = crate::utils::get_http_client();
+    // The shared client times out at 15 s, which is nowhere near enough for a
+    // ~17 MB release asset on a slow link: a first-run install would fail with a
+    // bare timeout and no way to tell it apart from a broken network.
+    let client = crate::utils::build_client_with_timeout(std::time::Duration::from_secs(180));
 
     let sums = client
         .get(format!("{YTDLP_RELEASE_BASE}/SHA2-256SUMS"))

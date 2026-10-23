@@ -106,27 +106,49 @@ async function runSplashFlow() {
   }
 
   // Installs yt-dlp when it is missing so the Music view is ready on first
-  // paint. Failure is non-fatal: the Music view reports what is unavailable.
+  // paint. Failure is non-fatal: the Music view reports what is unavailable and
+  // offers a retry, so a failed download never blocks boot.
   if (statusText) {
     statusText.innerText = 'Preparing media tools...';
   }
 
+  let mediaFailed: boolean;
+  let mediaTimer: ReturnType<typeof setTimeout> | undefined;
+
   try {
-    const result = await invoke<{ tools: { ytdlp: boolean }; ytdlpInstalled: boolean }>(
-      'ensure_media_tools',
-    );
-    if (result.ytdlpInstalled) {
+    // Capped so a stalled download cannot hold the splash open forever; the
+    // Music view's retry is the recovery path. 120 s covers a slow first-run
+    // download of the release asset.
+    const result = await Promise.race([
+      invoke<{ tools: { ytdlp: boolean }; ytdlpInstalled: boolean }>('ensure_media_tools'),
+      new Promise<null>((_, reject) => {
+        mediaTimer = setTimeout(() => reject(new Error('Media tool setup timed out')), 120_000);
+      }),
+    ]);
+
+    if (result?.ytdlpInstalled) {
       console.log('Installed yt-dlp for the Music editor.');
     }
-    if (!result.tools.ytdlp) {
+    mediaFailed = !!result && !result.tools.ytdlp;
+    if (mediaFailed) {
       console.warn('yt-dlp is unavailable; importing from a link will be disabled.');
     }
   } catch (err) {
+    mediaFailed = true;
     console.error('Failed to prepare media tools:', err);
+  } finally {
+    // Left running otherwise, the losing branch rejects with nobody listening.
+    clearTimeout(mediaTimer);
   }
 
-  if (statusText) {
+  // The failure text stays on screen instead of being replaced by "Starting...",
+  // which would hide the only signal that the Music view needs a retry.
+  if (statusText && !mediaFailed) {
     statusText.innerText = 'Starting...';
+  } else if (statusText) {
+    statusText.innerText = 'yt-dlp could not be installed. Retry from the Music view.';
+    // Held briefly so the message can be read before the window disappears.
+    await new Promise((resolve) => setTimeout(resolve, 3000));
   }
 
   try {
