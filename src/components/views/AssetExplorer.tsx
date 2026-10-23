@@ -729,7 +729,7 @@ export default function AssetExplorer({
                   </Popover>
                 </div>
 
-                <div className="flex items-center rounded-lg overflow-hidden border border-primary/20 shadow-sm">
+                <div className="flex items-center rounded-lg overflow-hidden border border-primary/20">
                   <button
                     type="button"
                     onClick={() => {
@@ -824,7 +824,7 @@ export default function AssetExplorer({
           <div className="flex-1 flex flex-col overflow-hidden h-full w-full relative">
             {(isSpoofing || isReplacing || isGrantingPermissions) && (
               <div className="absolute top-0 left-0 right-0 z-50 pointer-events-none">
-                <div className="h-1 bg-bg-base w-full overflow-hidden shadow-md">
+                <div className="h-1 bg-bg-base w-full overflow-hidden">
                   <div
                     className="h-full bg-primary transition-all duration-300"
                     style={{
@@ -856,16 +856,16 @@ export default function AssetExplorer({
                 <div
                   role="status"
                   aria-live="polite"
-                  className="absolute top-1.5 right-3 px-2.5 py-0.5 rounded bg-bg-surface/90 border border-border-subtle text-2xs text-text-primary font-mono shadow-sm pointer-events-auto flex items-center gap-1.5"
+                  className="absolute top-1.5 right-3 px-2.5 py-0.5 rounded bg-bg-surface/90 border border-border-subtle text-2xs text-text-primary tabular-nums pointer-events-auto flex items-center gap-1.5"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   <span>
                     {isSpoofing
-                      ? `${spoofStatusText || 'Initializing...'}${spoofTotalCount > 0 ? ` · ${spoofCurrentCount}/${spoofTotalCount}` : ''}${activeEta ? ` · ${activeEta}` : ''}`
+                      ? `${spoofStatusText || 'Initializing...'}${spoofTotalCount > 0 ? `, ${spoofCurrentCount}/${spoofTotalCount}` : ''}${activeEta ? `, ${activeEta}` : ''}`
                       : isReplacing
-                        ? `Replacing${replaceTotalCount > 0 ? ` · ${replaceCurrentCount}/${replaceTotalCount}` : '...'}${activeEta ? ` · ${activeEta}` : ''}`
+                        ? `Replacing${replaceTotalCount > 0 ? `, ${replaceCurrentCount}/${replaceTotalCount}` : '...'}${activeEta ? `, ${activeEta}` : ''}`
                         : isGrantingPermissions
-                          ? `${t('spoof.assetPermissionsProgress')}${permissionsTotalCount > 0 ? ` · ${permissionsCurrentCount}/${permissionsTotalCount}` : '...'}${activeEta ? ` · ${activeEta}` : ''}`
+                          ? `${t('spoof.assetPermissionsProgress')}${permissionsTotalCount > 0 ? `, ${permissionsCurrentCount}/${permissionsTotalCount}` : '...'}${activeEta ? `, ${activeEta}` : ''}`
                           : ''}
                   </span>
                 </div>
@@ -900,7 +900,7 @@ export default function AssetExplorer({
 
                       {!isScanningStudio && (
                         <div className="flex flex-col gap-2 w-full max-w-xs mt-2">
-                          <div className="flex items-center rounded-lg overflow-hidden border border-primary/20 shadow-sm w-full">
+                          <div className="flex items-center rounded-lg overflow-hidden border border-primary/20 w-full">
                             <button
                               type="button"
                               onClick={() => {
@@ -971,9 +971,7 @@ export default function AssetExplorer({
                               className="w-76 p-3 bg-bg-surface border border-border shadow-xl rounded-lg z-[250]"
                             >
                               <div className="flex flex-col gap-2.5">
-                                <SectionLabel className="tracking-wider">
-                                  {t('explorer.targetedPathScan')}
-                                </SectionLabel>
+                                <SectionLabel>{t('explorer.targetedPathScan')}</SectionLabel>
                                 <p className="text-2xs text-text-secondary leading-snug">
                                   {t('explorer.targetedPathScanBody')}
                                 </p>
@@ -1145,7 +1143,7 @@ export default function AssetExplorer({
                   <span>{stats.total} assets found</span>
                   {lastScanTime && (
                     <>
-                      <span>•</span>
+                      <span>,</span>
                       <span>
                         Scanned{' '}
                         {new Date(lastScanTime).toLocaleTimeString([], {
@@ -1160,7 +1158,7 @@ export default function AssetExplorer({
 
               <div className="flex items-center gap-2 shrink-0">
                 {selectedCount > 0 && (
-                  <div className="flex items-center rounded-lg border border-border-subtle bg-bg-surface p-0.5 shrink-0 gap-0.5 shadow-sm">
+                  <div className="flex items-center rounded-lg border border-border-subtle bg-bg-surface p-0.5 shrink-0 gap-0.5">
                     <Popover open={lockOpen} onOpenChange={setLockOpen}>
                       <PopoverTrigger
                         render={
@@ -1188,7 +1186,7 @@ export default function AssetExplorer({
                       >
                         <div className="flex flex-col gap-2">
                           <SectionLabel className="font-semibold">
-                            {t('settings.forcePlaceIds')} · {selectedCount} selected
+                            {t('settings.forcePlaceIds')}, {selectedCount} selected
                           </SectionLabel>
                           <Input
                             value={placeIdInput}
@@ -1351,7 +1349,7 @@ export default function AssetExplorer({
                   </div>
                 )}
 
-                <div className="flex items-center rounded-lg border border-border-subtle bg-bg-surface p-0.5 shrink-0 gap-0.5 shadow-sm">
+                <div className="flex items-center rounded-lg border border-border-subtle bg-bg-surface p-0.5 shrink-0 gap-0.5">
                   {config.spoofing.selectedUser !== 'none' && (
                     <div className="flex items-center rounded overflow-hidden">
                       <Tooltip>
@@ -1407,10 +1405,8 @@ export default function AssetExplorer({
                         >
                           <div className="flex flex-col gap-3">
                             <div className="flex items-center justify-between">
-                              <SectionLabel className="tracking-wider">
-                                {t('explorer.discoveryTimeout')}
-                              </SectionLabel>
-                              <span className="text-xs font-mono font-bold text-primary">
+                              <SectionLabel>{t('explorer.discoveryTimeout')}</SectionLabel>
+                              <span className="text-xs font-semibold tabular-nums text-primary">
                                 {discoveryTimeoutSecs}s / asset
                               </span>
                             </div>
@@ -1423,7 +1419,7 @@ export default function AssetExplorer({
                               onChange={(e) => setDiscoveryTimeoutSecs(Number(e.target.value))}
                               className="w-full accent-primary h-1.5 bg-bg-base rounded-lg cursor-pointer"
                             />
-                            <div className="flex justify-between text-2xs text-text-muted font-mono">
+                            <div className="flex justify-between text-2xs text-text-muted tabular-nums">
                               <span>30s (fast)</span>
                               <span>120s</span>
                               <span>300s (deep)</span>
@@ -1479,7 +1475,7 @@ export default function AssetExplorer({
                     <Button
                       size="sm"
                       data-tutorial-target="run-spoofer"
-                      className="h-8 px-3 rounded-r-none rounded-l-md text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm"
+                      className="h-8 px-3 rounded-r-none rounded-l-md text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                       onClick={() => {
                         const targetPaths = computeTargetPaths();
                         useSpooferStore.getState().setTargetPathsMap(targetPaths || {});
@@ -1598,7 +1594,7 @@ export default function AssetExplorer({
                         {t('explorer.reapplyReplacements')}
                       </span>
                       {storedReplacementsCount > 0 && (
-                        <span className="text-2xs text-muted-foreground font-mono bg-bg-base px-1 rounded border border-border-subtle">
+                        <span className="text-2xs text-muted-foreground tabular-nums bg-bg-base px-1 rounded border border-border-subtle">
                           {storedReplacementsCount}
                         </span>
                       )}

@@ -604,7 +604,7 @@ export default function AnimationPreview({
                       return r === 'R15' ? 'R6' : 'R15';
                     })
                   }
-                  className="px-1.5 py-0.5 rounded text-2xs font-bold tracking-wider uppercase border border-border-subtle hover:border-primary hover:text-primary transition-colors text-text-muted"
+                  className="px-1.5 py-0.5 rounded text-2xs font-semibold border border-border-subtle hover:border-primary hover:text-primary transition-colors text-text-muted"
                   aria-label={t('misc.toggleRigType')}
                 >
                   {rigType}
@@ -725,7 +725,7 @@ export default function AnimationPreview({
 
             <div
               ref={scrubThumbRef}
-              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-primary rounded-full shadow-md border-2 border-white pointer-events-none z-20"
+              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-primary rounded-full border-2 border-white pointer-events-none z-20"
               style={{ left: '0%' }}
             />
           </div>
@@ -753,7 +753,7 @@ export default function AnimationPreview({
               <RotateCcw size={12} />
             </Button>
 
-            <span ref={timeDisplayRef} className="text-2xs font-mono text-text-muted ml-1">
+            <span ref={timeDisplayRef} className="text-2xs tabular-nums text-text-muted ml-1">
               0.00s / {duration.toFixed(2)}s
             </span>
 
@@ -765,9 +765,7 @@ export default function AnimationPreview({
                     className="ml-auto flex items-center gap-1 h-7 px-2 bg-bg-base/80 hover:bg-bg-elevated border border-border-subtle rounded-md text-xs font-semibold text-text-primary transition-colors select-none shrink-0"
                     aria-label={t('misc.playbackSpeed')}
                   >
-                    <span className="text-2xs text-text-muted font-bold uppercase mr-0.5">
-                      {t('misc.speed')}
-                    </span>
+                    <span className="text-2xs text-text-muted mr-0.5">{t('misc.speed')}</span>
                     <span>{speed}×</span>
                     <ChevronDown size={11} className="text-muted-foreground" />
                   </button>
@@ -786,7 +784,7 @@ export default function AnimationPreview({
                       type="button"
                       onClick={() => setSpeed(s)}
                       className={cn(
-                        'flex items-center justify-between px-2 py-1 rounded text-xs font-mono transition-colors text-left',
+                        'flex items-center justify-between px-2 py-1 rounded text-xs tabular-nums transition-colors text-left',
                         speed === s
                           ? 'bg-primary text-primary-foreground font-bold'
                           : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated',

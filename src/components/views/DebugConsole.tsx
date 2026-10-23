@@ -204,9 +204,9 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
                 type="button"
                 onClick={() => setFilterSource(src.value)}
                 className={cn(
-                  'px-2 h-6 rounded text-2xs font-bold uppercase tracking-wider transition-all',
+                  'px-2 h-6 rounded text-2xs font-semibold transition-all',
                   filterSource === src.value
-                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-text-primary',
                 )}
               >
@@ -253,7 +253,7 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
         </div>
 
         <div className="flex items-center gap-1">
-          <span className="text-2xs text-text-muted font-mono mr-2">
+          <span className="text-2xs text-text-muted tabular-nums mr-2">
             {filteredLogs.length}{' '}
             {filteredLogs.length === 1 ? t('debug.entryOne') : t('debug.entryMany')}
           </span>

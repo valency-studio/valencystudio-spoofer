@@ -81,7 +81,7 @@ export const ru: TranslationTree = {
       'Не удалось проанализировать ключевые кадры анимации. Формат может не поддерживаться.',
     animation: 'Анимация',
     keyframesCount: '{count} ключевых кадров',
-    dragToOrbit: 'Перетащите для вращения · Прокрутите для масштабирования',
+    dragToOrbit: 'Перетащите для вращения, прокрутите для масштабирования',
     speed: 'Скорость',
     errorBoundaryTitle: 'Упс, что-то сломалось.',
     errorBoundaryDesc:
@@ -519,7 +519,7 @@ export const ru: TranslationTree = {
     clearExplorerBody: 'Это удалит все просканированные ресурсы: {count}.',
     showMore: 'Показать ещё {count}',
     discovered: 'Обнаружено',
-    idAutoDetected: 'ID: {id} · Определено автоматически',
+    idAutoDetected: 'ID: {id}, определено автоматически',
     studioNotConnectedToast: 'Плагин Roblox Studio не подключён. Сначала подключите Studio.',
     instanceDetails: 'Сведения об экземпляре',
     appearanceAndValues: 'Внешний вид и значения',

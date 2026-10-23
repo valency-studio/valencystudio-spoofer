@@ -81,7 +81,7 @@ export const fr: TranslationTree = {
       "Impossible d'analyser les images clés de l'animation. Le format peut ne pas être pris en charge.",
     animation: 'Animation',
     keyframesCount: '{count} images clés',
-    dragToOrbit: 'Faites glisser pour tourner · Faites défiler pour zoomer',
+    dragToOrbit: 'Faites glisser pour tourner, faites défiler pour zoomer',
     speed: 'Vitesse',
     errorBoundaryTitle: "Oups, quelque chose s'est cassé.",
     errorBoundaryDesc:
@@ -532,7 +532,7 @@ export const fr: TranslationTree = {
     clearExplorerBody: 'Cela supprimera les {count} ressources analysées.',
     showMore: 'Afficher {count} de plus',
     discovered: 'Détecté',
-    idAutoDetected: 'ID : {id} · Détecté automatiquement',
+    idAutoDetected: 'ID : {id}, détecté automatiquement',
     studioNotConnectedToast: "Aucun plugin Roblox Studio connecté. Connectez d'abord Studio.",
     instanceDetails: "Détails de l'instance",
     appearanceAndValues: 'Apparence et valeurs',

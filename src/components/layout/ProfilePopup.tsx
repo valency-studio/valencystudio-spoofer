@@ -227,7 +227,7 @@ export default function ProfilePopup({ collapsed = false }: { collapsed?: boolea
           <div className="h-px bg-border my-1.5" />
 
           <div className="flex flex-col gap-1 px-1">
-            <div className="flex items-center justify-between text-2xs font-semibold uppercase tracking-widest text-text-muted">
+            <div className="flex items-center justify-between text-2xs font-semibold text-text-muted">
               <span>{t('spoof.selectedGroup')}</span>
               {loadingGroups && <Loader2 size={11} className="animate-spin text-text-muted" />}
             </div>

@@ -103,7 +103,7 @@ export default function AboutView() {
             <img
               src={appIcon}
               alt=""
-              className="h-16 w-16 shrink-0 select-none shadow-xs"
+              className="h-16 w-16 shrink-0 select-none"
               draggable={false}
             />
             <div className="min-w-0 flex-1">
@@ -148,7 +148,7 @@ export default function AboutView() {
               {facts.map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between px-3 py-2">
                   <dt className="text-xs text-text-muted">{label}</dt>
-                  <dd className="font-mono text-xs text-text-secondary tabular-nums">{value}</dd>
+                  <dd className="text-xs text-text-secondary tabular-nums">{value}</dd>
                 </div>
               ))}
             </dl>

@@ -94,7 +94,7 @@ export const id: TranslationTree = {
       'Tidak dapat membaca keyframe animasi. Format animasi mungkin tidak didukung untuk dipratinjau.',
     animation: 'Animasi',
     keyframesCount: '{count} keyframe',
-    dragToOrbit: 'Seret untuk memutar · Gulir untuk memperbesar',
+    dragToOrbit: 'Seret untuk memutar, gulir untuk memperbesar',
     speed: 'Kecepatan',
     errorBoundaryTitle: 'Ada yang berhenti berfungsi.',
     errorBoundaryDesc:
@@ -525,7 +525,7 @@ export const id: TranslationTree = {
     clearExplorerBody: 'Ini akan menghapus semua {count} aset yang dipindai.',
     showMore: 'Tampilkan {count} lagi',
     discovered: 'Terdeteksi',
-    idAutoDetected: 'ID: {id} · Terdeteksi otomatis',
+    idAutoDetected: 'ID: {id}, terdeteksi otomatis',
     studioNotConnectedToast:
       'Plugin Roblox Studio belum terhubung. Hubungkan Studio terlebih dahulu.',
     instanceDetails: 'Detail Instance',

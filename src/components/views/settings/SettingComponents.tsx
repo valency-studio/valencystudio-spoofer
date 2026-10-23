@@ -31,7 +31,7 @@ export function SettingCard({
   return (
     <Card
       className={cn(
-        'bg-bg-surface/40 border border-border-subtle rounded-xl shadow-xs overflow-hidden',
+        'bg-bg-surface/40 border border-border-subtle rounded-xl overflow-hidden',
         className,
       )}
     >
@@ -150,7 +150,7 @@ export function SettingSliderItem({
             <p className="text-2xs text-text-secondary leading-snug">{description}</p>
           )}
         </div>
-        <span className="text-2xs font-mono font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md shrink-0">
+        <span className="text-2xs font-semibold tabular-nums text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md shrink-0">
           {value}
         </span>
       </div>
@@ -174,13 +174,13 @@ export function SettingSliderItem({
         />
 
         <div
-          className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary shadow-xs border border-white pointer-events-none transition-all duration-75"
+          className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary border border-white pointer-events-none transition-all duration-75"
           style={{ left: `${pct}%` }}
         />
       </div>
 
       {ticks && (
-        <div className="relative w-full h-3 text-2xs text-text-muted font-mono mt-0.5 select-none">
+        <div className="relative w-full h-3 text-2xs text-text-muted tabular-nums mt-0.5 select-none">
           {ticks.map((t, i) => {
             const numVal = typeof t === 'number' ? t : parseFloat(String(t));
             const tickPct = isNaN(numVal)

@@ -164,7 +164,7 @@ export default function ActivityView() {
                       <AccordionItem
                         key={job.id}
                         value={job.id}
-                        className="bg-bg-surface/40 border border-border-subtle shadow-xs rounded-xl overflow-hidden mb-3"
+                        className="bg-bg-surface/40 border border-border-subtle rounded-xl overflow-hidden mb-3"
                       >
                         <AccordionTrigger className="hover:no-underline py-2.5 pr-3 pl-2 data-[state=open]:border-b data-[state=open]:border-border-subtle/30">
                           <div className="flex items-center justify-between w-full">
@@ -174,10 +174,10 @@ export default function ActivityView() {
                                   <img
                                     src={job.account.avatarUrl}
                                     alt=""
-                                    className="w-9 h-9 rounded-full border border-border-subtle object-cover bg-bg-base shadow-xs"
+                                    className="w-9 h-9 rounded-full border border-border-subtle object-cover bg-bg-base"
                                   />
                                 ) : (
-                                  <div className="w-9 h-9 rounded-full border border-border-subtle bg-bg-base flex items-center justify-center shadow-xs">
+                                  <div className="w-9 h-9 rounded-full border border-border-subtle bg-bg-base flex items-center justify-center">
                                     <User2 size={16} className="text-muted-foreground" />
                                   </div>
                                 )}
@@ -185,7 +185,7 @@ export default function ActivityView() {
                                   <img
                                     src={job.group.iconUrl}
                                     alt=""
-                                    className="w-4.5 h-4.5 rounded-full border-[2px] border-bg-base absolute -bottom-0.5 -right-0.5 object-cover bg-bg-base shadow-xs"
+                                    className="w-4.5 h-4.5 rounded-full border-[2px] border-bg-base absolute -bottom-0.5 -right-0.5 object-cover bg-bg-base"
                                   />
                                 )}
                               </div>

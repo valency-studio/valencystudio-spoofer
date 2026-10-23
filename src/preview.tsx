@@ -174,7 +174,7 @@ function PreviewApp() {
             className={cn(
               'h-6 px-2 rounded flex items-center gap-1 text-2xs font-bold transition-colors cursor-pointer',
               isPinned
-                ? 'bg-primary text-primary-foreground shadow-xs'
+                ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:text-foreground hover:bg-bg-surface',
             )}
             aria-label={isPinned ? 'Unpin window' : 'Keep window always on top'}
@@ -285,7 +285,7 @@ function PreviewApp() {
                     render={
                       <button
                         type="button"
-                        className="h-5 px-1.5 flex items-center gap-0.5 text-2xs font-mono font-semibold text-text-secondary hover:text-foreground rounded cursor-pointer"
+                        className="h-5 px-1.5 flex items-center gap-0.5 text-2xs tabular-nums font-semibold text-text-secondary hover:text-foreground rounded cursor-pointer"
                       >
                         <span>{Math.round(imageZoom * 100)}%</span>
                         <ChevronDown size={9} />
@@ -308,7 +308,7 @@ function PreviewApp() {
                             setPan({ x: 0, y: 0 });
                           }}
                           className={cn(
-                            'flex items-center justify-between px-1.5 py-0.5 rounded text-2xs font-mono transition-colors text-left',
+                            'flex items-center justify-between px-1.5 py-0.5 rounded text-2xs tabular-nums transition-colors text-left',
                             imageZoom === z
                               ? 'bg-primary text-primary-foreground font-bold'
                               : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated',
@@ -350,7 +350,7 @@ function PreviewApp() {
             <Button
               size="sm"
               variant={playingAudioId === assetId ? 'destructive' : 'default'}
-              className="h-8 px-4 gap-2 font-semibold text-xs shadow-sm"
+              className="h-8 px-4 gap-2 font-semibold text-xs"
               onClick={handlePlayAudio}
             >
               {playingAudioId === assetId ? (

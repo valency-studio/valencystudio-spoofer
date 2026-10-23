@@ -1,4 +1,4 @@
-import { Palette } from 'lucide-react';
+import { Moon, Palette, Sun } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { HexAlphaColorPicker } from 'react-colorful';
 import { createPortal } from 'react-dom';
@@ -72,7 +72,7 @@ export default function AppearanceCard() {
             {t('settings.themeDescription')}
           </p>
         </div>
-        <div className="flex bg-bg-base border border-border rounded-lg p-0.5 overflow-hidden w-40 shrink-0 shadow-xs">
+        <div className="flex bg-bg-base border border-border rounded-lg p-0.5 overflow-hidden w-40 shrink-0">
           {(['light', 'dark'] as const).map((tMode) => (
             <button
               key={tMode}
@@ -81,11 +81,11 @@ export default function AppearanceCard() {
               className={cn(
                 'flex-1 py-1 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer',
                 themeMode === tMode
-                  ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                  ? 'bg-primary text-primary-foreground font-semibold'
                   : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated',
               )}
             >
-              <span>{tMode === 'light' ? '☀️' : '🌙'}</span>
+              {tMode === 'light' ? <Sun size={13} /> : <Moon size={13} />}
               <span>{t(`settings.theme${tMode.charAt(0).toUpperCase() + tMode.slice(1)}`)}</span>
             </button>
           ))}
@@ -110,7 +110,7 @@ export default function AppearanceCard() {
             aria-label={t('settings.accentColor')}
             aria-haspopup="dialog"
             aria-expanded={isColorPickerOpen}
-            className="w-7 h-7 rounded-full border border-border cursor-pointer shadow-xs shrink-0"
+            className="w-7 h-7 rounded-full border border-border cursor-pointer shrink-0"
             style={{ backgroundColor: accentColor || '#3B82F6' }}
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();

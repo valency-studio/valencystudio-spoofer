@@ -94,7 +94,7 @@ export const en: TranslationTree = {
       'Could not read animation keyframes. The animation format may not be supported for previewing.',
     animation: 'Animation',
     keyframesCount: '{count} keyframes',
-    dragToOrbit: 'Drag to orbit · Scroll to zoom',
+    dragToOrbit: 'Drag to orbit, scroll to zoom',
     speed: 'Speed',
     errorBoundaryTitle: 'Something stopped working.',
     errorBoundaryDesc:
@@ -525,7 +525,7 @@ export const en: TranslationTree = {
     clearExplorerBody: 'This will remove all {count} scanned assets.',
     showMore: 'Show {count} more',
     discovered: 'Discovered',
-    idAutoDetected: 'ID: {id} · Auto-detected',
+    idAutoDetected: 'ID: {id}, auto-detected',
     studioNotConnectedToast: 'No Roblox Studio plugin connected. Please connect Studio first.',
     instanceDetails: 'Instance Details',
     appearanceAndValues: 'Appearance & Values',

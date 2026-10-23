@@ -137,7 +137,7 @@ export default function ResultsModal({
                           <TooltipTrigger
                             render={
                               <span className="text-xs text-muted-foreground font-medium truncate">
-                                {meta.type.toUpperCase()} • {meta.name}
+                                {meta.type.toUpperCase()}, {meta.name}
                               </span>
                             }
                           />
@@ -225,7 +225,7 @@ export default function ResultsModal({
                           <SkipForward size={14} className="text-muted-foreground shrink-0" />
                         )}
                         <span className="text-xs text-muted-foreground font-medium truncate">
-                          {typeLabel ? `${typeLabel} • ` : ''}
+                          {typeLabel ? `${typeLabel}, ` : ''}
                           {name}
                         </span>
                         <span className="text-xs font-mono text-muted-foreground/70 ml-auto shrink-0">

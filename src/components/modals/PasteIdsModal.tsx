@@ -171,7 +171,7 @@ export default function PasteIdsModal({
             className={cn(
               'flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-semibold transition-all',
               mode === 'add'
-                ? 'bg-primary/15 text-primary border border-primary/30 shadow-sm'
+                ? 'bg-primary/15 text-primary border border-primary/30'
                 : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated',
             )}
           >
@@ -184,7 +184,7 @@ export default function PasteIdsModal({
             className={cn(
               'flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-semibold transition-all',
               mode === 'replace'
-                ? 'bg-primary/15 text-primary border border-primary/30 shadow-sm'
+                ? 'bg-primary/15 text-primary border border-primary/30'
                 : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated',
             )}
           >
@@ -241,7 +241,7 @@ export default function PasteIdsModal({
                     </span>
                   )}
                   {replacePairCount > 0 && badReplaceLines > 0 && (
-                    <span className="text-text-muted"> · </span>
+                    <span className="text-text-muted">,</span>
                   )}
                   {badReplaceLines > 0 && (
                     <span className="text-signal-warn">

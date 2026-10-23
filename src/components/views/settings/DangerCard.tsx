@@ -29,7 +29,7 @@ export default function DangerCard() {
         <Button
           variant="destructive"
           size="sm"
-          className="h-8 px-3 font-semibold text-xs shadow-xs bg-danger hover:bg-danger/90 text-white shrink-0 rounded-md"
+          className="h-8 px-3 font-semibold text-xs bg-danger hover:bg-danger/90 text-white shrink-0 rounded-md"
           onClick={async () => {
             const confirmed = await ask(t('settings.resetConfirmBody'), {
               title: t('settings.resetConfirmTitle'),

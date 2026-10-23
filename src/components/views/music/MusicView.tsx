@@ -414,8 +414,8 @@ export function HistoryRow({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-text-primary">{record.title}</p>
           <p className="mt-0.5 text-xs text-text-muted">
-            {formatUploadDate(record.uploadedAt)} · {formatBytes(record.totalBytes)}
-            {split ? ` · ${t('music.parts').replace('{count}', String(record.pieces.length))}` : ''}
+            {formatUploadDate(record.uploadedAt)}, {formatBytes(record.totalBytes)}
+            {split ? `, ${t('music.parts').replace('{count}', String(record.pieces.length))}` : ''}
           </p>
         </div>
 
@@ -841,8 +841,8 @@ function TrackEditor({
           )}
           <p className="mt-0.5 text-xs text-text-muted">
             {formatDuration(track.info?.duration)}
-            {track.uploader ? ` · ${track.uploader}` : ''}
-            {track.exportedPath ? ` · ${t('music.exportedLabel')}` : ''}
+            {track.uploader ? `, ${track.uploader}` : ''}
+            {track.exportedPath ? `, ${t('music.exportedLabel')}` : ''}
           </p>
         </div>
 
@@ -876,7 +876,7 @@ function TrackEditor({
           label={t('music.speed')}
           value={
             preset
-              ? `${t(preset.labelKey)} · ${track.speed.toFixed(2)}x`
+              ? `${t(preset.labelKey)}, ${track.speed.toFixed(2)}x`
               : `${track.speed.toFixed(2)}x`
           }
         >
@@ -945,7 +945,7 @@ function TrackEditor({
 
           <Control
             label={t('music.quality')}
-            value={`${track.quality}/${QUALITY_RANGE.max} · ${qualityBitrateKbps(track.quality)} kbps`}
+            value={`${track.quality}/${QUALITY_RANGE.max}, ${qualityBitrateKbps(track.quality)} kbps`}
           >
             <input
               type="range"
@@ -995,7 +995,7 @@ function TrackEditor({
             <li key={file.path} className="flex items-center justify-between gap-3 text-xs">
               <span className="truncate text-text-secondary">{file.displayName}</span>
               <span className="shrink-0 text-text-muted tabular-nums">
-                {formatDuration(file.outputDuration)} · {(file.bytes / 1024 / 1024).toFixed(1)} MB
+                {formatDuration(file.outputDuration)}, {(file.bytes / 1024 / 1024).toFixed(1)} MB
               </span>
             </li>
           ))}

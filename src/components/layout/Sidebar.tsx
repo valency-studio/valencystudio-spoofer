@@ -163,7 +163,7 @@ export default function Sidebar({
                 {!isCollapsed && (
                   <span
                     className={cn(
-                      'text-sm tracking-wide whitespace-nowrap overflow-hidden',
+                      'text-sm whitespace-nowrap overflow-hidden',
                       isActive ? 'font-semibold' : 'font-medium',
                     )}
                   >

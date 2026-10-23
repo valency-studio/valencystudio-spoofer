@@ -324,7 +324,7 @@ export default function AssetInspectorPanel({
                   render={
                     <button
                       type="button"
-                      className="h-5 px-1.5 flex items-center gap-0.5 text-2xs font-mono font-semibold text-text-secondary hover:text-foreground rounded cursor-pointer"
+                      className="h-5 px-1.5 flex items-center gap-0.5 text-2xs tabular-nums font-semibold text-text-secondary hover:text-foreground rounded cursor-pointer"
                     >
                       <span>{Math.round(imageZoom * 100)}%</span>
                       <ChevronDown size={9} />
@@ -347,7 +347,7 @@ export default function AssetInspectorPanel({
                           setPan({ x: 0, y: 0 });
                         }}
                         className={cn(
-                          'flex items-center justify-between px-1.5 py-0.5 rounded text-2xs font-mono transition-colors text-left',
+                          'flex items-center justify-between px-1.5 py-0.5 rounded text-2xs tabular-nums transition-colors text-left',
                           imageZoom === z
                             ? 'bg-primary text-primary-foreground font-bold'
                             : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated',
@@ -391,7 +391,7 @@ export default function AssetInspectorPanel({
           <Button
             size="sm"
             variant={playingAudioId === activeAssetId ? 'destructive' : 'default'}
-            className="h-7 px-3 gap-1.5 font-semibold text-xs shadow-sm"
+            className="h-7 px-3 gap-1.5 font-semibold text-xs"
             onClick={handlePlayAudio}
           >
             {playingAudioId === activeAssetId ? (
