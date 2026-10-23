@@ -1,12 +1,14 @@
 import { Info, ShieldCheck } from 'lucide-react';
 
 import { useConfig } from '../../../contexts/ConfigContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { Label } from '../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { SettingCard, SettingFieldRow, SettingSwitchRow } from './SettingComponents';
 
 export default function PermissionsCard() {
   const { config, updateConfig } = useConfig();
+  const { t } = useLanguage();
 
   const permissions = config.permissions || {
     enabled: false,
@@ -37,7 +39,7 @@ export default function PermissionsCard() {
       <div className="px-3.5 py-2.5 flex items-center justify-between gap-4 hover:bg-bg-elevated/20 transition-colors">
         <div className="space-y-0.5 min-w-0 flex-1">
           <Label className="text-xs font-semibold text-text-primary block">
-            Target Subject Type
+            {t('settings.targetSubjectType')}
           </Label>
           <p className="text-2xs text-text-secondary leading-snug">
             Choose whether permissions are granted to a Place/Experience, a Group, or a User.

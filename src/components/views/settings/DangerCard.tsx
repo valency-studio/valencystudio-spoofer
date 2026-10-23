@@ -42,7 +42,7 @@ export default function DangerCard() {
             }
           }}
         >
-          Reset to Defaults
+          {t('settings.resetToDefaults')}
         </Button>
       </div>
     </SettingCard>

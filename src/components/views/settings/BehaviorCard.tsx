@@ -69,7 +69,7 @@ export default function BehaviorCard() {
       <div className="px-4 py-3 flex items-center justify-between gap-4 hover:bg-bg-elevated/20 transition-colors">
         <div className="space-y-0.5 min-w-0 flex-1">
           <span className="text-xs font-semibold text-text-primary block">
-            Interactive Onboarding Tutorial
+            {t('settings.onboardingTutorial')}
           </span>
           <p className="text-2xs text-text-secondary leading-relaxed">
             Walk through adding an account, setting up API keys, loading places, and running your

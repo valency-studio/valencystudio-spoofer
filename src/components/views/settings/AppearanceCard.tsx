@@ -69,7 +69,7 @@ export default function AppearanceCard() {
             {t('settings.theme')}
           </Label>
           <p className="text-2xs text-text-secondary leading-relaxed">
-            Switch between light and dark UI themes.
+            {t('settings.themeDescription')}
           </p>
         </div>
         <div className="flex bg-bg-base border border-border rounded-lg p-0.5 overflow-hidden w-40 shrink-0 shadow-xs">
@@ -98,7 +98,7 @@ export default function AppearanceCard() {
             {t('settings.accentColor')}
           </Label>
           <p className="text-2xs text-text-secondary leading-relaxed">
-            Choose the primary brand accent color across UI and buttons.
+            {t('settings.accentColorDescription')}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -169,7 +169,7 @@ export default function AppearanceCard() {
             {t('settings.language')}
           </Label>
           <p className="text-2xs text-text-secondary leading-relaxed">
-            Select your preferred display language for UI labels.
+            {t('settings.languageDescription')}
           </p>
         </div>
         <Select value={lang} onValueChange={(val) => setLang(val as any)}>

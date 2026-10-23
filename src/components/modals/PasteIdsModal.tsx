@@ -1,6 +1,7 @@
 import { ClipboardPaste, Plus, Replace } from 'lucide-react';
 import { useState } from 'react';
 
+import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 import { useSpooferStore } from '../../stores/spooferStore';
 import { logValencyStudio } from '../../utils/robloxProfiles';
@@ -17,6 +18,7 @@ export default function PasteIdsModal({
   onOpenChange: (open: boolean) => void;
   initialMode?: 'add' | 'replace';
 }) {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<'add' | 'replace'>(initialMode);
   const [rawInput, setRawInput] = useState('');
   const [isApplying, setIsApplying] = useState(false);
@@ -140,7 +142,10 @@ export default function PasteIdsModal({
         return next;
       });
 
-      const message = `Added ${singleIds.length} ID(s) to Explorer (${matchedIds.length} matched in Studio, ${ghostIds.length} created as Ghost IDs).`;
+      const message = t('misc.pasteIdsAdded')
+        .replace('{single}', String(singleIds.length))
+        .replace('{matched}', String(matchedIds.length))
+        .replace('{ghost}', String(ghostIds.length));
       logValencyStudio('info', message, true);
       showToast('info', message);
 
@@ -155,7 +160,7 @@ export default function PasteIdsModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base font-bold">
             <ClipboardPaste size={18} className="text-primary" />
-            Manual Replace & Add IDs
+            {t('misc.pasteIdsTitle')}
           </DialogTitle>
         </DialogHeader>
 
@@ -171,7 +176,7 @@ export default function PasteIdsModal({
             )}
           >
             <Plus size={14} />
-            Add IDs (Ghost IDs)
+            {t('misc.pasteIdsAddMode')}
           </button>
           <button
             type="button"
@@ -184,26 +189,27 @@ export default function PasteIdsModal({
             )}
           >
             <Replace size={14} />
-            Replace IDs (Pairs)
+            {t('misc.pasteIdsReplaceMode')}
           </button>
         </div>
 
         <div className="flex flex-col gap-3">
           {mode === 'add' ? (
             <p className="text-xs text-text-secondary leading-relaxed">
-              Paste a list of asset IDs (one per line, spaces, or commas). IDs that exist in Studio
-              scan will be selected. IDs not in Studio will be added as{' '}
-              <strong className="text-primary font-semibold">Ghost IDs</strong> allowed to be
-              discovered, spoofed, or saved to Studio.
+              {t('misc.pasteIdsAddBodyPre')}
+              <strong className="text-primary font-semibold">Ghost IDs</strong>
+              {t('misc.pasteIdsAddBodyPost')}
             </p>
           ) : (
             <p className="text-xs text-text-secondary leading-relaxed">
-              Paste a list of ID pairs, one per line. Any of these separators work:{' '}
+              {t('misc.pasteIdsReplaceBodyPre')}
               <code className="text-2xs bg-bg-elevated px-1 rounded">-{'>'}</code>{' '}
               <code className="text-2xs bg-bg-elevated px-1 rounded">=</code>{' '}
-              <code className="text-2xs bg-bg-elevated px-1 rounded">,</code> or spaces. Lines
-              starting with <code className="text-2xs bg-bg-elevated px-1 rounded">#</code> or{' '}
-              <code className="text-2xs bg-bg-elevated px-1 rounded">//</code> are ignored.
+              <code className="text-2xs bg-bg-elevated px-1 rounded">,</code>
+              {t('misc.pasteIdsReplaceBodyMid')}
+              <code className="text-2xs bg-bg-elevated px-1 rounded">#</code>
+              {t('common.or')} <code className="text-2xs bg-bg-elevated px-1 rounded">//</code>
+              {t('misc.pasteIdsReplaceBodyPost')}
             </p>
           )}
 
@@ -224,14 +230,14 @@ export default function PasteIdsModal({
               {mode === 'add' ? (
                 singleIds.length > 0 && (
                   <span className="text-primary font-medium">
-                    {singleIds.length} ID{singleIds.length === 1 ? '' : 's'} ready
+                    {t('misc.pasteIdsReady').replace('{count}', String(singleIds.length))}
                   </span>
                 )
               ) : (
                 <>
                   {replacePairCount > 0 && (
                     <span className="text-primary font-medium">
-                      {replacePairCount} valid pair{replacePairCount === 1 ? '' : 's'}
+                      {t('misc.pasteIdsValidPairs').replace('{count}', String(replacePairCount))}
                     </span>
                   )}
                   {replacePairCount > 0 && badReplaceLines > 0 && (
@@ -239,8 +245,7 @@ export default function PasteIdsModal({
                   )}
                   {badReplaceLines > 0 && (
                     <span className="text-signal-warn">
-                      {badReplaceLines} line{badReplaceLines === 1 ? '' : 's'} skipped (need two IDs
-                      per line)
+                      {t('misc.pasteIdsLinesSkipped').replace('{count}', String(badReplaceLines))}
                     </span>
                   )}
                 </>
@@ -249,7 +254,7 @@ export default function PasteIdsModal({
 
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 size="sm"
@@ -259,10 +264,10 @@ export default function PasteIdsModal({
                 }
               >
                 {isApplying
-                  ? 'Processing...'
+                  ? t('misc.pasteIdsProcessing')
                   : mode === 'add'
-                    ? 'Add to Explorer'
-                    : 'Send to Studio'}
+                    ? t('misc.pasteIdsAddToExplorer')
+                    : t('misc.pasteIdsSendToStudio')}
               </Button>
             </div>
           </div>

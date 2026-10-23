@@ -76,7 +76,7 @@ describe('ResultsModal', () => {
 
     render(<ResultsModal isOpen={true} onClose={onClose} />);
 
-    const saveBtn = screen.getByText('Save Spoofed .rbxlx');
+    const saveBtn = screen.getByText('results.saveRbxlx');
     fireEvent.click(saveBtn);
 
     expect(TauriDialog.save).toHaveBeenCalled();
@@ -96,7 +96,7 @@ describe('ResultsModal', () => {
     vi.mocked(TauriDialog.save).mockResolvedValue(null);
     render(<ResultsModal isOpen={true} onClose={() => {}} />);
 
-    const saveBtn = screen.getByText('Save Spoofed .rbxlx');
+    const saveBtn = screen.getByText('results.saveRbxlx');
     fireEvent.click(saveBtn);
 
     await waitFor(() => {

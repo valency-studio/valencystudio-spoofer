@@ -1,6 +1,7 @@
 import { ArrowRight, CheckCircle2, Circle, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
 export interface TutorialStep {
@@ -24,6 +25,7 @@ interface TutorialProps {
 }
 
 export const Tutorial = ({ steps, onComplete, onSkip, beforeStep }: TutorialProps) => {
+  const { t } = useLanguage();
   const [stepIndex, setStepIndex] = useState(0);
   const onEnteredRef = useRef<Set<string>>(new Set());
 
@@ -80,19 +82,21 @@ export const Tutorial = ({ steps, onComplete, onSkip, beforeStep }: TutorialProp
         )}
         role="dialog"
         aria-modal="false"
-        aria-label="Tutorial"
+        aria-label={t('misc.tutorialLabel')}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="text-sm font-bold text-text-primary leading-tight">{step.title}</h3>
             <p className="text-2xs text-text-muted mt-0.5">
-              Step {stepIndex + 1} of {steps.length}
+              {t('misc.tutorialStepOf')
+                .replace('{current}', String(stepIndex + 1))
+                .replace('{total}', String(steps.length))}
             </p>
           </div>
           <button
             onClick={onSkip}
             className="opacity-50 hover:opacity-100 transition-opacity shrink-0"
-            aria-label="Skip tutorial"
+            aria-label={t('misc.tutorialSkip')}
           >
             <X size={15} />
           </button>
@@ -130,7 +134,7 @@ export const Tutorial = ({ steps, onComplete, onSkip, beforeStep }: TutorialProp
             onClick={onSkip}
             className="px-3 h-8 rounded-md text-2xs font-medium text-text-muted hover:text-text-primary transition-colors"
           >
-            Skip tutorial
+            {t('misc.tutorialSkip')}
           </button>
           <button
             onClick={advance}
@@ -145,11 +149,11 @@ export const Tutorial = ({ steps, onComplete, onSkip, beforeStep }: TutorialProp
             {isLast ? (
               <>
                 <CheckCircle2 size={13} />
-                Finish
+                {t('misc.tutorialFinish')}
               </>
             ) : (
               <>
-                Next
+                {t('misc.tutorialNext')}
                 <ArrowRight size={13} />
               </>
             )}

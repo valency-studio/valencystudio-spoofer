@@ -260,7 +260,7 @@ export default function ResultsModal({
         {loadedFilePath && loadedFilePath.endsWith('.rbxlx') && replacementsArray.length > 0 && (
           <div className="flex justify-end gap-3 pt-2">
             <Button onClick={handleSaveRbxlx} disabled={isSaving}>
-              Save Spoofed .rbxlx
+              {t('results.saveRbxlx')}
             </Button>
           </div>
         )}

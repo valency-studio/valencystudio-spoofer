@@ -13,6 +13,7 @@ import {
 import { memo, useMemo, useState } from 'react';
 
 import type { AppConfig } from '../../../contexts/ConfigContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { cn } from '../../../lib/utils';
 import { useSpooferStore } from '../../../stores/spooferStore';
 import type { ParsedAssetRef, RbxInstance } from '../../../utils/robloxPlaceParser/types';
@@ -148,6 +149,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
   onInspectAsset?: (asset: ParsedAssetRef) => void;
   activeInspectAssetId?: string | null;
 }) {
+  const { t } = useLanguage();
   const activeInspectAsset = useSpooferStore((s) => s.activeInspectAsset);
   const setActiveInspectAsset = useSpooferStore((s) => s.setActiveInspectAsset);
   const setIsInspectorOpen = useSpooferStore((s) => s.setIsInspectorOpen);
@@ -430,7 +432,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
               }
             />
             <TooltipContent className="whitespace-nowrap font-mono text-xs">
-              Ghost Asset (No instance in Studio)
+              {t('explorer.ghostAsset')}
             </TooltipContent>
           </Tooltip>
         )}
@@ -643,7 +645,10 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
                     className="h-6 px-2 text-2xs"
                     onClick={() => setRenderLimit((prev) => prev + ASSET_RENDER_CHUNK)}
                   >
-                    Show {Math.min(ASSET_RENDER_CHUNK, hiddenAssetCount)} more
+                    {t('explorer.showMore').replace(
+                      '{count}',
+                      String(Math.min(ASSET_RENDER_CHUNK, hiddenAssetCount)),
+                    )}
                   </Button>
                   {hiddenAssetCount > ASSET_RENDER_CHUNK && (
                     <Button
@@ -652,7 +657,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
                       className="h-6 px-2 text-2xs"
                       onClick={() => setRenderLimit(filteredAssets.length)}
                     >
-                      Show all
+                      {t('explorer.showAll')}
                     </Button>
                   )}
                 </div>

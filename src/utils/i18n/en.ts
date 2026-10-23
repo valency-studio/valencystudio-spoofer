@@ -2,6 +2,51 @@ import type { TranslationTree } from './index';
 
 export const en: TranslationTree = {
   misc: {
+    tutorialStep6Body:
+      "Press Run Spoofer. Watch the progress bar and the toast when it's done. You can re-run this tutorial from Settings.",
+    tutorialStep6Title: 'Run the spoofer',
+    tutorialStep5Hint: 'Tick at least one asset to continue.',
+    tutorialStep5Body:
+      'Tick the checkboxes next to any assets in the tree. You can select individual rows or expand a folder and tick the whole tree.',
+    tutorialStep5Title: 'Select a few assets',
+    tutorialStep4Hint: 'Click Scan Studio or Open File to populate the asset list.',
+    tutorialStep4Body:
+      'Open a Roblox Studio place with the ValencyStudio - Spoofer plugin loaded, then click Scan Studio. Scanning is the primary way to populate the asset list — it pulls every animation, sound, image, mesh, and script reference from the running game.',
+    tutorialStep4Title: 'Scan Studio',
+    tutorialStep3Hint: 'Paste your Open Cloud API key in Settings > Credentials.',
+    tutorialStep3Body:
+      'Switch to Settings, open Credentials, and paste an Open Cloud API key with Assets read/write permission. This is the uploader — without it, spoofing can only download, not upload.',
+    tutorialStep3Title: 'Open Cloud API key',
+    tutorialStep2Hint: 'Add an account or auto-detect one from Studio to continue.',
+    tutorialStep2Body:
+      'Open the Accounts tab and add a Roblox profile. You can paste a .ROBLOSECURITY cookie or auto-detect the one from Studio. This account is the downloader.',
+    tutorialStep2Title: 'Add a Roblox account',
+    tutorialStep1Body:
+      "Let's set you up in 6 quick steps. You'll add a Roblox account, paste an Open Cloud API key, scan Studio, then select assets and run the spoofer.",
+    tutorialStep1Title: 'Welcome to ValencyStudio - Spoofer',
+    tutorialFinish: 'Finish',
+    tutorialNext: 'Next',
+    tutorialSkip: 'Skip tutorial',
+    tutorialStepOf: 'Step {current} of {total}',
+    tutorialLabel: 'Tutorial',
+    pasteIdsAdded:
+      'Added {single} ID(s) to Explorer ({matched} matched in Studio, {ghost} created as Ghost IDs).',
+    pasteIdsSendToStudio: 'Send to Studio',
+    pasteIdsAddToExplorer: 'Add to Explorer',
+    pasteIdsProcessing: 'Processing...',
+    pasteIdsLinesSkipped: '{count} line(s) skipped (need two IDs per line)',
+    pasteIdsValidPairs: '{count} valid pair(s)',
+    pasteIdsReady: '{count} ID(s) ready',
+    pasteIdsReplaceBodyPost: ' are ignored.',
+    pasteIdsReplaceBodyMid: ' or spaces. Lines starting with ',
+    pasteIdsReplaceBodyPre:
+      'Paste a list of ID pairs, one per line. Any of these separators work: ',
+    pasteIdsAddBodyPost: ' allowed to be discovered, spoofed, or saved to Studio.',
+    pasteIdsAddBodyPre:
+      'Paste a list of asset IDs (one per line, spaces, or commas). IDs that exist in Studio scan will be selected. IDs not in Studio will be added as ',
+    pasteIdsReplaceMode: 'Replace IDs (Pairs)',
+    pasteIdsAddMode: 'Add IDs (Ghost IDs)',
+    pasteIdsTitle: 'Manual Replace & Add IDs',
     seek: 'Seek position',
     playbackSpeed: 'Playback speed',
     toggleRigType: 'Toggle Rig Type',
@@ -233,6 +278,12 @@ export const en: TranslationTree = {
       'No manageable groups found. Make sure your account has group management permissions in Roblox.',
   },
   settings: {
+    targetSubjectType: 'Target Subject Type',
+    onboardingTutorial: 'Interactive Onboarding Tutorial',
+    resetToDefaults: 'Reset to Defaults',
+    languageDescription: 'Select your preferred display language for UI labels.',
+    accentColorDescription: 'Choose the primary brand accent color across UI and buttons.',
+    themeDescription: 'Switch between light and dark UI themes.',
     title: 'Settings',
     general: 'General Settings',
     appearance: 'Appearance & Localization',
@@ -359,6 +410,26 @@ export const en: TranslationTree = {
     goToBottom: 'Go to Bottom',
   },
   explorer: {
+    reset: 'Reset',
+    clearExplorerBody: 'This will remove all {count} scanned assets.',
+    showMore: 'Show {count} more',
+    discovered: 'Discovered',
+    idAutoDetected: 'ID: {id} · Auto-detected',
+    studioNotConnectedToast: 'No Roblox Studio plugin connected. Please connect Studio first.',
+    instanceDetails: 'Instance Details',
+    appearanceAndValues: 'Appearance & Values',
+    scanSpecificPath: 'Scan Specific Path / Model',
+    scanPath: 'Scan Path',
+    showAll: 'Show all',
+    ghostAsset: 'Ghost Asset (No instance in Studio)',
+    discoveryTimeout: 'Discovery Timeout',
+    targetedPathScanBody: 'Scan only a specific instance or container instead of the whole game:',
+    targetedPathScan: 'Targeted Path Scan',
+    assetTypes: 'Asset Types',
+    previewUnavailable: 'No preview available',
+    previewFailed: 'Failed to load preview',
+    noInstanceSelectedBody: 'Pick an instance in the tree to inspect its Roblox properties.',
+    noInstanceSelected: 'No instance selected',
     zoomIn: 'Zoom in',
     zoomOut: 'Zoom out',
     zoomReset: 'Reset zoom',
@@ -410,6 +481,7 @@ export const en: TranslationTree = {
     unknownAsset: 'Unknown Asset',
   },
   common: {
+    or: 'or',
     none: 'None',
     cancel: 'Cancel',
     save: 'Save',
@@ -427,6 +499,7 @@ export const en: TranslationTree = {
     restart: 'Restart',
   },
   results: {
+    saveRbxlx: 'Save Spoofed .rbxlx',
     title: 'Spoofing Results',
     assetsSpoofed: '{count} asset IDs spoofed successfully.',
     copyAll: 'Copy All',
@@ -436,6 +509,16 @@ export const en: TranslationTree = {
       'If the Studio plugin is connected, these IDs have already been replaced in your open Roblox Studio place.',
   },
   accounts: {
+    groupApiKeyPlaceholder: 'Paste Group Open Cloud API Key...',
+    userApiKeyPlaceholder: 'Paste User Open Cloud API Key...',
+    userApiKeyBody:
+      'API key with Asset Permissions for uploading animations and audio to your personal Roblox account.',
+    userApiKey: 'User Open Cloud API Key',
+    discoveredAccounts: 'Discovered Accounts',
+    robloxAccount: 'Roblox account.',
+    groupApiKeyBody:
+      'Use a group-owned Open Cloud key to upload on behalf of a group, not a personal account.',
+    groupApiKey: 'Group Open Cloud API Key',
     validated: 'Validated account',
     missingCookie: 'No cookie is saved for this account',
     missingApiKey: 'No Open Cloud API key is saved for this account',

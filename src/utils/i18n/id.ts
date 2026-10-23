@@ -2,6 +2,51 @@ import type { TranslationTree } from './index';
 
 export const id: TranslationTree = {
   misc: {
+    tutorialStep6Body:
+      'Tekan Run Spoofer. Perhatikan bilah progres dan notifikasi saat selesai. Tutorial ini bisa dibuka ulang dari Settings.',
+    tutorialStep6Title: 'Jalankan spoofer',
+    tutorialStep5Hint: 'Centang minimal satu aset untuk melanjutkan.',
+    tutorialStep5Body:
+      'Centang kotak di samping aset pada pohon. Anda bisa memilih baris satu per satu atau membuka folder lalu mencentang seluruh pohonnya.',
+    tutorialStep5Title: 'Pilih beberapa aset',
+    tutorialStep4Hint: 'Klik Scan Studio atau Open File untuk mengisi daftar aset.',
+    tutorialStep4Body:
+      'Buka place di Roblox Studio dengan plugin ValencyStudio - Spoofer aktif, lalu klik Scan Studio. Pemindaian adalah cara utama mengisi daftar aset — semua animasi, suara, gambar, mesh, dan referensi script dari game yang berjalan akan diambil.',
+    tutorialStep4Title: 'Pindai Studio',
+    tutorialStep3Hint: 'Tempel Open Cloud API key di Settings > Credentials.',
+    tutorialStep3Body:
+      'Buka Settings, masuk ke Credentials, lalu tempel Open Cloud API key dengan izin baca/tulis Assets. Ini yang mengunggah — tanpa itu, spoofing hanya bisa mengunduh, tidak mengunggah.',
+    tutorialStep3Title: 'Open Cloud API key',
+    tutorialStep2Hint: 'Tambah akun atau deteksi otomatis dari Studio untuk melanjutkan.',
+    tutorialStep2Body:
+      'Buka tab Accounts dan tambahkan profil Roblox. Anda bisa menempel cookie .ROBLOSECURITY atau mendeteksi otomatis dari Studio. Akun ini berperan sebagai pengunduh.',
+    tutorialStep2Title: 'Tambah akun Roblox',
+    tutorialStep1Body:
+      'Kita siapkan semuanya dalam 6 langkah singkat. Anda akan menambah akun Roblox, menempel Open Cloud API key, memindai Studio, lalu memilih aset dan menjalankan spoofer.',
+    tutorialStep1Title: 'Selamat datang di ValencyStudio - Spoofer',
+    tutorialFinish: 'Selesai',
+    tutorialNext: 'Lanjut',
+    tutorialSkip: 'Lewati tutorial',
+    tutorialStepOf: 'Langkah {current} dari {total}',
+    tutorialLabel: 'Tutorial',
+    pasteIdsAdded:
+      'Ditambahkan {single} ID ke Explorer ({matched} cocok di Studio, {ghost} dibuat sebagai Ghost ID).',
+    pasteIdsSendToStudio: 'Kirim ke Studio',
+    pasteIdsAddToExplorer: 'Tambahkan ke Explorer',
+    pasteIdsProcessing: 'Memproses...',
+    pasteIdsLinesSkipped: '{count} baris dilewati (butuh dua ID per baris)',
+    pasteIdsValidPairs: '{count} pasangan valid',
+    pasteIdsReady: '{count} ID siap',
+    pasteIdsReplaceBodyPost: ' akan diabaikan.',
+    pasteIdsReplaceBodyMid: ' atau spasi. Baris yang diawali ',
+    pasteIdsReplaceBodyPre:
+      'Tempel daftar pasangan ID, satu per baris. Pemisah berikut semuanya bisa dipakai: ',
+    pasteIdsAddBodyPost: ' yang boleh ditemukan, di-spoof, atau disimpan ke Studio.',
+    pasteIdsAddBodyPre:
+      'Tempel daftar ID aset (satu per baris, dipisah spasi atau koma). ID yang ada di hasil scan Studio akan dipilih. ID yang tidak ada di Studio akan ditambahkan sebagai ',
+    pasteIdsReplaceMode: 'Ganti ID (Pasangan)',
+    pasteIdsAddMode: 'Tambah ID (Ghost ID)',
+    pasteIdsTitle: 'Ganti & Tambah ID Manual',
     seek: 'Posisi putar',
     playbackSpeed: 'Kecepatan putar',
     toggleRigType: 'Ubah Tipe Rig',
@@ -235,6 +280,12 @@ export const id: TranslationTree = {
       'Tidak ada grup yang bisa dikelola. Pastikan akun Anda memiliki izin pengelolaan grup di Roblox.',
   },
   settings: {
+    targetSubjectType: 'Tipe Subjek Target',
+    onboardingTutorial: 'Tutorial Interaktif',
+    resetToDefaults: 'Kembalikan ke Default',
+    languageDescription: 'Pilih bahasa tampilan untuk label antarmuka.',
+    accentColorDescription: 'Pilih warna aksen utama untuk UI dan tombol.',
+    themeDescription: 'Beralih antara tema terang dan gelap.',
     title: 'Pengaturan',
     general: 'Pengaturan Umum',
     appearance: 'Tampilan & Bahasa',
@@ -360,6 +411,27 @@ export const id: TranslationTree = {
     goToBottom: 'Ke Bawah',
   },
   explorer: {
+    reset: 'Reset',
+    clearExplorerBody: 'Ini akan menghapus semua {count} aset yang dipindai.',
+    showMore: 'Tampilkan {count} lagi',
+    discovered: 'Terdeteksi',
+    idAutoDetected: 'ID: {id} · Terdeteksi otomatis',
+    studioNotConnectedToast:
+      'Plugin Roblox Studio belum terhubung. Hubungkan Studio terlebih dahulu.',
+    instanceDetails: 'Detail Instance',
+    appearanceAndValues: 'Tampilan & Nilai',
+    scanSpecificPath: 'Pindai Path / Model Tertentu',
+    scanPath: 'Pindai Path',
+    showAll: 'Tampilkan semua',
+    ghostAsset: 'Aset Hantu (Tidak ada instance di Studio)',
+    discoveryTimeout: 'Batas Waktu Discovery',
+    targetedPathScanBody: 'Pindai hanya instance atau container tertentu, bukan seluruh game:',
+    targetedPathScan: 'Pemindaian Path Tertarget',
+    assetTypes: 'Tipe Aset',
+    previewUnavailable: 'Pratinjau tidak tersedia',
+    previewFailed: 'Gagal memuat pratinjau',
+    noInstanceSelectedBody: 'Pilih instance di pohon untuk melihat properti Roblox-nya.',
+    noInstanceSelected: 'Belum ada instance dipilih',
     zoomIn: 'Perbesar',
     zoomOut: 'Perkecil',
     zoomReset: 'Reset zoom',
@@ -411,6 +483,7 @@ export const id: TranslationTree = {
     unknownAsset: 'Aset Tidak Diketahui',
   },
   common: {
+    or: 'atau',
     none: 'Tidak ada',
     cancel: 'Batal',
     save: 'Simpan',
@@ -428,6 +501,7 @@ export const id: TranslationTree = {
     restart: 'Ulangi',
   },
   results: {
+    saveRbxlx: 'Simpan .rbxlx Hasil Spoof',
     title: 'Hasil Spoofing',
     assetsSpoofed: '{count} ID aset berhasil di-spoof.',
     copyAll: 'Salin Semua',
@@ -437,6 +511,16 @@ export const id: TranslationTree = {
       'Jika plugin Studio terhubung, ID ini sudah diganti di place Roblox Studio yang Anda buka.',
   },
   accounts: {
+    groupApiKeyPlaceholder: 'Tempel API Key Open Cloud Grup...',
+    userApiKeyPlaceholder: 'Tempel API Key Open Cloud Pengguna...',
+    userApiKeyBody:
+      'API key dengan izin aset (Asset Permissions) untuk mengunggah animasi dan audio ke akun Roblox pribadi Anda.',
+    userApiKey: 'API Key Open Cloud Pengguna',
+    discoveredAccounts: 'Akun Terdeteksi',
+    robloxAccount: 'Akun Roblox.',
+    groupApiKeyBody:
+      'Gunakan API key Open Cloud milik grup untuk mengunggah atas nama grup, bukan akun pribadi.',
+    groupApiKey: 'API Key Open Cloud Grup',
     validated: 'Akun tervalidasi',
     missingCookie: 'Cookie belum disimpan untuk akun ini',
     missingApiKey: 'API key Open Cloud belum disimpan untuk akun ini',

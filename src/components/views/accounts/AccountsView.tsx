@@ -24,6 +24,8 @@ import {
   logValencyStudio,
   validateCookieProfile,
 } from '../../../utils/robloxProfiles';
+import { EmptyState } from '../../shared/EmptyState';
+import { SectionLabel } from '../../shared/SectionLabel';
 import { Button } from '../../ui/button';
 import { Card } from '../../ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../ui/dialog';
@@ -278,9 +280,7 @@ export default function AccountsView() {
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <p className="text-2xs font-bold uppercase tracking-widest text-text-muted px-1">
-                Discovered Accounts
-              </p>
+              <SectionLabel className="px-1 block">{t('accounts.discoveredAccounts')}</SectionLabel>
               {discoveredUsers.map((user) => (
                 <div
                   key={user.id}
@@ -302,23 +302,23 @@ export default function AccountsView() {
                       {user.displayName || user.name}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      ID: {user.id} · Auto-detected
+                      {t('explorer.idAutoDetected').replace('{id}', String(user.id))}
                     </span>
                   </div>
                   <span className="text-2xs text-primary bg-primary/10 px-2 py-1 rounded-full font-semibold shrink-0">
-                    Discovered
+                    {t('explorer.discovered')}
                   </span>
                 </div>
               ))}
             </div>
           </div>
         ) : config.accounts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[calc(100vh-140px)] text-center text-muted-foreground space-y-4">
-            <User2 size={48} className="opacity-20 text-primary" />
-            <div className="space-y-1">
-              <p className="text-base font-semibold text-foreground">{t('accounts.noAccounts')}</p>
-              <p className="text-xs text-muted-foreground max-w-sm">{t('accounts.description')}</p>
-            </div>
+          <EmptyState
+            className="h-[calc(100vh-140px)]"
+            icon={<User2 size={48} className="opacity-20 text-primary" />}
+            title={t('accounts.noAccounts')}
+            description={t('accounts.description')}
+          >
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
               <DialogTrigger render={<Button size="sm" className="font-semibold" />}>
                 <Plus size={16} className="mr-2" />
@@ -343,7 +343,7 @@ export default function AccountsView() {
                 />
               </DialogContent>
             </Dialog>
-          </div>
+          </EmptyState>
         ) : (
           <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 pb-12">
             <div className="flex items-center justify-between">

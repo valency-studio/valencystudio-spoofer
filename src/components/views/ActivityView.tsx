@@ -17,6 +17,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { queueSpoofRetry, type SpoofJob } from '../../utils/jobTypes';
 import { deleteUploadRecord, getUploadHistory, type UploadRecord } from '../../utils/music';
 import { logValencyStudio } from '../../utils/robloxProfiles';
+import { EmptyState } from '../shared/EmptyState';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { HistoryRow } from './music/MusicView';
@@ -137,11 +138,12 @@ export default function ActivityView() {
               <span className="text-muted-foreground">{t('misc.loadingHistory')}</span>
             </div>
           ) : jobs.length === 0 && musicHistory.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground space-y-3">
-              <Clock size={48} className="opacity-20" />
-              <p>{t('misc.noJobHistory')}</p>
-              <p className="text-sm opacity-70">{t('misc.jobsWillAppear')}</p>
-            </div>
+            <EmptyState
+              className="h-full"
+              icon={<Clock size={48} className="opacity-20" />}
+              title={t('misc.noJobHistory')}
+              description={t('misc.jobsWillAppear')}
+            />
           ) : (
             <div className="space-y-8 pb-8 w-full">
               {jobs.length > 0 && (

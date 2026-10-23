@@ -18,6 +18,7 @@ import {
   type LogEntry,
   subscribeDebugLogs,
 } from '../../utils/debugLogger';
+import { EmptyState } from '../shared/EmptyState';
 import { Button } from '../ui/button';
 import { JsonViewer } from '../ui/JsonViewer';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
@@ -190,7 +191,7 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
       <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle bg-bg-surface/50 shrink-0">
         <div className="flex items-center gap-3">
           {!fill && (
-            <div className="flex items-center gap-2 text-muted-foreground text-2xs font-bold uppercase tracking-widest">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Terminal size={14} className="text-primary" />
               {t('debug.title')}
             </div>
@@ -325,10 +326,11 @@ export default function DebugConsole({ isOpen, onClose, fill = false }: DebugCon
         style={{ overflowAnchor: 'none' }}
       >
         {groupedLogs.length === 0 ? (
-          <div className="text-muted-foreground/50 italic flex flex-col items-center justify-center h-full gap-2">
-            <Terminal size={32} className="opacity-20" />
-            <span>{t('debug.noLogs')}</span>
-          </div>
+          <EmptyState
+            className="h-full"
+            icon={<Terminal size={32} className="opacity-20" />}
+            title={t('debug.noLogs')}
+          />
         ) : (
           groupedLogs.map((log, index) => {
             const config = LEVEL_CONFIG[log.level] ?? LEVEL_CONFIG.info;

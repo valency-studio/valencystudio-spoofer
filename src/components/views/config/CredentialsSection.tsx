@@ -273,16 +273,17 @@ export default function CredentialsSection() {
 
       <div className="flex flex-col gap-2 p-3.5 rounded-lg border border-border-subtle/60 bg-bg-base/40">
         <div className="space-y-0.5">
-          <Label className="text-sm font-semibold text-text-primary">User Open Cloud API Key</Label>
+          <Label className="text-sm font-semibold text-text-primary">
+            {t('accounts.userApiKey')}
+          </Label>
           <p className="text-xs text-text-secondary leading-relaxed">
-            API key with Asset Permissions for uploading animations and audio to your personal
-            Roblox account.
+            {t('accounts.userApiKeyBody')}
           </p>
         </div>
         <div className="relative">
           <Input
             type="password"
-            placeholder="Paste User Open Cloud API Key..."
+            placeholder={t('accounts.userApiKeyPlaceholder')}
             value={userApiKeyVal}
             onChange={(e) => {
               setUserApiKeyStatus('idle');
@@ -328,17 +329,16 @@ export default function CredentialsSection() {
       <div className="flex flex-col gap-2 p-3.5 rounded-lg border border-border-subtle/60 bg-bg-base/40">
         <div className="space-y-0.5">
           <Label className="text-sm font-semibold text-text-primary">
-            Group Open Cloud API Key
+            {t('accounts.groupApiKey')}
           </Label>
           <p className="text-xs text-text-secondary leading-relaxed">
-            API key with Asset Permissions created specifically for uploading assets to your Roblox
-            Groups.
+            {t('accounts.groupApiKeyBody')}
           </p>
         </div>
         <div className="relative">
           <Input
             type="password"
-            placeholder="Paste Group Open Cloud API Key..."
+            placeholder={t('accounts.groupApiKeyPlaceholder')}
             value={groupApiKeyVal}
             onChange={(e) => {
               setGroupApiKeyStatus('idle');

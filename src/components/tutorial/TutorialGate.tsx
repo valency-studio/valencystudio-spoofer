@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useConfig } from '../../contexts/ConfigContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useSpooferStore } from '../../stores/spooferStore';
 import { loadCachedUsers } from '../../utils/robloxProfiles';
 import { Tutorial, TutorialStep } from './Tutorial';
@@ -18,6 +19,7 @@ const hasAnyAccount = (config: ReturnType<typeof useConfig>['config']): boolean 
 
 export const TutorialGate = () => {
   const { config, updateConfig } = useConfig();
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const rootInstances = useSpooferStore((s) => s.rootInstances);
   const selectedAssetIds = useSpooferStore((s) => s.selectedAssetIds);
@@ -46,27 +48,27 @@ export const TutorialGate = () => {
     () => [
       {
         id: 'welcome',
-        title: 'Welcome to ValencyStudio - Spoofer',
-        body: "Let's set you up in 6 quick steps. You'll add a Roblox account, paste an Open Cloud API key, scan Studio, then select assets and run the spoofer.",
+        title: t('misc.tutorialStep1Title'),
+        body: t('misc.tutorialStep1Body'),
       },
       {
         id: 'accounts',
-        title: 'Add a Roblox account',
-        body: 'Open the Accounts tab and add a Roblox profile. You can paste a .ROBLOSECURITY cookie or auto-detect the one from Studio. This account is the downloader.',
+        title: t('misc.tutorialStep2Title'),
+        body: t('misc.tutorialStep2Body'),
         isComplete: () => hasAnyAccount(config),
-        waitingHint: 'Add an account or auto-detect one from Studio to continue.',
+        waitingHint: t('misc.tutorialStep2Hint'),
       },
       {
         id: 'api-key',
-        title: 'Open Cloud API key',
-        body: 'Switch to Settings, open Credentials, and paste an Open Cloud API key with Assets read/write permission. This is the uploader — without it, spoofing can only download, not upload.',
+        title: t('misc.tutorialStep3Title'),
+        body: t('misc.tutorialStep3Body'),
         isComplete: () => config.spoofing.apiKey.trim().length >= 20,
-        waitingHint: 'Paste your Open Cloud API key in Settings > Credentials.',
+        waitingHint: t('misc.tutorialStep3Hint'),
       },
       {
         id: 'scan-studio',
-        title: 'Scan Studio',
-        body: 'Open a Roblox Studio place with the ValencyStudio - Spoofer plugin loaded, then click Scan Studio. Scanning is the primary way to populate the asset list — it pulls every animation, sound, image, mesh, and script reference from the running game.',
+        title: t('misc.tutorialStep4Title'),
+        body: t('misc.tutorialStep4Body'),
         isComplete: () => {
           if (rootInstances.length === 0) return false;
           const hasAssets = (list: typeof rootInstances): boolean => {
@@ -78,19 +80,19 @@ export const TutorialGate = () => {
           };
           return hasAssets(rootInstances);
         },
-        waitingHint: 'Click Scan Studio or Open File to populate the asset list.',
+        waitingHint: t('misc.tutorialStep4Hint'),
       },
       {
         id: 'select',
-        title: 'Select a few assets',
-        body: 'Tick the checkboxes next to any assets in the tree. You can select individual rows or expand a folder and tick the whole tree.',
+        title: t('misc.tutorialStep5Title'),
+        body: t('misc.tutorialStep5Body'),
         isComplete: () => selectedAssetIds.size > 0,
-        waitingHint: 'Tick at least one asset to continue.',
+        waitingHint: t('misc.tutorialStep5Hint'),
       },
       {
         id: 'run',
-        title: 'Run the spoofer',
-        body: "Press Run Spoofer. Watch the progress bar and the toast when it's done. You can re-run this tutorial from Settings.",
+        title: t('misc.tutorialStep6Title'),
+        body: t('misc.tutorialStep6Body'),
       },
     ],
     [
@@ -99,6 +101,7 @@ export const TutorialGate = () => {
       config.spoofing.apiKey,
       rootInstances,
       selectedAssetIds.size,
+      t,
     ],
   );
 

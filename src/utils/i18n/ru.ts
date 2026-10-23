@@ -2,6 +2,51 @@ import type { TranslationTree } from './index';
 
 export const ru: TranslationTree = {
   misc: {
+    tutorialStep6Body:
+      'Нажмите Run Spoofer. Следите за полосой прогресса и уведомлением по завершении. Обучение можно перезапустить из Settings.',
+    tutorialStep6Title: 'Запустите spoofer',
+    tutorialStep5Hint: 'Отметьте хотя бы один ресурс, чтобы продолжить.',
+    tutorialStep5Body:
+      'Отметьте флажки рядом с ресурсами в дереве. Можно выбирать отдельные строки или раскрыть папку и отметить всё.',
+    tutorialStep5Title: 'Выберите несколько ресурсов',
+    tutorialStep4Hint: 'Нажмите Scan Studio или Open File, чтобы заполнить список ресурсов.',
+    tutorialStep4Body:
+      'Откройте place в Roblox Studio с включённым плагином ValencyStudio - Spoofer и нажмите Scan Studio. Сканирование — основной способ наполнить список ресурсов: собирает анимации, звуки, изображения, меши и ссылки на скрипты.',
+    tutorialStep4Title: 'Сканируйте Studio',
+    tutorialStep3Hint: 'Вставьте ключ API Open Cloud в Settings > Credentials.',
+    tutorialStep3Body:
+      'Перейдите в Settings → Credentials и вставьте ключ API Open Cloud с правом чтения/записи Assets. Он нужен для загрузки: без него spoofer умеет только скачивать.',
+    tutorialStep3Title: 'Ключ API Open Cloud',
+    tutorialStep2Hint: 'Добавьте аккаунт или определите его из Studio, чтобы продолжить.',
+    tutorialStep2Body:
+      'Откройте вкладку Accounts и добавьте профиль Roblox. Можно вставить cookie .ROBLOSECURITY или определить его из Studio автоматически. Этот аккаунт используется для скачивания.',
+    tutorialStep2Title: 'Добавьте аккаунт Roblox',
+    tutorialStep1Body:
+      'Настроим всё за 6 коротких шагов: добавите аккаунт Roblox, вставите ключ API Open Cloud, просканируете Studio, выберете ресурсы и запустите spoofer.',
+    tutorialStep1Title: 'Добро пожаловать в ValencyStudio - Spoofer',
+    tutorialFinish: 'Готово',
+    tutorialNext: 'Далее',
+    tutorialSkip: 'Пропустить обучение',
+    tutorialStepOf: 'Шаг {current} из {total}',
+    tutorialLabel: 'Обучение',
+    pasteIdsAdded:
+      'В Explorer добавлено ID: {single} (совпало в Studio: {matched}, создано призрачных ID: {ghost}).',
+    pasteIdsSendToStudio: 'Отправить в Studio',
+    pasteIdsAddToExplorer: 'Добавить в Explorer',
+    pasteIdsProcessing: 'Обработка...',
+    pasteIdsLinesSkipped: 'Пропущено строк: {count} (нужно два ID в строке)',
+    pasteIdsValidPairs: 'Корректных пар: {count}',
+    pasteIdsReady: 'Готово ID: {count}',
+    pasteIdsReplaceBodyPost: ' игнорируются.',
+    pasteIdsReplaceBodyMid: ' или пробелы. Строки, начинающиеся с ',
+    pasteIdsReplaceBodyPre:
+      'Вставьте список пар ID, по одной в строке. Подойдёт любой из этих разделителей: ',
+    pasteIdsAddBodyPost: ' — их можно находить, подменять или сохранять в Studio.',
+    pasteIdsAddBodyPre:
+      'Вставьте список ID ресурсов (по одному в строке, через пробел или запятую). ID, найденные при сканировании Studio, будут выбраны. Отсутствующие в Studio ID будут добавлены как ',
+    pasteIdsReplaceMode: 'Заменить ID (пары)',
+    pasteIdsAddMode: 'Добавить ID (призрачные ID)',
+    pasteIdsTitle: 'Ручная замена и добавление ID',
     seek: 'Позиция воспроизведения',
     playbackSpeed: 'Скорость воспроизведения',
     toggleRigType: 'Toggle Rig Type',
@@ -233,6 +278,12 @@ export const ru: TranslationTree = {
       'Группы не найдены. Добавьте учетные данные в настройках, затем выберите пользователя.',
   },
   settings: {
+    targetSubjectType: 'Тип целевого субъекта',
+    onboardingTutorial: 'Интерактивное обучение',
+    resetToDefaults: 'Сбросить к значениям по умолчанию',
+    languageDescription: 'Выберите язык интерфейса.',
+    accentColorDescription: 'Выберите основной акцентный цвет интерфейса и кнопок.',
+    themeDescription: 'Переключение между светлой и тёмной темой интерфейса.',
     title: 'Настройки',
     general: 'Общие настройки',
     appearance: 'Внешний вид и локализация',
@@ -356,6 +407,26 @@ export const ru: TranslationTree = {
     goToBottom: 'Вниз',
   },
   explorer: {
+    reset: 'Сбросить',
+    clearExplorerBody: 'Это удалит все просканированные ресурсы: {count}.',
+    showMore: 'Показать ещё {count}',
+    discovered: 'Обнаружено',
+    idAutoDetected: 'ID: {id} · Определено автоматически',
+    studioNotConnectedToast: 'Плагин Roblox Studio не подключён. Сначала подключите Studio.',
+    instanceDetails: 'Сведения об экземпляре',
+    appearanceAndValues: 'Внешний вид и значения',
+    scanSpecificPath: 'Сканировать указанный путь или модель',
+    scanPath: 'Сканировать путь',
+    showAll: 'Показать все',
+    ghostAsset: 'Призрачный ассет (нет экземпляра в Studio)',
+    discoveryTimeout: 'Тайм-аут обнаружения',
+    targetedPathScanBody: 'Сканировать только указанный экземпляр или контейнер, а не всю игру:',
+    targetedPathScan: 'Сканирование заданного пути',
+    assetTypes: 'Типы ассетов',
+    previewUnavailable: 'Предпросмотр недоступен',
+    previewFailed: 'Не удалось загрузить предпросмотр',
+    noInstanceSelectedBody: 'Выберите экземпляр в дереве, чтобы посмотреть его свойства Roblox.',
+    noInstanceSelected: 'Экземпляр не выбран',
     zoomIn: 'Увеличить',
     zoomOut: 'Уменьшить',
     zoomReset: 'Сбросить масштаб',
@@ -407,6 +478,7 @@ export const ru: TranslationTree = {
     unknownAsset: 'Неизвестный актив',
   },
   common: {
+    or: 'или',
     none: 'Нет',
     cancel: 'Отмена',
     save: 'Сохранить',
@@ -424,6 +496,7 @@ export const ru: TranslationTree = {
     and: '&',
   },
   results: {
+    saveRbxlx: 'Сохранить .rbxlx с подменой',
     title: 'Результаты Подмены',
     assetsSpoofed: 'Подменено ресурсов: {count}.',
     copyAll: 'Скопировать все',
@@ -433,6 +506,16 @@ export const ru: TranslationTree = {
       'Если активен плагин или внедрение в память, эти идентификаторы уже были автоматически заменены в вашем Roblox Studio!',
   },
   accounts: {
+    groupApiKeyPlaceholder: 'Вставьте ключ API Open Cloud группы...',
+    userApiKeyPlaceholder: 'Вставьте ключ API Open Cloud пользователя...',
+    userApiKeyBody:
+      'Ключ API с правами на ресурсы для загрузки анимации и звука в ваш личный аккаунт Roblox.',
+    userApiKey: 'Ключ API Open Cloud пользователя',
+    discoveredAccounts: 'Обнаруженные аккаунты',
+    robloxAccount: 'Аккаунт Roblox.',
+    groupApiKeyBody:
+      'Используйте ключ Open Cloud группы, чтобы загружать от имени группы, а не личного аккаунта.',
+    groupApiKey: 'Ключ API Open Cloud группы',
     validated: 'Аккаунт подтверждён',
     missingCookie: 'Для этого аккаунта не сохранён cookie',
     missingApiKey: 'Для этого аккаунта не сохранён ключ API Open Cloud',

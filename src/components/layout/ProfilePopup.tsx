@@ -16,6 +16,7 @@ import {
   saveCachedGroups,
   validateCookieProfile,
 } from '../../utils/robloxProfiles';
+import { SectionLabel } from '../shared/SectionLabel';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 export default function ProfilePopup({ collapsed = false }: { collapsed?: boolean }) {
@@ -158,9 +159,7 @@ export default function ProfilePopup({ collapsed = false }: { collapsed?: boolea
       />
       <PopoverContent align="start" sideOffset={8} className="w-72 p-2">
         <div className="flex flex-col gap-1">
-          <div className="px-2 py-1 text-2xs font-bold uppercase tracking-widest text-text-muted">
-            {t('spoof.targetContext')}
-          </div>
+          <SectionLabel className="px-2 py-1">{t('spoof.targetContext')}</SectionLabel>
 
           {(() => {
             const configIds = new Set(config.accounts.map((a) => normalizeId(a.id)));

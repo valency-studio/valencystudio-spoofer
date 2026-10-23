@@ -27,6 +27,8 @@ import { useSpooferStore } from '../../../stores/spooferStore';
 import { getAssetId } from '../../../utils/explorerTree';
 import { playRobloxAudio, stopRobloxAudio } from '../../../utils/robloxAudio';
 import type { ParsedAssetRef, RbxInstance } from '../../../utils/robloxPlaceParser/types';
+import { EmptyState } from '../../shared/EmptyState';
+import { SectionLabel } from '../../shared/SectionLabel';
 import { Button } from '../../ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
@@ -203,13 +205,12 @@ export default function AssetInspectorPanel({
 
   if (!asset || !activeAsset) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-xs text-center p-6 gap-2 select-none h-full bg-bg-surface/5">
-        <FolderOpen size={36} className="opacity-30 text-primary mb-2" />
-        <span className="text-sm font-semibold text-text-secondary">No Instance Selected</span>
-        <span className="max-w-[240px] text-2xs leading-relaxed">
-          Select an instance in the Explorer tree to inspect its Roblox properties.
-        </span>
-      </div>
+      <EmptyState
+        className="flex-1 p-6 select-none h-full bg-bg-surface/5"
+        icon={<FolderOpen size={36} className="opacity-30 text-primary" />}
+        title={t('explorer.noInstanceSelected')}
+        description={t('explorer.noInstanceSelectedBody')}
+      />
     );
   }
 
@@ -285,7 +286,7 @@ export default function AssetInspectorPanel({
           ) : error ? (
             <div className="text-xs text-destructive flex flex-col items-center gap-2">
               <ImageIcon size={24} className="opacity-40" />
-              <span>Failed to load preview</span>
+              <span>{t('explorer.previewFailed')}</span>
             </div>
           ) : thumbnailUrl ? (
             <img
@@ -301,7 +302,7 @@ export default function AssetInspectorPanel({
           ) : (
             <div className="text-xs text-text-muted flex flex-col items-center gap-2">
               <ImageIcon size={24} className="opacity-40" />
-              <span>No preview available</span>
+              <span>{t('explorer.previewUnavailable')}</span>
             </div>
           )}
 
@@ -375,7 +376,7 @@ export default function AssetInspectorPanel({
                 className="h-5 px-1 flex items-center justify-center text-muted-foreground hover:text-foreground text-2xs font-medium border-l border-border-subtle/50 ml-0.5 cursor-pointer"
                 aria-label={t('explorer.zoomReset')}
               >
-                Reset
+                {t('explorer.reset')}
               </button>
             </div>
           )}
@@ -395,11 +396,11 @@ export default function AssetInspectorPanel({
           >
             {playingAudioId === activeAssetId ? (
               <>
-                <Square size={11} fill="currentColor" /> Stop Audio
+                <Square size={11} fill="currentColor" /> {t('explorer.stopAudio')}
               </>
             ) : (
               <>
-                <Play size={11} fill="currentColor" /> Play Audio
+                <Play size={11} fill="currentColor" /> {t('explorer.playAudio')}
               </>
             )}
           </Button>
@@ -457,13 +458,13 @@ export default function AssetInspectorPanel({
             <button
               type="button"
               onClick={() => setAppearanceOpen(!appearanceOpen)}
-              className="w-full h-6 px-2 bg-bg-elevated/40 hover:bg-bg-elevated/70 flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wider text-text-muted select-none transition-colors text-left"
+              className="w-full h-6 px-2 bg-bg-elevated/40 hover:bg-bg-elevated/70 flex items-center gap-1.5 select-none transition-colors text-left"
             >
               <ChevronRight
                 size={11}
                 className={cn('transition-transform duration-150', appearanceOpen && 'rotate-90')}
               />
-              <span>Appearance & Values</span>
+              <SectionLabel>{t('explorer.appearanceAndValues')}</SectionLabel>
               <span className="ml-auto font-normal text-muted-foreground">
                 ({instanceProperties.length})
               </span>
@@ -570,7 +571,7 @@ export default function AssetInspectorPanel({
                               }
                             />
                             <TooltipContent className="whitespace-nowrap font-mono text-xs">
-                              Spoofed to: rbxassetid://{replId}
+                              {t('explorer.spoofedTo').replace('{id}', String(replId))}
                             </TooltipContent>
                           </Tooltip>
                         )}
@@ -586,13 +587,13 @@ export default function AssetInspectorPanel({
             <button
               type="button"
               onClick={() => setDataOpen(!dataOpen)}
-              className="w-full h-6 px-2 bg-bg-elevated/40 hover:bg-bg-elevated/70 flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wider text-text-muted select-none transition-colors text-left"
+              className="w-full h-6 px-2 bg-bg-elevated/40 hover:bg-bg-elevated/70 flex items-center gap-1.5 select-none transition-colors text-left"
             >
               <ChevronRight
                 size={11}
                 className={cn('transition-transform duration-150', dataOpen && 'rotate-90')}
               />
-              <span>Instance Details</span>
+              <SectionLabel>{t('explorer.instanceDetails')}</SectionLabel>
             </button>
 
             {dataOpen && (

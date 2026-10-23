@@ -2,6 +2,51 @@ import type { TranslationTree } from './index';
 
 export const fr: TranslationTree = {
   misc: {
+    tutorialStep6Body:
+      'Cliquez sur Run Spoofer. Suivez la barre de progression et la notification à la fin. Vous pouvez relancer ce tutoriel depuis Settings.',
+    tutorialStep6Title: 'Lancez le spoofer',
+    tutorialStep5Hint: 'Cochez au moins une ressource pour continuer.',
+    tutorialStep5Body:
+      "Cochez les cases à côté des ressources dans l'arborescence. Vous pouvez sélectionner des lignes ou déplier un dossier et tout cocher.",
+    tutorialStep5Title: 'Sélectionnez quelques ressources',
+    tutorialStep4Hint: 'Cliquez sur Scan Studio ou Open File pour remplir la liste.',
+    tutorialStep4Body:
+      "Ouvrez un place Roblox Studio avec le plugin ValencyStudio - Spoofer chargé, puis cliquez sur Scan Studio. L'analyse remplit la liste des ressources : animations, sons, images, meshes et références de scripts du jeu en cours.",
+    tutorialStep4Title: 'Analyser Studio',
+    tutorialStep3Hint: 'Collez votre clé API Open Cloud dans Settings > Credentials.',
+    tutorialStep3Body:
+      "Allez dans Settings, ouvrez Credentials et collez une clé API Open Cloud avec l'autorisation Assets en lecture/écriture. C'est le téléverseur : sans elle, le spoofing ne peut que télécharger.",
+    tutorialStep3Title: 'Clé API Open Cloud',
+    tutorialStep2Hint: 'Ajoutez un compte ou détectez-en un depuis Studio pour continuer.',
+    tutorialStep2Body:
+      "Ouvrez l'onglet Accounts et ajoutez un profil Roblox. Vous pouvez coller un cookie .ROBLOSECURITY ou le détecter automatiquement depuis Studio. Ce compte sert de téléchargeur.",
+    tutorialStep2Title: 'Ajouter un compte Roblox',
+    tutorialStep1Body:
+      'Configurons tout en 6 étapes rapides. Vous allez ajouter un compte Roblox, coller une clé API Open Cloud, analyser Studio, puis sélectionner des ressources et lancer le spoofer.',
+    tutorialStep1Title: 'Bienvenue dans ValencyStudio - Spoofer',
+    tutorialFinish: 'Terminer',
+    tutorialNext: 'Suivant',
+    tutorialSkip: 'Ignorer le tutoriel',
+    tutorialStepOf: 'Étape {current} sur {total}',
+    tutorialLabel: 'Tutoriel',
+    pasteIdsAdded:
+      "Ajout de {single} ID à l'explorateur ({matched} trouvés dans Studio, {ghost} créés comme ID fantômes).",
+    pasteIdsSendToStudio: 'Envoyer vers Studio',
+    pasteIdsAddToExplorer: "Ajouter à l'explorateur",
+    pasteIdsProcessing: 'Traitement...',
+    pasteIdsLinesSkipped: '{count} ligne(s) ignorée(s) (deux ID par ligne requis)',
+    pasteIdsValidPairs: '{count} paire(s) valide(s)',
+    pasteIdsReady: '{count} ID prêt(s)',
+    pasteIdsReplaceBodyPost: ' sont ignorées.',
+    pasteIdsReplaceBodyMid: ' ou des espaces. Les lignes commençant par ',
+    pasteIdsReplaceBodyPre:
+      "Collez une liste de paires d'ID, une par ligne. Ces séparateurs fonctionnent tous : ",
+    pasteIdsAddBodyPost: ', autorisés à être découverts, remplacés ou enregistrés dans Studio.',
+    pasteIdsAddBodyPre:
+      "Collez une liste d'ID de ressources (un par ligne, séparés par des espaces ou des virgules). Les ID présents dans le scan Studio seront sélectionnés. Ceux absents de Studio seront ajoutés comme ",
+    pasteIdsReplaceMode: 'Remplacer des ID (paires)',
+    pasteIdsAddMode: 'Ajouter des ID (ID fantômes)',
+    pasteIdsTitle: 'Remplacer et ajouter des ID manuellement',
     seek: 'Position de lecture',
     playbackSpeed: 'Vitesse de lecture',
     toggleRigType: 'Toggle Rig Type',
@@ -234,6 +279,13 @@ export const fr: TranslationTree = {
     spoofAllAssets: 'Usurper tous les actifs ({count})',
   },
   settings: {
+    targetSubjectType: 'Type de sujet cible',
+    onboardingTutorial: "Tutoriel d'accueil interactif",
+    resetToDefaults: 'Réinitialiser les valeurs par défaut',
+    languageDescription: "Choisissez la langue d'affichage des libellés de l'interface.",
+    accentColorDescription:
+      "Choisissez la couleur d'accent principale de l'interface et des boutons.",
+    themeDescription: "Basculez entre les thèmes clair et sombre de l'interface.",
     title: 'Paramètres',
     general: 'Paramètres généraux',
     appearance: 'Apparence et localisation',
@@ -359,6 +411,28 @@ export const fr: TranslationTree = {
     goToBottom: 'Aller en bas',
   },
   explorer: {
+    reset: 'Réinitialiser',
+    clearExplorerBody: 'Cela supprimera les {count} ressources analysées.',
+    showMore: 'Afficher {count} de plus',
+    discovered: 'Détecté',
+    idAutoDetected: 'ID : {id} · Détecté automatiquement',
+    studioNotConnectedToast: "Aucun plugin Roblox Studio connecté. Connectez d'abord Studio.",
+    instanceDetails: "Détails de l'instance",
+    appearanceAndValues: 'Apparence et valeurs',
+    scanSpecificPath: 'Analyser un chemin ou modèle précis',
+    scanPath: 'Analyser le chemin',
+    showAll: 'Tout afficher',
+    ghostAsset: 'Actif fantôme (aucune instance dans Studio)',
+    discoveryTimeout: 'Délai de découverte',
+    targetedPathScanBody:
+      'Analyse uniquement une instance ou un conteneur précis au lieu du jeu entier :',
+    targetedPathScan: 'Analyse de chemin ciblée',
+    assetTypes: "Types d'actifs",
+    previewUnavailable: 'Aucun aperçu disponible',
+    previewFailed: "Échec du chargement de l'aperçu",
+    noInstanceSelectedBody:
+      "Choisissez une instance dans l'arbre pour inspecter ses propriétés Roblox.",
+    noInstanceSelected: 'Aucune instance sélectionnée',
     zoomIn: 'Zoom avant',
     zoomOut: 'Zoom arrière',
     zoomReset: 'Réinitialiser le zoom',
@@ -410,6 +484,7 @@ export const fr: TranslationTree = {
     unknownAsset: 'Actif Inconnu',
   },
   common: {
+    or: 'ou',
     none: 'Aucun',
     cancel: 'Annuler',
     save: 'Sauvegarder',
@@ -427,6 +502,7 @@ export const fr: TranslationTree = {
     areYouSure: 'Voulez-vous vraiment continuer ?',
   },
   results: {
+    saveRbxlx: 'Enregistrer le .rbxlx remplacé',
     title: "Résultats d'Usurpation",
     assetsSpoofed: "{count} ID d'actifs ont été usurpés.",
     copyAll: 'Tout Copier',
@@ -436,6 +512,16 @@ export const fr: TranslationTree = {
       "Si le plugin ou l'injection en mémoire est actif, ces identifiants ont déjà été remplacés automatiquement dans votre Roblox Studio !",
   },
   accounts: {
+    groupApiKeyPlaceholder: 'Collez la clé API Open Cloud du groupe...',
+    userApiKeyPlaceholder: "Collez la clé API Open Cloud de l'utilisateur...",
+    userApiKeyBody:
+      'Clé API avec permissions de ressources pour téléverser animations et audio sur votre compte Roblox personnel.',
+    userApiKey: "Clé API Open Cloud de l'utilisateur",
+    discoveredAccounts: 'Comptes détectés',
+    robloxAccount: 'Compte Roblox.',
+    groupApiKeyBody:
+      "Utilisez une clé Open Cloud de groupe pour téléverser au nom d'un groupe, et non d'un compte personnel.",
+    groupApiKey: 'Clé API Open Cloud de groupe',
     validated: 'Compte validé',
     missingCookie: 'Aucun cookie enregistré pour ce compte',
     missingApiKey: 'Aucune clé API Open Cloud enregistrée pour ce compte',

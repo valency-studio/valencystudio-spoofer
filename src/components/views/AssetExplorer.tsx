@@ -33,6 +33,7 @@ import type { ParsedAssetRef, RbxInstance } from '../../utils/robloxPlaceParser/
 import { logValencyStudio } from '../../utils/robloxProfiles';
 import { isTauriRuntime } from '../../utils/tauriRuntime';
 import { AssetTypePicker, SCAN_ASSET_TYPES } from '../shared/AssetTypePicker';
+import { SectionLabel } from '../shared/SectionLabel';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
@@ -718,9 +719,9 @@ export default function AssetExplorer({
                     >
                       <div className="flex flex-col gap-3">
                         <div>
-                          <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-2 block">
-                            Asset Types
-                          </span>
+                          <SectionLabel className="mb-2 block">
+                            {t('explorer.assetTypes')}
+                          </SectionLabel>
                           <AssetTypePicker scanTypes={scanTypes} onToggle={toggleScanType} />
                         </div>
                       </div>
@@ -775,9 +776,9 @@ export default function AssetExplorer({
                     >
                       <div className="flex flex-col gap-3">
                         <div>
-                          <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-2 block">
-                            Asset Types
-                          </span>
+                          <SectionLabel className="mb-2 block">
+                            {t('explorer.assetTypes')}
+                          </SectionLabel>
                           <AssetTypePicker scanTypes={scanTypes} onToggle={toggleScanType} />
                         </div>
                       </div>
@@ -792,10 +793,7 @@ export default function AssetExplorer({
                 type="button"
                 onClick={() => {
                   if (!studioConnected) {
-                    showToast(
-                      'error',
-                      'No Roblox Studio plugin connected. Please connect Studio first.',
-                    );
+                    showToast('error', t('explorer.studioNotConnectedToast'));
                     return;
                   }
                   setRootInstances((prev) =>
@@ -939,9 +937,9 @@ export default function AssetExplorer({
                               >
                                 <div className="flex flex-col gap-3">
                                   <div>
-                                    <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-2 block">
-                                      Asset Types
-                                    </span>
+                                    <SectionLabel className="mb-2 block">
+                                      {t('explorer.assetTypes')}
+                                    </SectionLabel>
                                     <AssetTypePicker
                                       scanTypes={scanTypes}
                                       onToggle={toggleScanType}
@@ -962,7 +960,7 @@ export default function AssetExplorer({
                                   className="h-8 text-xs font-medium gap-1.5 w-full"
                                 >
                                   <MapPin size={13} />
-                                  <span>Scan Specific Path / Model</span>
+                                  <span>{t('explorer.scanSpecificPath')}</span>
                                 </Button>
                               }
                             />
@@ -973,12 +971,11 @@ export default function AssetExplorer({
                               className="w-76 p-3 bg-bg-surface border border-border shadow-xl rounded-lg z-[250]"
                             >
                               <div className="flex flex-col gap-2.5">
-                                <div className="text-2xs font-bold uppercase tracking-wider text-text-muted">
-                                  Targeted Path Scan
-                                </div>
+                                <SectionLabel className="tracking-wider">
+                                  {t('explorer.targetedPathScan')}
+                                </SectionLabel>
                                 <p className="text-2xs text-text-secondary leading-snug">
-                                  Scan only a specific instance or container instead of the whole
-                                  game:
+                                  {t('explorer.targetedPathScanBody')}
                                 </p>
                                 <Input
                                   value={targetedPath}
@@ -989,9 +986,9 @@ export default function AssetExplorer({
                                 />
 
                                 <div>
-                                  <span className="text-2xs font-bold uppercase tracking-widest text-text-muted mb-1.5 block">
-                                    Asset Types
-                                  </span>
+                                  <SectionLabel className="mb-1.5 block">
+                                    {t('explorer.assetTypes')}
+                                  </SectionLabel>
                                   <AssetTypePicker
                                     scanTypes={scanTypes}
                                     onToggle={toggleScanType}
@@ -1006,7 +1003,7 @@ export default function AssetExplorer({
                                     className="h-7 text-xs"
                                     onClick={() => setTargetedScanOpen(false)}
                                   >
-                                    Cancel
+                                    {t('common.cancel')}
                                   </Button>
                                   <Button
                                     size="sm"
@@ -1014,7 +1011,7 @@ export default function AssetExplorer({
                                     disabled={!targetedPath.trim() || !studioConnected}
                                     onClick={() => handleRunTargetedScan()}
                                   >
-                                    Scan Path
+                                    {t('explorer.scanPath')}
                                   </Button>
                                 </div>
                               </div>
@@ -1104,13 +1101,11 @@ export default function AssetExplorer({
                     className="w-56 p-3 bg-bg-surface border border-border rounded-lg shadow-lg"
                   >
                     <div className="flex flex-col gap-2.5">
-                      <div className="text-2xs font-bold uppercase tracking-widest text-text-muted">
-                        {t('explorer.clearExplorer')}
-                      </div>
+                      <SectionLabel className="block">{t('explorer.clearExplorer')}</SectionLabel>
                       <div className="text-xs text-text-secondary leading-normal">
                         {t('common.areYouSure')}{' '}
                         <span className="text-text-muted">
-                          This will remove all {stats.total} scanned assets.
+                          {t('explorer.clearExplorerBody').replace('{count}', String(stats.total))}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 justify-end pt-1">
@@ -1192,9 +1187,9 @@ export default function AssetExplorer({
                         className="w-64 p-3 bg-bg-surface border border-border shadow-xl rounded-lg"
                       >
                         <div className="flex flex-col gap-2">
-                          <div className="text-2xs font-semibold uppercase tracking-widest text-text-muted">
+                          <SectionLabel className="font-semibold">
                             {t('settings.forcePlaceIds')} · {selectedCount} selected
-                          </div>
+                          </SectionLabel>
                           <Input
                             value={placeIdInput}
                             onChange={(e) => setPlaceIdInput(e.target.value)}
@@ -1409,9 +1404,9 @@ export default function AssetExplorer({
                         >
                           <div className="flex flex-col gap-3">
                             <div className="flex items-center justify-between">
-                              <span className="text-2xs font-bold uppercase tracking-wider text-text-muted">
-                                Discovery Timeout
-                              </span>
+                              <SectionLabel className="tracking-wider">
+                                {t('explorer.discoveryTimeout')}
+                              </SectionLabel>
                               <span className="text-xs font-mono font-bold text-primary">
                                 {discoveryTimeoutSecs}s / asset
                               </span>
