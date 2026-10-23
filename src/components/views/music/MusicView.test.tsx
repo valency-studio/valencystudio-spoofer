@@ -6,7 +6,7 @@ import { ConfigProvider } from '../../../contexts/ConfigContext';
 import { useConfigStore } from '../../../stores/configStore';
 import { useMusicStore } from '../../../stores/musicStore';
 import * as music from '../../../utils/music';
-import MusicView from './MusicView';
+import MusicView, { HistoryRow } from './MusicView';
 
 vi.mock('../../../utils/music', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../utils/music')>();
@@ -108,5 +108,43 @@ describe('MusicView FFmpeg requirement', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
     expect(screen.getByText('Tambah lagu')).toBeInTheDocument();
+  });
+});
+
+describe('HistoryRow asset id', () => {
+  // 13 digits, which is what current Roblox ids run to and what `w-28` is sized
+  // for. A shorter id would pass even if the chip clipped.
+  const record: music.UploadRecord = {
+    id: 'rec-1',
+    title: 'Song',
+    uploadedAt: '2026-01-01T00:00:00.000Z',
+    wasSplit: false,
+    totalBytes: 1024,
+    pieces: [
+      {
+        name: 'song.mp3',
+        path: 'C:/tmp/song.mp3',
+        bytes: 1024,
+        assetId: 1234567890123,
+        status: 'accepted',
+      },
+    ],
+  };
+
+  beforeEach(() => {
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn(),
+      },
+    });
+  });
+
+  it('copies the id and confirms it on the chip', async () => {
+    render(<HistoryRow record={record} onDelete={() => {}} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Salin ID aset' }));
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('1234567890123');
+    expect(await screen.findByText('Tersalin')).toBeInTheDocument();
   });
 });

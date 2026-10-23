@@ -200,7 +200,7 @@ export default function MusicView() {
               <pre
                 role="log"
                 aria-live="polite"
-                className="mt-2 max-h-40 overflow-auto rounded-md bg-bg-surface p-3 text-xs leading-relaxed text-text-secondary"
+                className="mt-2 max-h-40 overflow-y-auto rounded-md bg-bg-surface p-3 text-xs leading-relaxed break-words whitespace-pre-wrap text-text-secondary"
               >
                 {ffmpegInstallOutput.join('\n')}
               </pre>
@@ -491,9 +491,17 @@ function AssetId({ value }: { value?: number | null }) {
   return (
     <button
       type="button"
-      onClick={() => void navigator.clipboard.writeText(String(value))}
+      onClick={() => {
+        void navigator.clipboard.writeText(String(value));
+        setCopied(true);
+      }}
       aria-label={t('music.copyId')}
-      className="w-24 shrink-0 truncate rounded border border-border-subtle px-1.5 py-0.5 text-right font-mono text-xs text-text-muted hover:text-text-primary"
+      title={String(value)}
+      // `select-all` overrides the button default of `user-select: none`, so the
+      // id can still be dragged out by hand; `truncate` only clips visually and
+      // the selectable text stays whole. `w-28` is the width 13 digits need at
+      // this type scale, which is what current Roblox ids run to.
+      className="w-28 shrink-0 cursor-pointer truncate rounded border border-border-subtle px-1.5 py-0.5 text-right font-mono text-xs text-text-muted select-all hover:border-border-strong hover:text-text-primary"
     >
       {copied ? t('music.copied') : value}
     </button>
