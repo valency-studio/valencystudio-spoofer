@@ -406,7 +406,7 @@ export default function AccountsView() {
                         {acc.avatarUrl ? (
                           <img
                             src={acc.avatarUrl}
-                            alt="Avatar"
+                            alt={t('accounts.avatar')}
                             className="w-12 h-12 rounded-full bg-secondary object-cover"
                           />
                         ) : (

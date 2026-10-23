@@ -1,10 +1,12 @@
 import { CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import { useEffect } from 'react';
 
+import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 import { useSpooferStore } from '../../stores/spooferStore';
 
 export const Toast = () => {
+  const { t } = useLanguage();
   const toast = useSpooferStore((s) => s.toast);
   const dismiss = useSpooferStore((s) => s.dismissToast);
 
@@ -45,7 +47,7 @@ export const Toast = () => {
         <button
           onClick={dismiss}
           className="opacity-60 hover:opacity-100 transition-opacity shrink-0"
-          aria-label="Dismiss"
+          aria-label={t('common.dismiss')}
         >
           <X size={14} />
         </button>

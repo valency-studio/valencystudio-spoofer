@@ -43,11 +43,11 @@ export default function BehaviorCard() {
     <SettingCard
       icon={Laptop}
       title={t('settings.behavior')}
-      description="Configure application tray behavior, desktop notifications, and tutorials."
+      description={t('settings.behaviorDescription')}
     >
       <SettingSwitchRow
         label={t('settings.desktopNotifications')}
-        description="Show system notifications when downloads or spoof jobs finish."
+        description={t('settings.notificationsDescription')}
         checked={config.general.desktopNotifications}
         onCheckedChange={handleDesktopNotificationsChange}
       />
@@ -72,8 +72,7 @@ export default function BehaviorCard() {
             {t('settings.onboardingTutorial')}
           </span>
           <p className="text-2xs text-text-secondary leading-relaxed">
-            Walk through adding an account, setting up API keys, loading places, and running your
-            first spoof.
+            {t('settings.tutorialDescription')}
           </p>
         </div>
         <Button
@@ -83,7 +82,7 @@ export default function BehaviorCard() {
           className="h-8 px-3 text-xs flex items-center gap-1.5 shrink-0"
         >
           <HelpCircle size={13} />
-          <span>Launch Tutorial</span>
+          <span>{t('settings.launchTutorial')}</span>
         </Button>
       </div>
     </SettingCard>

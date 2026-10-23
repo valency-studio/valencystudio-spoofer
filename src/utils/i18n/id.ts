@@ -2,6 +2,8 @@ import type { TranslationTree } from './index';
 
 export const id: TranslationTree = {
   misc: {
+    startScan: 'Mulai Pemindaian',
+    typesToScan: 'Jenis aset yang dipindai',
     tutorialStep6Body:
       'Tekan Run Spoofer. Perhatikan bilah progres dan notifikasi saat selesai. Tutorial ini bisa dibuka ulang dari Settings.',
     tutorialStep6Title: 'Jalankan spoofer',
@@ -194,6 +196,7 @@ export const id: TranslationTree = {
       'yt-dlp tidak ada di PATH Anda, jadi impor dari tautan tidak tersedia. Pasang yt-dlp lalu buka ulang aplikasi.',
   },
   nav: {
+    clearSearch: 'Bersihkan pencarian',
     spoofing: 'Spoofer',
     settings: 'Pengaturan',
     activity: 'Aktivitas',
@@ -234,6 +237,7 @@ export const id: TranslationTree = {
     madeWith: 'Dibuat dengan hati oleh {team}.',
   },
   spoof: {
+    assetPermissionsProgress: 'Izin Aset',
     manualReplace: 'Ganti & tambah ID manual',
     title: 'Asset Spoofer',
     targets: 'Target',
@@ -280,6 +284,72 @@ export const id: TranslationTree = {
       'Tidak ada grup yang bisa dikelola. Pastikan akun Anda memiliki izin pengelolaan grup di Roblox.',
   },
   settings: {
+    cacheClearFailed: 'Gagal membersihkan cache',
+    cacheEnabled: 'Cache diaktifkan.',
+    cacheDisabled: 'Cache dimatikan. Data runtime yang tersimpan dibersihkan.',
+    cacheCleared: 'Cache dibersihkan.',
+    resetAllSettingsTitle: 'Reset Semua Pengaturan',
+    openLogsFolderDescription: 'Buka folder yang berisi log aplikasi.',
+    resetConfirmTitle: 'Reset Pengaturan',
+    resetConfirmBody:
+      'Kembalikan semua pengaturan ke nilai bawaan? Tindakan ini tidak dapat dibatalkan.',
+    resetAllSettingsBody:
+      'Kembalikan semua pengaturan dan preferensi ke nilai bawaan. Tindakan ini tidak dapat dibatalkan.',
+    tutorialDescription:
+      'Panduan menambahkan akun, menyiapkan API key, memuat place, dan menjalankan spoof pertama.',
+    launchTutorial: 'Jalankan Tutorial',
+    languagePlaceholder: 'Bahasa',
+    cacheDescription:
+      'Simpan mesh, gambar, dan audio hasil unduhan ke disk untuk mempercepat pemindaian berulang.',
+    debugConsoleDescription:
+      'Tampilkan konsol debug mengambang real-time untuk pelacakan IPC dan jaringan.',
+    debugDescription: 'Aktifkan konsol debug pengembang dan kelola file cache lokal.',
+    dangerDescription: 'Tindakan tak dapat dibatalkan dan reset konfigurasi menyeluruh.',
+    credentialsDescription:
+      'Kelola cookie sesi Roblox dan kredensial Open Cloud API untuk mengunduh dan mengunggah.',
+    notificationsDescription: 'Tampilkan notifikasi sistem saat unduhan atau proses spoof selesai.',
+    behaviorDescription: 'Atur perilaku tray aplikasi, notifikasi desktop, dan tutorial.',
+    appearanceDescription: 'Sesuaikan tema warna, warna aksen, dan bahasa tampilan.',
+    advancedDescription: 'Opsi injeksi eksperimental dan pemicu otomatisasi sistem.',
+    assetProcessingDescription:
+      'Atur pemeriksaan kepemilikan aset, penyimpanan metadata, dan pemulihan arsip.',
+    exclusionsDescription: 'Cegah pengguna atau grup Roblox tertentu ikut di-spoof atau diubah.',
+    batchSpeedMax: 'Kecepatan Maksimal — kecepatan penggantian tertinggi.',
+    batchSpeedFast: 'Cepat — batch penggantian dipercepat dengan yield lebih pendek.',
+    batchSpeedBalanced: 'Seimbang — throughput dan stabilitas penggantian standar.',
+    batchSpeedUltra:
+      'Ultra Mulus — beban CPU lebih rendah & viewport lebih lancar saat penggantian.',
+    batchSizeSpeed: 'Ukuran Batch & Kecepatan',
+    uploadPollIntervalDescription:
+      'Seberapa sering memeriksa Roblox Open Cloud untuk penyelesaian unggahan (lebih rendah = lebih cepat, disarankan 200-400ms).',
+    uploadPollInterval: 'Interval Polling Operasi Unggah',
+    discoveryConcurrencyDescription: 'Thread paralel untuk pencarian Place ID.',
+    discoveryConcurrency: 'Konkurensi Discovery',
+    maxDownloadConcurrencyDescription: 'Stream paralel untuk mengunduh payload aset Roblox.',
+    maxConcurrencyDescription: 'Batas atas thread paralel untuk pipeline spoof aset.',
+    routingDescription: 'Atur proxy jaringan dan tingkat konkurensi untuk unduh dan unggah aset.',
+    accessActionBody:
+      'Memberi izin {code} di dalam game, sehingga experience, grup, atau pengguna yang dipilih dapat memakai dan memainkan aset hasil spoof.',
+    accessActionTitle: 'Aksi Akses:',
+    targetSubjectIdsGroupPlaceholder: 'mis. 1089883489',
+    targetSubjectIdsUserPlaceholder: 'mis. 12345678',
+    targetSubjectIdsPlacePlaceholder: 'mis. 1818, 924364, 12345678',
+    targetSubjectIdsGroupDesc: 'Masukkan Group ID, pisahkan dengan koma.',
+    targetSubjectIdsUserDesc: 'Masukkan User ID, pisahkan dengan koma.',
+    targetSubjectIdsPlaceDesc: 'Masukkan Place ID atau Universe ID, pisahkan dengan koma.',
+    targetSubjectIds: 'ID Subjek Target',
+    subjectUser: 'Pengguna Roblox (User ID)',
+    subjectGroup: 'Grup Roblox (Group ID)',
+    subjectExperience: 'Experience (Place / Universe)',
+    selectType: 'Pilih jenis',
+    targetSubjectTypeDescription:
+      'Pilih apakah izin diberikan ke Place/Experience, Grup, atau Pengguna.',
+    autoGrantPermissionsDescription:
+      'Panggil Roblox Asset Permissions API secara otomatis untuk aset baru setelah spoof selesai.',
+    autoGrantPermissions: 'Berikan Izin Otomatis Setelah Spoof',
+    assetPermissionsDescription:
+      'Berikan izin otomatis untuk aset hasil spoof kepada experience, grup, atau pengguna guna menghilangkan error "missing permission".',
+    assetPermissionsTitle: 'Izin Aset (Open Cloud)',
     targetSubjectType: 'Tipe Subjek Target',
     onboardingTutorial: 'Tutorial Interaktif',
     resetToDefaults: 'Kembalikan ke Default',
@@ -411,6 +481,41 @@ export const id: TranslationTree = {
     goToBottom: 'Ke Bawah',
   },
   explorer: {
+    downloadFailed: 'Unduhan gagal',
+    clearFilters: 'Bersihkan filter',
+    assetTypeScripts: 'Script',
+    assetTypeMeshes: 'Mesh',
+    assetTypeImages: 'Gambar',
+    assetTypeAnimations: 'Animasi',
+    assetTypeSounds: 'Suara',
+    discoveryFailed: 'Penelusuran gagal',
+    skipped: 'Dilewati',
+    stageError: 'Error',
+    completed: 'Selesai',
+    uploadingStage: 'Mengunggah...',
+    downloading: 'Mengunduh...',
+    discoveringGraph: 'Menelusuri Place ID (Graf Kreator)...',
+    discoveringUsage: 'Menelusuri Place ID (Penggunaan Aset)...',
+    checkingDirectPlaceIds: 'Memeriksa Place ID langsung...',
+    ghostIds: 'Ghost ID',
+    ghostId: 'Ghost ID',
+    dataModelPath: 'Jalur DataModel',
+    parent: 'Induk',
+    className: 'Nama Class',
+    searchLogs: 'Cari log berdasarkan ID, status, atau aset...',
+    searchAssets: 'Cari aset berdasarkan nama atau ID...',
+    targetedPathPlaceholder: 'mis. game.Workspace.AKAnims atau Guns',
+    forceResetToast: 'Status tombol direset. Anda bisa memulai spoof baru.',
+    forceResetStuck: 'Paksa Reset (Macet?)',
+    reapplyReplacements: 'Terapkan Ulang Penggantian',
+    downloadOnlyMode: 'Hanya Unduh',
+    spoofUpload: 'Spoof (Unggah)',
+    discoverPlaceIdsTooltip: 'Telusuri Place ID (batas {secs}s/aset)',
+    discoveringPlaceIds: 'Menelusuri Place ID...',
+    discover: 'Telusuri',
+    copyReplacedIdsOnly: 'Salin Hanya ID Hasil Penggantian',
+    copyReplacementPairs: 'Salin Pasangan Pengganti',
+    addManualGhostIds: 'Tambah ID Manual / Ghost',
     reset: 'Reset',
     clearExplorerBody: 'Ini akan menghapus semua {count} aset yang dipindai.',
     showMore: 'Tampilkan {count} lagi',
@@ -483,6 +588,8 @@ export const id: TranslationTree = {
     unknownAsset: 'Aset Tidak Diketahui',
   },
   common: {
+    promise: 'Promise',
+    selectAll: 'Pilih semua',
     or: 'atau',
     none: 'Tidak ada',
     cancel: 'Batal',
@@ -511,6 +618,8 @@ export const id: TranslationTree = {
       'Jika plugin Studio terhubung, ID ini sudah diganti di place Roblox Studio yang Anda buka.',
   },
   accounts: {
+    avatar: 'Avatar',
+    profile: 'Profil',
     groupApiKeyPlaceholder: 'Tempel API Key Open Cloud Grup...',
     userApiKeyPlaceholder: 'Tempel API Key Open Cloud Pengguna...',
     userApiKeyBody:

@@ -197,7 +197,7 @@ export default function PasteIdsModal({
           {mode === 'add' ? (
             <p className="text-xs text-text-secondary leading-relaxed">
               {t('misc.pasteIdsAddBodyPre')}
-              <strong className="text-primary font-semibold">Ghost IDs</strong>
+              <strong className="text-primary font-semibold">{t('explorer.ghostIds')}</strong>
               {t('misc.pasteIdsAddBodyPost')}
             </p>
           ) : (

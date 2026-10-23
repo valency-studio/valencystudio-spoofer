@@ -32,50 +32,50 @@ if (typeof window !== 'undefined') {
 
 import { getAssetId } from '../../../utils/explorerTree';
 
-// One map for both the per-asset badge and the per-instance badge. `label` is the
+// One map for both the per-asset badge and the per-instance badge. `labelKey` is the
 // fallback only — callers prefer the live status message over it.
 // ponytail: the six distinct stage hues collapsed into the shared signal tokens;
 // add a per-stage token to index.css only if users actually need to tell them apart.
-const STAGE_BADGES: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
+const STAGE_BADGES: Record<string, { icon: React.ReactNode; color: string; labelKey: string }> = {
   resolving_location: {
     icon: <Loader2 size={10} className="animate-spin" />,
     color: 'text-signal-info',
-    label: 'Checking direct Place IDs...',
+    labelKey: 'explorer.checkingDirectPlaceIds',
   },
   discovering_usage: {
     icon: <Loader2 size={10} className="animate-spin" />,
     color: 'text-signal-info',
-    label: 'Discovering Place IDs (Asset Usage)...',
+    labelKey: 'explorer.discoveringUsage',
   },
   discovering_graph: {
     icon: <Loader2 size={10} className="animate-spin" />,
     color: 'text-signal-info',
-    label: 'Discovering Place IDs (Creator Graph)...',
+    labelKey: 'explorer.discoveringGraph',
   },
   downloading: {
     icon: <Download size={10} />,
     color: 'text-signal-info',
-    label: 'Downloading...',
+    labelKey: 'explorer.downloading',
   },
   uploading: {
     icon: <Upload size={10} />,
     color: 'text-signal-warn',
-    label: 'Uploading...',
+    labelKey: 'explorer.uploadingStage',
   },
   done: {
     icon: <Check size={10} />,
     color: 'text-signal-live',
-    label: 'Completed',
+    labelKey: 'explorer.completed',
   },
   error: {
     icon: <AlertCircle size={10} />,
     color: 'text-danger',
-    label: 'Error',
+    labelKey: 'explorer.stageError',
   },
   skipped: {
     icon: <SkipForward size={10} />,
     color: 'text-muted-foreground',
-    label: 'Skipped',
+    labelKey: 'explorer.skipped',
   },
 };
 
@@ -352,12 +352,13 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
           if (!cfg) return null;
           const isError = status.stage === 'error';
           const isDiscoveryError = isError && status.message?.toLowerCase().includes('no place id');
+          const cfgLabel = t(cfg.labelKey);
           const badgeText = isError
             ? isDiscoveryError
-              ? 'Discovery failed'
-              : 'Download failed'
-            : status.message || cfg.label;
-          const fullMessage = status.message || cfg.label;
+              ? t('explorer.discoveryFailed')
+              : t('explorer.downloadFailed')
+            : status.message || cfgLabel;
+          const fullMessage = status.message || cfgLabel;
           return (
             <Tooltip>
               <TooltipTrigger
@@ -427,7 +428,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
               render={
                 <div className="flex items-center gap-1 justify-center h-5 px-1.5 rounded border border-signal-spoofed/30 bg-signal-spoofed/10 text-signal-spoofed shrink-0 text-2xs font-bold ml-1">
                   <Ghost size={11} />
-                  <span>Ghost ID</span>
+                  <span>{t('explorer.ghostId')}</span>
                 </div>
               }
             />
@@ -554,11 +555,12 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
                   const isError = status.stage === 'error';
                   const isDiscoveryError =
                     isError && status.message?.toLowerCase().includes('no place id');
+                  const cfgLabel = t(cfg.labelKey);
                   const badgeText = isError
                     ? isDiscoveryError
-                      ? 'Discovery failed'
-                      : 'Download failed'
-                    : status.message || cfg.label;
+                      ? t('explorer.discoveryFailed')
+                      : t('explorer.downloadFailed')
+                    : status.message || cfgLabel;
                   return (
                     <Tooltip>
                       <TooltipTrigger
@@ -575,7 +577,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
                         }
                       />
                       <TooltipContent className="text-xs max-w-xs break-words">
-                        {status.message || cfg.label}
+                        {status.message || cfgLabel}
                       </TooltipContent>
                     </Tooltip>
                   );

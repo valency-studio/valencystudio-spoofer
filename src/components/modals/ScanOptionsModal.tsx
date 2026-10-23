@@ -3,16 +3,9 @@ import { useState } from 'react';
 
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { ScanOptions } from '../../utils/studioScan';
+import { assetTypeLabel, SCAN_ASSET_TYPES } from '../shared/AssetTypePicker';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-
-const ASSET_TYPES = [
-  { key: 'sounds', label: 'Sounds' },
-  { key: 'animations', label: 'Animations' },
-  { key: 'images', label: 'Images' },
-  { key: 'meshes', label: 'Meshes' },
-  { key: 'scripts', label: 'Scripts' },
-] as const;
 
 export default function ScanOptionsModal({
   open,
@@ -24,7 +17,7 @@ export default function ScanOptionsModal({
   onScanStart: (options: ScanOptions) => Promise<void>;
 }) {
   const { t } = useLanguage();
-  const [scanTypes, setScanTypes] = useState<Set<string>>(new Set(ASSET_TYPES.map((a) => a.key)));
+  const [scanTypes, setScanTypes] = useState<Set<string>>(new Set(SCAN_ASSET_TYPES));
   const [scanning, setScanning] = useState(false);
 
   const toggleType = (key: string) => {
@@ -42,7 +35,7 @@ export default function ScanOptionsModal({
   const handleStart = async () => {
     setScanning(true);
     try {
-      const types = ASSET_TYPES.map((a) => a.key).filter((k) => scanTypes.has(k));
+      const types = SCAN_ASSET_TYPES.filter((k) => scanTypes.has(k));
       await onScanStart({ scanTypes: types });
       onOpenChange(false);
     } finally {
@@ -62,20 +55,20 @@ export default function ScanOptionsModal({
 
         <div className="space-y-4 py-2">
           <div>
-            <p className="text-sm font-semibold text-foreground mb-2">Asset types to scan</p>
+            <p className="text-sm font-semibold text-foreground mb-2">{t('misc.typesToScan')}</p>
             <div className="grid grid-cols-2 gap-2">
-              {ASSET_TYPES.map((type) => (
+              {SCAN_ASSET_TYPES.map((key) => (
                 <label
-                  key={type.key}
+                  key={key}
                   className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-accent/50 transition-colors"
                 >
                   <input
                     type="checkbox"
-                    checked={scanTypes.has(type.key)}
-                    onChange={() => toggleType(type.key)}
+                    checked={scanTypes.has(key)}
+                    onChange={() => toggleType(key)}
                     className="accent-primary"
                   />
-                  <span className="text-sm">{type.label}</span>
+                  <span className="text-sm">{assetTypeLabel(t, key)}</span>
                 </label>
               ))}
             </div>
@@ -91,7 +84,7 @@ export default function ScanOptionsModal({
               className="min-w-32"
             >
               <ScanSearch size={16} className="mr-2" />
-              {scanning ? t('spoof.scanning') : 'Start Scan'}
+              {scanning ? t('spoof.scanning') : t('misc.startScan')}
             </Button>
           </div>
         </div>

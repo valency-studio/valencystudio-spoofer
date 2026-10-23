@@ -2,6 +2,8 @@ import type { TranslationTree } from './index';
 
 export const en: TranslationTree = {
   misc: {
+    startScan: 'Start Scan',
+    typesToScan: 'Asset types to scan',
     tutorialStep6Body:
       "Press Run Spoofer. Watch the progress bar and the toast when it's done. You can re-run this tutorial from Settings.",
     tutorialStep6Title: 'Run the spoofer',
@@ -193,6 +195,7 @@ export const en: TranslationTree = {
       'yt-dlp is not on your PATH, so importing from a link is unavailable. Install yt-dlp and reopen the app.',
   },
   nav: {
+    clearSearch: 'Clear search',
     spoofing: 'Spoofer',
     settings: 'Settings',
     activity: 'Activity',
@@ -232,6 +235,7 @@ export const en: TranslationTree = {
     madeWith: 'Made with care by {team}.',
   },
   spoof: {
+    assetPermissionsProgress: 'Asset Permissions',
     manualReplace: 'Manual Replace & Add IDs',
     title: 'Asset Spoofer',
     targets: 'Targets',
@@ -278,6 +282,73 @@ export const en: TranslationTree = {
       'No manageable groups found. Make sure your account has group management permissions in Roblox.',
   },
   settings: {
+    cacheClearFailed: 'Failed to clear cache',
+    cacheEnabled: 'Cache enabled.',
+    cacheDisabled: 'Cache disabled. Cached runtime data cleared.',
+    cacheCleared: 'Cache cleared.',
+    resetAllSettingsTitle: 'Reset All Settings',
+    openLogsFolderDescription: 'Open the folder containing application logs.',
+    resetConfirmTitle: 'Reset Settings',
+    resetConfirmBody: 'Reset all settings to their default values? This cannot be undone.',
+    resetAllSettingsBody:
+      'Reset all settings and preferences to default values. This cannot be undone.',
+    tutorialDescription:
+      'Walk through adding an account, setting up API keys, loading places, and running your first spoof.',
+    launchTutorial: 'Launch Tutorial',
+    languagePlaceholder: 'Language',
+    cacheDescription:
+      'Store downloaded meshes, images, and audio payloads on disk to speed up repeated scans.',
+    debugConsoleDescription: 'Show floating real-time debug console for IPC and network tracing.',
+    debugDescription: 'Enable developer debug console and manage local cache files.',
+    dangerDescription: 'Irreversible actions and complete configuration reset.',
+    credentialsDescription:
+      'Manage Roblox session cookies and Open Cloud API credentials for downloading and uploading.',
+    notificationsDescription: 'Show system notifications when downloads or spoof jobs finish.',
+    behaviorDescription:
+      'Configure application tray behavior, desktop notifications, and tutorials.',
+    appearanceDescription: 'Customize color themes, accent colors, and display language.',
+    advancedDescription: 'Experimental injection options and system automation triggers.',
+    assetProcessingDescription:
+      'Configure asset ownership checks, metadata preservation, and archive recovery.',
+    exclusionsDescription:
+      'Prevent specific Roblox users or groups from being spoofed or modified.',
+    batchSpeedMax: 'Max Speed — highest replacement speed.',
+    batchSpeedFast: 'Fast — accelerated replacement batches with shorter yields.',
+    batchSpeedBalanced: 'Balanced — standard replacement throughput and stability.',
+    batchSpeedUltra:
+      'Ultra Smooth — lower CPU load & smoother viewport rendering during replacement.',
+    batchSizeSpeed: 'Batch Size & Speed',
+    uploadPollIntervalDescription:
+      'How frequently to check Roblox Open Cloud for upload completion (lower = faster, 200-400ms recommended).',
+    uploadPollInterval: 'Upload Operation Poll Interval',
+    discoveryConcurrencyDescription: 'Parallel threads for place ID discovery lookups.',
+    discoveryConcurrency: 'Discovery Concurrency',
+    maxDownloadConcurrencyDescription: 'Parallel streams for downloading Roblox asset payloads.',
+    maxConcurrencyDescription: 'Parallel thread ceiling for asset spoofing pipeline.',
+    routingDescription:
+      'Configure network proxies and concurrency levels for downloading and uploading assets.',
+    accessActionBody:
+      'Grants in-game {code} permission, allowing the specified experiences, groups, or users to use and play the spoofed assets.',
+    accessActionTitle: 'Access Action:',
+    targetSubjectIdsGroupPlaceholder: 'e.g. 1089883489',
+    targetSubjectIdsUserPlaceholder: 'e.g. 12345678',
+    targetSubjectIdsPlacePlaceholder: 'e.g. 1818, 924364, 12345678',
+    targetSubjectIdsGroupDesc: 'Enter comma-separated Group IDs.',
+    targetSubjectIdsUserDesc: 'Enter comma-separated User IDs.',
+    targetSubjectIdsPlaceDesc: 'Enter comma-separated Place IDs or Universe IDs.',
+    targetSubjectIds: 'Target Subject ID(s)',
+    subjectUser: 'Roblox User (User ID)',
+    subjectGroup: 'Roblox Group (Group ID)',
+    subjectExperience: 'Experience (Place / Universe)',
+    selectType: 'Select type',
+    targetSubjectTypeDescription:
+      'Choose whether permissions are granted to a Place/Experience, a Group, or a User.',
+    autoGrantPermissionsDescription:
+      'Automatically call the Roblox Asset Permissions API for newly created assets upon spoof completion.',
+    autoGrantPermissions: 'Auto-Grant Permissions After Spoof',
+    assetPermissionsDescription:
+      "Automatically grant permission for spoofed assets to experiences, groups, or users to eliminate 'missing permission' errors.",
+    assetPermissionsTitle: 'Asset Permissions (Open Cloud)',
     targetSubjectType: 'Target Subject Type',
     onboardingTutorial: 'Interactive Onboarding Tutorial',
     resetToDefaults: 'Reset to Defaults',
@@ -410,6 +481,41 @@ export const en: TranslationTree = {
     goToBottom: 'Go to Bottom',
   },
   explorer: {
+    downloadFailed: 'Download failed',
+    clearFilters: 'Clear filters',
+    assetTypeScripts: 'Scripts',
+    assetTypeMeshes: 'Meshes',
+    assetTypeImages: 'Images',
+    assetTypeAnimations: 'Animations',
+    assetTypeSounds: 'Sounds',
+    discoveryFailed: 'Discovery failed',
+    skipped: 'Skipped',
+    stageError: 'Error',
+    completed: 'Completed',
+    uploadingStage: 'Uploading...',
+    downloading: 'Downloading...',
+    discoveringGraph: 'Discovering Place IDs (Creator Graph)...',
+    discoveringUsage: 'Discovering Place IDs (Asset Usage)...',
+    checkingDirectPlaceIds: 'Checking direct Place IDs...',
+    ghostIds: 'Ghost IDs',
+    ghostId: 'Ghost ID',
+    dataModelPath: 'DataModel Path',
+    parent: 'Parent',
+    className: 'Class Name',
+    searchLogs: 'Search logs by ID, status, or asset...',
+    searchAssets: 'Search assets by name or ID...',
+    targetedPathPlaceholder: 'e.g. game.Workspace.AKAnims or Guns',
+    forceResetToast: 'Button state reset. You can start a new spoof.',
+    forceResetStuck: 'Force Reset (Stuck?)',
+    reapplyReplacements: 'Re-apply Replacements',
+    downloadOnlyMode: 'Download Only',
+    spoofUpload: 'Spoof (Upload)',
+    discoverPlaceIdsTooltip: 'Discover Place IDs ({secs}s limit/asset)',
+    discoveringPlaceIds: 'Discovering Place IDs...',
+    discover: 'Discover',
+    copyReplacedIdsOnly: 'Copy Replaced IDs Only',
+    copyReplacementPairs: 'Copy Replacement Pairs',
+    addManualGhostIds: 'Add Manual / Ghost IDs',
     reset: 'Reset',
     clearExplorerBody: 'This will remove all {count} scanned assets.',
     showMore: 'Show {count} more',
@@ -481,6 +587,8 @@ export const en: TranslationTree = {
     unknownAsset: 'Unknown Asset',
   },
   common: {
+    promise: 'Promise',
+    selectAll: 'Select all',
     or: 'or',
     none: 'None',
     cancel: 'Cancel',
@@ -509,6 +617,8 @@ export const en: TranslationTree = {
       'If the Studio plugin is connected, these IDs have already been replaced in your open Roblox Studio place.',
   },
   accounts: {
+    avatar: 'Avatar',
+    profile: 'Profile',
     groupApiKeyPlaceholder: 'Paste Group Open Cloud API Key...',
     userApiKeyPlaceholder: 'Paste User Open Cloud API Key...',
     userApiKeyBody:

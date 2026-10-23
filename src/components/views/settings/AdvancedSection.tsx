@@ -19,7 +19,7 @@ export default function AdvancedSection() {
     <SettingCard
       icon={Wrench}
       title={t('settings.advanced')}
-      description="Experimental injection options and system automation triggers."
+      description={t('settings.advancedDescription')}
     >
       <SettingSwitchRow
         label={t('settings.clipboardMonitoring')}

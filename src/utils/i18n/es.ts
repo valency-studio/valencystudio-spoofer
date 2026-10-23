@@ -2,6 +2,8 @@ import type { TranslationTree } from './index';
 
 export const es: TranslationTree = {
   misc: {
+    startScan: 'Iniciar escaneo',
+    typesToScan: 'Tipos de assets a escanear',
     tutorialStep6Body:
       'Pulsa Run Spoofer. Observa la barra de progreso y el aviso al terminar. Puedes repetir este tutorial desde Settings.',
     tutorialStep6Title: 'Ejecuta el spoofer',
@@ -191,6 +193,7 @@ export const es: TranslationTree = {
       'yt-dlp no está en tu PATH, así que importar desde un enlace no está disponible. Instala yt-dlp y vuelve a abrir la aplicación.',
   },
   nav: {
+    clearSearch: 'Limpiar búsqueda',
     spoofing: 'Suplantación',
     settings: 'Ajustes',
     activity: 'Actividad',
@@ -230,6 +233,7 @@ export const es: TranslationTree = {
     madeWith: 'Hecho con cariño por {team}.',
   },
   spoof: {
+    assetPermissionsProgress: 'Permisos de assets',
     manualReplace: 'Reemplazo y añadir ID manual',
     title: 'Suplantador de Assets',
     targets: 'Objetivos',
@@ -276,6 +280,78 @@ export const es: TranslationTree = {
     spoofAllAssets: 'Falsificar todos los activos ({count})',
   },
   settings: {
+    cacheClearFailed: 'No se pudo borrar la caché',
+    cacheEnabled: 'Caché activada.',
+    cacheDisabled: 'Caché desactivada. Se borraron los datos de ejecución guardados.',
+    cacheCleared: 'Caché borrada.',
+    resetAllSettingsTitle: 'Restablecer todos los ajustes',
+    openLogsFolderDescription: 'Abre la carpeta con los registros de la aplicación.',
+    resetConfirmTitle: 'Restablecer ajustes',
+    resetConfirmBody:
+      '¿Restablecer todos los ajustes a sus valores predeterminados? No se puede deshacer.',
+    resetAllSettingsBody:
+      'Restablece todos los ajustes y preferencias a los valores predeterminados. No se puede deshacer.',
+    tutorialDescription:
+      'Guía para añadir una cuenta, configurar API keys, cargar places y hacer tu primer spoof.',
+    launchTutorial: 'Iniciar tutorial',
+    languagePlaceholder: 'Idioma',
+    cacheDescription:
+      'Guarda en disco los meshes, imágenes y audios descargados para acelerar escaneos repetidos.',
+    debugConsoleDescription: 'Muestra una consola flotante en tiempo real para trazar IPC y red.',
+    debugDescription: 'Activa la consola de depuración y gestiona los archivos de caché locales.',
+    dangerDescription: 'Acciones irreversibles y restablecimiento completo de la configuración.',
+    credentialsDescription:
+      'Gestiona las cookies de sesión de Roblox y las credenciales de Open Cloud API para descargar y subir.',
+    notificationsDescription:
+      'Muestra notificaciones del sistema cuando terminan las descargas o los trabajos de spoof.',
+    behaviorDescription:
+      'Configura el comportamiento en la bandeja, las notificaciones de escritorio y los tutoriales.',
+    appearanceDescription:
+      'Personaliza temas de color, colores de acento y el idioma de la interfaz.',
+    advancedDescription:
+      'Opciones de inyección experimentales y disparadores de automatización del sistema.',
+    assetProcessingDescription:
+      'Configura la comprobación de propiedad, la conservación de metadatos y la recuperación de archivos.',
+    exclusionsDescription:
+      'Evita que usuarios o grupos concretos de Roblox se spoofeen o modifiquen.',
+    batchSpeedMax: 'Velocidad máxima — la mayor velocidad de reemplazo.',
+    batchSpeedFast: 'Rápido — lotes de reemplazo acelerados con pausas más cortas.',
+    batchSpeedBalanced: 'Equilibrado — rendimiento y estabilidad de reemplazo estándar.',
+    batchSpeedUltra:
+      'Ultra fluido — menos carga de CPU y renderizado del viewport más fluido durante el reemplazo.',
+    batchSizeSpeed: 'Tamaño de lote y velocidad',
+    uploadPollIntervalDescription:
+      'Con qué frecuencia consultar Roblox Open Cloud para saber si la subida terminó (más bajo = más rápido, se recomiendan 200-400 ms).',
+    uploadPollInterval: 'Intervalo de sondeo de la subida',
+    discoveryConcurrencyDescription: 'Hilos paralelos para las búsquedas de IDs de place.',
+    discoveryConcurrency: 'Concurrencia de descubrimiento',
+    maxDownloadConcurrencyDescription:
+      'Flujos paralelos para descargar los payloads de assets de Roblox.',
+    maxConcurrencyDescription: 'Límite de hilos paralelos para el flujo de spoofeo de assets.',
+    routingDescription:
+      'Configura proxies de red y niveles de concurrencia para descargar y subir assets.',
+    accessActionBody:
+      'Otorga el permiso {code} en el juego, permitiendo que las experiencias, grupos o usuarios indicados usen y reproduzcan los assets spoofeados.',
+    accessActionTitle: 'Acción de acceso:',
+    targetSubjectIdsGroupPlaceholder: 'p. ej. 1089883489',
+    targetSubjectIdsUserPlaceholder: 'p. ej. 12345678',
+    targetSubjectIdsPlacePlaceholder: 'p. ej. 1818, 924364, 12345678',
+    targetSubjectIdsGroupDesc: 'Introduce IDs de grupo separados por comas.',
+    targetSubjectIdsUserDesc: 'Introduce IDs de usuario separados por comas.',
+    targetSubjectIdsPlaceDesc: 'Introduce IDs de Place o de Universe separados por comas.',
+    targetSubjectIds: 'ID(s) de destino',
+    subjectUser: 'Usuario de Roblox (ID de usuario)',
+    subjectGroup: 'Grupo de Roblox (ID de grupo)',
+    subjectExperience: 'Experience (Place / Universe)',
+    selectType: 'Seleccionar tipo',
+    targetSubjectTypeDescription:
+      'Elige si los permisos se conceden a un Place/Experience, un grupo o un usuario.',
+    autoGrantPermissionsDescription:
+      'Llama automáticamente a la API de permisos de assets de Roblox para los assets nuevos al terminar el spoof.',
+    autoGrantPermissions: 'Conceder permisos automáticamente tras el spoof',
+    assetPermissionsDescription:
+      'Otorga permiso automáticamente a los assets spoofeados para experiencias, grupos o usuarios y elimina los errores de "permiso faltante".',
+    assetPermissionsTitle: 'Permisos de assets (Open Cloud)',
     targetSubjectType: 'Tipo de sujeto objetivo',
     onboardingTutorial: 'Tutorial interactivo de inicio',
     resetToDefaults: 'Restablecer valores predeterminados',
@@ -406,6 +482,41 @@ export const es: TranslationTree = {
     goToBottom: 'Ir al fondo',
   },
   explorer: {
+    downloadFailed: 'Falló la descarga',
+    clearFilters: 'Limpiar filtros',
+    assetTypeScripts: 'Scripts',
+    assetTypeMeshes: 'Meshes',
+    assetTypeImages: 'Imágenes',
+    assetTypeAnimations: 'Animaciones',
+    assetTypeSounds: 'Sonidos',
+    discoveryFailed: 'Falló el descubrimiento',
+    skipped: 'Omitido',
+    stageError: 'Error',
+    completed: 'Completado',
+    uploadingStage: 'Subiendo...',
+    downloading: 'Descargando...',
+    discoveringGraph: 'Descubriendo IDs de place (grafo de creadores)...',
+    discoveringUsage: 'Descubriendo IDs de place (uso de assets)...',
+    checkingDirectPlaceIds: 'Comprobando IDs de place directos...',
+    ghostIds: 'IDs fantasma',
+    ghostId: 'ID fantasma',
+    dataModelPath: 'Ruta en el DataModel',
+    parent: 'Padre',
+    className: 'Nombre de clase',
+    searchLogs: 'Buscar registros por ID, estado o asset...',
+    searchAssets: 'Buscar assets por nombre o ID...',
+    targetedPathPlaceholder: 'p. ej. game.Workspace.AKAnims o Guns',
+    forceResetToast: 'Estado de botones reiniciado. Puedes iniciar un nuevo spoof.',
+    forceResetStuck: 'Forzar reinicio (¿atascado?)',
+    reapplyReplacements: 'Reaplicar reemplazos',
+    downloadOnlyMode: 'Solo descargar',
+    spoofUpload: 'Spoofear (subir)',
+    discoverPlaceIdsTooltip: 'Descubrir IDs de place (límite {secs}s por asset)',
+    discoveringPlaceIds: 'Descubriendo IDs de place...',
+    discover: 'Descubrir',
+    copyReplacedIdsOnly: 'Copiar solo los IDs reemplazados',
+    copyReplacementPairs: 'Copiar pares de reemplazo',
+    addManualGhostIds: 'Añadir IDs manuales / fantasma',
     reset: 'Restablecer',
     clearExplorerBody: 'Esto eliminará los {count} recursos escaneados.',
     showMore: 'Mostrar {count} más',
@@ -479,6 +590,8 @@ export const es: TranslationTree = {
     unknownAsset: 'Activo Desconocido',
   },
   common: {
+    promise: 'Promise',
+    selectAll: 'Seleccionar todo',
     or: 'o',
     none: 'Ninguno',
     cancel: 'Cancelar',
@@ -507,6 +620,8 @@ export const es: TranslationTree = {
       '¡Si el plugin o la inyección de memoria están activos, estos IDs ya se han reemplazado en tu Roblox Studio automáticamente!',
   },
   accounts: {
+    avatar: 'Avatar',
+    profile: 'Perfil',
     groupApiKeyPlaceholder: 'Pega la clave API de Open Cloud del grupo...',
     userApiKeyPlaceholder: 'Pega la clave API de Open Cloud del usuario...',
     userApiKeyBody:

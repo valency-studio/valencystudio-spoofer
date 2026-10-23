@@ -12,7 +12,7 @@ export default function ExclusionsSection() {
     <SettingCard
       icon={ShieldAlert}
       title={t('config.exclusions')}
-      description="Prevent specific Roblox users or groups from being spoofed or modified."
+      description={t('settings.exclusionsDescription')}
     >
       <SettingFieldRow
         label={t('settings.excludedUsers')}

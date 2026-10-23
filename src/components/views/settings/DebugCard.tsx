@@ -12,7 +12,7 @@ export default function DebugCard() {
   const { t } = useLanguage();
   const { config, updateConfig } = useConfig();
 
-  async function handleClearCache(successMessage = 'Cache cleared.') {
+  async function handleClearCache(successMessage = t('settings.cacheCleared')) {
     try {
       await Promise.all([
         invoke('clear_asset_cache'),
@@ -34,7 +34,9 @@ export default function DebugCard() {
       store.showToast('success', successMessage);
       logValencyStudio('success', successMessage);
     } catch (err) {
-      useSpooferStore.getState().showToast('error', `Failed to clear cache: ${String(err)}`);
+      useSpooferStore
+        .getState()
+        .showToast('error', `${t('settings.cacheClearFailed')}: ${String(err)}`);
       logValencyStudio('error', `Failed to clear cache: ${String(err)}`);
     }
   }
@@ -42,28 +44,24 @@ export default function DebugCard() {
   const handleCacheChange = async (enabled: boolean) => {
     updateConfig('debug', 'enableCache', enabled);
     if (enabled) {
-      logValencyStudio('success', 'Cache enabled.');
+      logValencyStudio('success', t('settings.cacheEnabled'));
       return;
     }
-    await handleClearCache('Cache disabled. Cached runtime data cleared.');
+    await handleClearCache(t('settings.cacheDisabled'));
   };
 
   return (
-    <SettingCard
-      icon={Bug}
-      title={t('debug.title')}
-      description="Enable developer debug console and manage local cache files."
-    >
+    <SettingCard icon={Bug} title={t('debug.title')} description={t('settings.debugDescription')}>
       <SettingSwitchRow
         label={t('settings.debugMode')}
-        description="Show floating real-time debug console for IPC and network tracing."
+        description={t('settings.debugConsoleDescription')}
         checked={config.debug.debugMode}
         onCheckedChange={(v) => updateConfig('debug', 'debugMode', v)}
       />
 
       <SettingSwitchRow
         label={t('settings.enableCache')}
-        description="Store downloaded meshes, images, and audio payloads on disk to speed up repeated scans."
+        description={t('settings.cacheDescription')}
         checked={config.debug.enableCache}
         onCheckedChange={handleCacheChange}
       />

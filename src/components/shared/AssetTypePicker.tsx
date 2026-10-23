@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react';
 
+import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
 /** The scan categories the Studio plugin understands, in display order. */
@@ -7,15 +8,17 @@ export const SCAN_ASSET_TYPES = ['sounds', 'animations', 'images', 'meshes', 'sc
 
 export type ScanAssetType = (typeof SCAN_ASSET_TYPES)[number];
 
-// ponytail: labels stay literal English — explorer has `sounds`/`scripts` keys nowhere yet.
-// Add them to the five locale files and read them here when i18n catches up.
-const ASSET_TYPE_LABELS: Record<ScanAssetType, string> = {
-  sounds: 'Sounds',
-  animations: 'Animations',
-  images: 'Images',
-  meshes: 'Meshes',
-  scripts: 'Scripts',
+const ASSET_TYPE_KEYS: Record<ScanAssetType, string> = {
+  sounds: 'explorer.assetTypeSounds',
+  animations: 'explorer.assetTypeAnimations',
+  images: 'explorer.assetTypeImages',
+  meshes: 'explorer.assetTypeMeshes',
+  scripts: 'explorer.assetTypeScripts',
 };
+
+export function assetTypeLabel(t: (key: string) => string, key: ScanAssetType): string {
+  return t(ASSET_TYPE_KEYS[key]);
+}
 
 export function AssetTypePicker({
   scanTypes,
@@ -26,6 +29,7 @@ export function AssetTypePicker({
   onToggle: (key: string) => void;
   size?: 'md' | 'sm';
 }) {
+  const { t } = useLanguage();
   const compact = size === 'sm';
 
   return (
@@ -46,7 +50,7 @@ export function AssetTypePicker({
             )}
           >
             {active && <Check size={compact ? 8 : 9} className="inline mr-1" />}
-            {ASSET_TYPE_LABELS[key]}
+            {assetTypeLabel(t, key)}
           </button>
         );
       })}

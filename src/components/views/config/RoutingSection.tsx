@@ -17,7 +17,7 @@ export default function RoutingSection() {
     <SettingCard
       icon={Gauge}
       title={t('config.routingLimits')}
-      description="Configure network proxies and concurrency levels for downloading and uploading assets."
+      description={t('settings.routingDescription')}
     >
       <SettingFieldRow
         label={t('settings.proxyUrl')}
@@ -38,7 +38,7 @@ export default function RoutingSection() {
         <>
           <SettingSliderItem
             label={t('settings.maxConcurrency')}
-            description="Parallel thread ceiling for asset spoofing pipeline."
+            description={t('settings.maxConcurrencyDescription')}
             value={config.advanced.maxConcurrency}
             onChange={(val) => updateConfig('advanced', 'maxConcurrency', val)}
             min={1}
@@ -48,7 +48,7 @@ export default function RoutingSection() {
 
           <SettingSliderItem
             label={t('settings.maxDownloadConcurrency')}
-            description="Parallel streams for downloading Roblox asset payloads."
+            description={t('settings.maxDownloadConcurrencyDescription')}
             value={config.advanced.maxDownloadConcurrency}
             onChange={(val) => updateConfig('advanced', 'maxDownloadConcurrency', val)}
             min={1}
@@ -57,8 +57,8 @@ export default function RoutingSection() {
           />
 
           <SettingSliderItem
-            label="Discovery Concurrency"
-            description="Parallel threads for place ID discovery lookups."
+            label={t('settings.discoveryConcurrency')}
+            description={t('settings.discoveryConcurrencyDescription')}
             value={config.advanced.discoveryConcurrency ?? 30}
             onChange={(val) => updateConfig('advanced', 'discoveryConcurrency', val)}
             min={1}
@@ -67,8 +67,8 @@ export default function RoutingSection() {
           />
 
           <SettingSliderItem
-            label="Upload Operation Poll Interval"
-            description="How frequently to check Roblox Open Cloud for upload completion (lower = faster, 200–400ms recommended)."
+            label={t('settings.uploadPollInterval')}
+            description={t('settings.uploadPollIntervalDescription')}
             value={config.advanced.operationPollIntervalMs ?? 250}
             onChange={(val) => updateConfig('advanced', 'operationPollIntervalMs', val)}
             min={100}
@@ -77,15 +77,15 @@ export default function RoutingSection() {
           />
 
           <SettingSliderItem
-            label="Batch Size & Speed"
+            label={t('settings.batchSizeSpeed')}
             description={
               (config.advanced.batchSize ?? 50) <= 25
-                ? 'Ultra Smooth — lower CPU load & smoother viewport rendering during replacement.'
+                ? t('settings.batchSpeedUltra')
                 : (config.advanced.batchSize ?? 50) <= 80
-                  ? 'Balanced — standard replacement throughput and stability.'
+                  ? t('settings.batchSpeedBalanced')
                   : (config.advanced.batchSize ?? 50) <= 180
-                    ? 'Fast — accelerated replacement batches with shorter yields.'
-                    : 'Max Speed — highest replacement speed.'
+                    ? t('settings.batchSpeedFast')
+                    : t('settings.batchSpeedMax')
             }
             value={config.advanced.batchSize ?? 50}
             onChange={(val) => {

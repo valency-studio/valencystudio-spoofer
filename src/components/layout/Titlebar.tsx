@@ -33,10 +33,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
 export const ASSET_TYPE_OPTIONS = [
-  { value: 'audio', label: 'Audio', icon: Volume2 },
-  { value: 'image', label: 'Images', icon: ImageIcon },
-  { value: 'animation', label: 'Animations', icon: Film },
-  { value: 'mesh', label: 'Meshes', icon: Box },
+  { value: 'audio', icon: Volume2 },
+  { value: 'image', icon: ImageIcon },
+  { value: 'animation', icon: Film },
+  { value: 'mesh', icon: Box },
 ];
 
 export default function Titlebar() {
@@ -115,7 +115,7 @@ export default function Titlebar() {
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search assets by name or ID..."
+                placeholder={t('explorer.searchAssets')}
                 className="h-8 w-full text-xs pl-8 pr-16 bg-bg-base/50 border-border-subtle focus:border-primary"
               />
               <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
@@ -124,7 +124,7 @@ export default function Titlebar() {
                     type="button"
                     onClick={() => setSearchQuery('')}
                     className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
-                    aria-label="Clear search"
+                    aria-label={t('nav.clearSearch')}
                   >
                     <X size={11} />
                   </button>
@@ -201,7 +201,9 @@ export default function Titlebar() {
                           className="flex items-center gap-2 h-7 px-2 rounded text-xs text-left text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors cursor-pointer w-full"
                         >
                           <X size={12} className="text-muted-foreground" />
-                          <span>Clear filters ({activeAssetFilters.length})</span>
+                          <span>
+                            {t('explorer.clearFilters')} ({activeAssetFilters.length})
+                          </span>
                         </button>
                       </>
                     ) : (
@@ -215,7 +217,7 @@ export default function Titlebar() {
                           className="flex items-center gap-2 h-7 px-2 rounded text-xs text-left text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-colors cursor-pointer w-full"
                         >
                           <Check size={12} className="text-muted-foreground" />
-                          <span>Select all</span>
+                          <span>{t('explorer.selectAll')}</span>
                         </button>
                       </>
                     )}
@@ -296,7 +298,7 @@ export default function Titlebar() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search logs by ID, status, or asset..."
+              placeholder={t('explorer.searchLogs')}
               className="h-8 w-full text-xs pl-8 pr-7 bg-bg-base/50 border-border-subtle focus:border-primary"
             />
             {searchQuery.length > 0 && (
@@ -304,7 +306,7 @@ export default function Titlebar() {
                 type="button"
                 onClick={() => setSearchQuery('')}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label="Clear search"
+                aria-label={t('nav.clearSearch')}
               >
                 <X size={12} />
               </button>

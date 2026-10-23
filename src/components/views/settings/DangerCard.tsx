@@ -14,14 +14,16 @@ export default function DangerCard() {
     <SettingCard
       icon={<TriangleAlert size={16} className="text-danger" />}
       title={t('settings.dangerZone')}
-      description="Irreversible actions and complete configuration reset."
+      description={t('settings.dangerDescription')}
       className="bg-danger/5 border-danger/20"
     >
       <div className="px-4 py-3 flex items-center justify-between gap-4 hover:bg-danger/10 transition-colors">
         <div className="space-y-0.5 min-w-0 flex-1">
-          <span className="text-xs font-semibold text-text-primary block">Reset All Settings</span>
+          <span className="text-xs font-semibold text-text-primary block">
+            {t('settings.resetAllSettingsTitle')}
+          </span>
           <p className="text-2xs text-text-secondary leading-relaxed">
-            Reset all settings and preferences to default values. This cannot be undone.
+            {t('settings.resetAllSettingsBody')}
           </p>
         </div>
         <Button
@@ -29,13 +31,10 @@ export default function DangerCard() {
           size="sm"
           className="h-8 px-3 font-semibold text-xs shadow-xs bg-danger hover:bg-danger/90 text-white shrink-0 rounded-md"
           onClick={async () => {
-            const confirmed = await ask(
-              'Reset all settings to their default values? This cannot be undone.',
-              {
-                title: 'Reset Settings',
-                kind: 'warning',
-              },
-            );
+            const confirmed = await ask(t('settings.resetConfirmBody'), {
+              title: t('settings.resetConfirmTitle'),
+              kind: 'warning',
+            });
             if (confirmed) {
               resetConfig();
               window.ValencyStudioLog?.('success', t('settings.resetSuccess'));

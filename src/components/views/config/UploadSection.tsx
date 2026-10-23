@@ -12,7 +12,7 @@ export default function UploadSection() {
     <SettingCard
       icon={ArrowDownUp}
       title={t('config.assetProcessing')}
-      description="Configure asset ownership checks, metadata preservation, and archive recovery."
+      description={t('settings.assetProcessingDescription')}
     >
       <SettingSwitchRow
         label={t('settings.skipOwned')}

@@ -18,20 +18,22 @@ export default function PermissionsCard() {
   };
 
   const subjectTypeOptions = [
-    { value: 'experience', label: 'Experience (Place / Universe)' },
-    { value: 'group', label: 'Roblox Group (Group ID)' },
-    { value: 'user', label: 'Roblox User (User ID)' },
+    { value: 'experience', label: t('settings.subjectExperience') },
+    { value: 'group', label: t('settings.subjectGroup') },
+    { value: 'user', label: t('settings.subjectUser') },
   ];
+
+  const [actionPre, actionPost] = t('settings.accessActionBody').split('{code}');
 
   return (
     <SettingCard
       icon={ShieldCheck}
-      title="Asset Permissions (Open Cloud)"
-      description="Automatically grant permission for spoofed assets to experiences, groups, or users to eliminate 'missing permission' errors."
+      title={t('settings.assetPermissionsTitle')}
+      description={t('settings.assetPermissionsDescription')}
     >
       <SettingSwitchRow
-        label="Auto-Grant Permissions After Spoof"
-        description="Automatically call the Roblox Asset Permissions API for newly created assets upon spoof completion."
+        label={t('settings.autoGrantPermissions')}
+        description={t('settings.autoGrantPermissionsDescription')}
         checked={permissions.enabled}
         onCheckedChange={(val) => updateConfig('permissions', 'enabled', val)}
       />
@@ -42,7 +44,7 @@ export default function PermissionsCard() {
             {t('settings.targetSubjectType')}
           </Label>
           <p className="text-2xs text-text-secondary leading-snug">
-            Choose whether permissions are granted to a Place/Experience, a Group, or a User.
+            {t('settings.targetSubjectTypeDescription')}
           </p>
         </div>
         <Select
@@ -52,7 +54,7 @@ export default function PermissionsCard() {
           }
         >
           <SelectTrigger className="w-56 h-8 text-xs bg-bg-base/70">
-            <SelectValue placeholder="Select type" />
+            <SelectValue placeholder={t('settings.selectType')} />
           </SelectTrigger>
           <SelectContent>
             {subjectTypeOptions.map((opt) => (
@@ -65,34 +67,36 @@ export default function PermissionsCard() {
       </div>
 
       <SettingFieldRow
-        label="Target Subject ID(s)"
-        description={`Enter comma-separated ${
+        label={t('settings.targetSubjectIds')}
+        description={
           permissions.subjectType === 'experience'
-            ? 'Place IDs or Universe IDs'
+            ? t('settings.targetSubjectIdsPlaceDesc')
             : permissions.subjectType === 'user'
-              ? 'User IDs'
-              : 'Group IDs'
-        }.`}
+              ? t('settings.targetSubjectIdsUserDesc')
+              : t('settings.targetSubjectIdsGroupDesc')
+        }
         value={permissions.subjectIds}
         onChange={(val) => updateConfig('permissions', 'subjectIds', val)}
         placeholder={
           permissions.subjectType === 'experience'
-            ? 'e.g. 1818, 924364, 12345678'
+            ? t('settings.targetSubjectIdsPlacePlaceholder')
             : permissions.subjectType === 'user'
-              ? 'e.g. 12345678'
-              : 'e.g. 1089883489'
+              ? t('settings.targetSubjectIdsUserPlaceholder')
+              : t('settings.targetSubjectIdsGroupPlaceholder')
         }
       />
 
       <div className="px-3.5 py-2.5 bg-primary/5 border-t border-primary/10 flex items-start gap-2.5">
         <Info size={14} className="text-primary shrink-0 mt-0.5" />
         <p className="text-2xs text-text-secondary leading-relaxed">
-          <strong className="text-text-primary font-medium">Access Action:</strong> Grants in-game{' '}
+          <strong className="text-text-primary font-medium">
+            {t('settings.accessActionTitle')}
+          </strong>{' '}
+          {actionPre}
           <code className="px-1 py-0.5 rounded bg-bg-base border border-border-subtle text-primary font-mono text-2xs">
             Use
-          </code>{' '}
-          permission, allowing the specified experiences, groups, or users to use and play the
-          spoofed assets.
+          </code>
+          {actionPost}
         </p>
       </div>
     </SettingCard>

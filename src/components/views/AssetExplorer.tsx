@@ -865,7 +865,7 @@ export default function AssetExplorer({
                       : isReplacing
                         ? `Replacing${replaceTotalCount > 0 ? ` · ${replaceCurrentCount}/${replaceTotalCount}` : '...'}${activeEta ? ` · ${activeEta}` : ''}`
                         : isGrantingPermissions
-                          ? `Asset Permissions${permissionsTotalCount > 0 ? ` · ${permissionsCurrentCount}/${permissionsTotalCount}` : '...'}${activeEta ? ` · ${activeEta}` : ''}`
+                          ? `${t('spoof.assetPermissionsProgress')}${permissionsTotalCount > 0 ? ` · ${permissionsCurrentCount}/${permissionsTotalCount}` : '...'}${activeEta ? ` · ${activeEta}` : ''}`
                           : ''}
                   </span>
                 </div>
@@ -915,7 +915,7 @@ export default function AssetExplorer({
                               className="flex-1 flex items-center justify-center gap-2 h-8 bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 disabled:opacity-50 transition-colors"
                             >
                               <ScanSearch size={14} />
-                              <span>Scan Studio</span>
+                              <span>{t('explorer.scanStudio')}</span>
                             </button>
 
                             <Popover>
@@ -980,7 +980,7 @@ export default function AssetExplorer({
                                 <Input
                                   value={targetedPath}
                                   onChange={(e) => setTargetedPath(e.target.value)}
-                                  placeholder="e.g. game.Workspace.AKAnims or Guns"
+                                  placeholder={t('explorer.targetedPathPlaceholder')}
                                   className="h-8 text-xs font-mono bg-bg-base"
                                   onKeyDown={(e) => e.key === 'Enter' && handleRunTargetedScan()}
                                 />
@@ -1029,7 +1029,7 @@ export default function AssetExplorer({
                             }
                           >
                             <ClipboardPaste size={13} />
-                            <span>Add Manual / Ghost IDs</span>
+                            <span>{t('explorer.addManualGhostIds')}</span>
                           </Button>
                         </div>
                       )}
@@ -1326,7 +1326,7 @@ export default function AssetExplorer({
                                 )}
                               >
                                 <Copy size={13} />
-                                <span className="flex-1">Copy Replacement Pairs</span>
+                                <span className="flex-1">{t('explorer.copyReplacementPairs')}</span>
                               </button>
 
                               <button
@@ -1341,7 +1341,7 @@ export default function AssetExplorer({
                                 )}
                               >
                                 <Copy size={13} className="text-muted-foreground" />
-                                <span className="flex-1">Copy Replaced IDs Only</span>
+                                <span className="flex-1">{t('explorer.copyReplacedIdsOnly')}</span>
                               </button>
                             </div>
                           </PopoverContent>
@@ -1374,14 +1374,17 @@ export default function AssetExplorer({
                               ) : (
                                 <MapPin size={13} />
                               )}
-                              <span>Discover</span>
+                              <span>{t('explorer.discover')}</span>
                             </button>
                           }
                         />
                         <TooltipContent>
                           {isDiscoveringPlaceIds
-                            ? 'Discovering Place IDs...'
-                            : `Discover Place IDs (${discoveryTimeoutSecs}s limit/asset)`}
+                            ? t('explorer.discoveringPlaceIds')
+                            : t('explorer.discoverPlaceIdsTooltip').replace(
+                                '{secs}',
+                                String(discoveryTimeoutSecs),
+                              )}
                         </TooltipContent>
                       </Tooltip>
 
@@ -1552,7 +1555,7 @@ export default function AssetExplorer({
                         )}
                         fill="currentColor"
                       />
-                      <span className="flex-1">Spoof (Upload)</span>
+                      <span className="flex-1">{t('explorer.spoofUpload')}</span>
                       {!config.spoofing.downloadOnly && (
                         <Check size={12} className="text-primary" />
                       )}
@@ -1576,7 +1579,7 @@ export default function AssetExplorer({
                           config.spoofing.downloadOnly ? 'text-primary' : 'text-muted-foreground',
                         )}
                       />
-                      <span className="flex-1">Download Only</span>
+                      <span className="flex-1">{t('explorer.downloadOnlyMode')}</span>
                       {config.spoofing.downloadOnly && <Check size={12} className="text-primary" />}
                     </button>
 
@@ -1591,7 +1594,9 @@ export default function AssetExplorer({
                       className="flex items-center gap-2 w-full h-7 px-2 rounded-md text-xs text-left transition-colors text-text-secondary hover:text-text-primary hover:bg-bg-elevated cursor-pointer"
                     >
                       <RotateCcw size={12} className="text-primary" />
-                      <span className="flex-1 font-medium">Re-apply Replacements</span>
+                      <span className="flex-1 font-medium">
+                        {t('explorer.reapplyReplacements')}
+                      </span>
                       {storedReplacementsCount > 0 && (
                         <span className="text-2xs text-muted-foreground font-mono bg-bg-base px-1 rounded border border-border-subtle">
                           {storedReplacementsCount}
@@ -1612,12 +1617,12 @@ export default function AssetExplorer({
                         import('@tauri-apps/api/core')
                           .then(({ invoke }) => invoke('force_reset_spoofer_job'))
                           .catch(() => {});
-                        showToast('info', 'Button state reset. You can start a new spoof.');
+                        showToast('info', t('explorer.forceResetToast'));
                       }}
                       className="flex items-center gap-2 w-full h-7 px-2 rounded-md text-xs text-left transition-colors text-danger hover:bg-danger/10"
                     >
                       <X size={12} className="text-danger" />
-                      <span className="flex-1 font-medium">Force Reset (Stuck?)</span>
+                      <span className="flex-1 font-medium">{t('explorer.forceResetStuck')}</span>
                     </button>
                   </PopoverContent>
                 </Popover>

@@ -61,7 +61,7 @@ export default function AppearanceCard() {
     <SettingCard
       icon={Palette}
       title={t('settings.appearance')}
-      description="Customize color themes, accent colors, and display language."
+      description={t('settings.appearanceDescription')}
     >
       <div className="px-4 py-3 flex items-center justify-between gap-4 hover:bg-bg-elevated/20 transition-colors">
         <div className="space-y-0.5 min-w-0 flex-1">
