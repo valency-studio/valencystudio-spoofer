@@ -53,6 +53,22 @@ local plugin = {
 	},
 }
 
+local function mockSignal()
+	local signal = {
+		_handlers = {},
+		Connect = function(self, callback)
+			table.insert(self._handlers, callback)
+			return { Disconnect = function() end }
+		end,
+		Fire = function(self, ...)
+			for _, callback in ipairs(self._handlers) do
+				callback(...)
+			end
+		end,
+	}
+	return signal
+end
+
 local game = {
 	GetService = function(_self, serviceName)
 		if serviceName == "HttpService" then
@@ -66,6 +82,9 @@ local game = {
 				JSONDecode = function(_s, _str)
 					return {}
 				end,
+				GenerateGUID = function()
+					return "00000000-0000-0000-0000-000000000000"
+				end,
 			}
 		elseif serviceName == "RunService" then
 			return {
@@ -76,6 +95,10 @@ local game = {
 					return false
 				end,
 			}
+		elseif serviceName == "LogService" then
+			return { MessageOut = mockSignal() }
+		elseif serviceName == "UserInputService" then
+			return { InputChanged = mockSignal(), InputEnded = mockSignal() }
 		end
 		return {}
 	end,
@@ -158,6 +181,45 @@ describe("patcher.luau", function()
 		expect(normalizeAssetId("rbxassetid://12345")).to_equal("12345")
 		expect(normalizeAssetId("12345")).to_equal("12345")
 		expect(normalizeAssetId("roblox.com/asset/?id=54321&version=1")).to_equal("54321")
+	end)
+
+	it("should rewrite isolated asset IDs in every literal form", function()
+		expect(replaceAssetIdToken("local a = 12345", "12345", "67890")).to_equal("local a = 67890")
+		expect(replaceAssetIdToken('"rbxassetid://12345"', "12345", "67890")).to_equal(
+			'"rbxassetid://67890"'
+		)
+		expect(replaceAssetIdToken("{AnimationId = 12345}", "12345", "67890")).to_equal(
+			"{AnimationId = 67890}"
+		)
+		expect(replaceAssetIdToken('"roblox.com/asset/?id=12345"', "12345", "67890")).to_equal(
+			'"roblox.com/asset/?id=67890"'
+		)
+	end)
+
+	it("should leave longer IDs and identifiers untouched", function()
+		-- A bare ID match used to corrupt these: 12345 inside 123456 rewrote the
+		-- longer ID's tail, turning rbxassetid://123456 into rbxassetid://678906.
+		expect(replaceAssetIdToken('"rbxassetid://123456"', "12345", "67890")).to_equal(
+			'"rbxassetid://123456"'
+		)
+		expect(replaceAssetIdToken('"roblox.com/asset/?id=123456"', "12345", "67890")).to_equal(
+			'"roblox.com/asset/?id=123456"'
+		)
+		expect(replaceAssetIdToken('"rbxassetid://12345ab"', "12345", "67890")).to_equal(
+			'"rbxassetid://12345ab"'
+		)
+		expect(replaceAssetIdToken("local a = 12345ab", "12345", "67890")).to_equal(
+			"local a = 12345ab"
+		)
+		expect(replaceAssetIdToken("local a = 912345", "12345", "67890")).to_equal(
+			"local a = 912345"
+		)
+	end)
+
+	it("should rewrite every occurrence in a single pass", function()
+		local source = 'local a = 12345\nlocal b = 12345\nlocal c = "rbxassetid://12345"'
+		local expected = 'local a = 67890\nlocal b = 67890\nlocal c = "rbxassetid://67890"'
+		expect(replaceAssetIdToken(source, "12345", "67890")).to_equal(expected)
 	end)
 
 	it("should reject invalid patch actions", function()
