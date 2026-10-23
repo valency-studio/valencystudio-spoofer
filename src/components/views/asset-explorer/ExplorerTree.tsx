@@ -29,13 +29,7 @@ if (typeof window !== 'undefined') {
   });
 }
 
-export const getAssetId = (
-  asset: ParsedAssetRef | { id?: string; assetId?: string; name?: string },
-) => {
-  if ('assetId' in asset && asset.assetId) return asset.assetId;
-  if ('id' in asset && asset.id) return asset.id;
-  return '';
-};
+import { getAssetId } from '../../../utils/explorerTree';
 
 // One map for both the per-asset badge and the per-instance badge. `label` is the
 // fallback only — callers prefer the live status message over it.

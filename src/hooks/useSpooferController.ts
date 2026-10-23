@@ -15,6 +15,7 @@ import { useConfigStore } from '../stores/configStore';
 import { applyReplacements, useSpooferStore } from '../stores/spooferStore';
 import { getStudioPlaceIdFallback } from '../utils/apiClient';
 import { addDebugLog } from '../utils/debugLogger';
+import { getAssetId } from '../utils/explorerTree';
 import { type PendingSpoofRetry, takeSpoofRetry } from '../utils/jobTypes';
 import { type PluginAsset } from '../utils/pluginBridge';
 import type { RbxInstance } from '../utils/robloxPlaceParser/types';
@@ -561,11 +562,6 @@ export function useSpooferController() {
       setLogs((prev) => appendSpoofingLog(prev, `[WARN] ${msg}\n`));
       return;
     }
-
-    const getAssetId = (asset: { assetId?: string; id?: string }) => {
-      if ('assetId' in asset) return asset.assetId;
-      return asset.id ?? '';
-    };
 
     const extraIdsParsed = config.spoofing.extraAssetIds
       .split(/[\s,]+/)
