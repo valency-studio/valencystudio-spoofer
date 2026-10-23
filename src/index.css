@@ -2,6 +2,7 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
+@import '@fontsource-variable/jetbrains-mono';
 
 @custom-variant dark (&:is(.dark *));
 @source "../splash.html";
@@ -104,6 +105,10 @@ input[type='number'] {
 
   --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;
+  /* Reserved for machine data the user reads character by character: asset IDs,
+     hashes, paths, log lines. A column of plain numbers wants `tabular-nums`
+     on the sans face instead, not this. */
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
 
   --color-bg-base: var(--bg-base);
   --color-bg-surface: var(--bg-surface);
