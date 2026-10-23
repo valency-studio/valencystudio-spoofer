@@ -114,9 +114,6 @@ interface SpooferState {
   lastAssetResults: SpooferAssetResult[];
   setLastAssetResults: (results: SpooferAssetResult[]) => void;
 
-  showAdvanced: boolean;
-  setShowAdvanced: (val: boolean | ((prev: boolean) => boolean)) => void;
-
   isScanningStudio: boolean;
   setIsScanningStudio: (val: boolean) => void;
 
@@ -325,12 +322,6 @@ export const useSpooferStore = create<SpooferState>((set) => ({
 
   lastAssetResults: [],
   setLastAssetResults: (results) => set({ lastAssetResults: results }),
-
-  showAdvanced: false,
-  setShowAdvanced: (val) =>
-    set((state) => ({
-      showAdvanced: typeof val === 'function' ? val(state.showAdvanced) : val,
-    })),
 
   isScanningStudio: false,
   setIsScanningStudio: (val) => set({ isScanningStudio: val }),

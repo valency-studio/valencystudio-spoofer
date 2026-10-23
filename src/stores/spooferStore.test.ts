@@ -39,7 +39,6 @@ describe('spooferStore', () => {
     store.setActiveSpooferJobId(null);
     store.setIsJobPaused(false);
     store.setLastAssetResults([]);
-    store.setShowAdvanced(false);
     store.setKeyframeWarningCount(0);
     store.setAssetMetadataMap({});
   });
