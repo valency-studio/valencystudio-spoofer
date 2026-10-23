@@ -25,8 +25,8 @@ export const Toast = () => {
     level === 'success'
       ? 'border-signal-live/40 bg-signal-live/10 text-signal-live'
       : level === 'error'
-        ? 'border-red-500/40 bg-red-500/10 text-red-100'
-        : 'border-blue-500/40 bg-blue-500/10 text-blue-100';
+        ? 'border-danger/40 bg-danger/10 text-danger'
+        : 'border-signal-info/40 bg-signal-info/10 text-signal-info';
 
   return (
     <div

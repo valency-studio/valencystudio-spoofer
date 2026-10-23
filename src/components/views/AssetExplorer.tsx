@@ -1121,7 +1121,7 @@ export default function AssetExplorer({
                         <Button
                           variant="destructive"
                           size="sm"
-                          className="h-7 text-xs px-3 font-semibold bg-red-500 text-white"
+                          className="h-7 text-xs px-3 font-semibold bg-danger text-white"
                           onClick={() => {
                             setRootInstances([]);
                             setLoadedFileName(null);
@@ -1615,9 +1615,9 @@ export default function AssetExplorer({
                           .catch(() => {});
                         showToast('info', 'Button state reset. You can start a new spoof.');
                       }}
-                      className="flex items-center gap-2 w-full h-7 px-2 rounded-md text-xs text-left transition-colors text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      className="flex items-center gap-2 w-full h-7 px-2 rounded-md text-xs text-left transition-colors text-danger hover:bg-danger/10"
                     >
-                      <X size={12} className="text-red-400" />
+                      <X size={12} className="text-danger" />
                       <span className="flex-1 font-medium">Force Reset (Stuck?)</span>
                     </button>
                   </PopoverContent>

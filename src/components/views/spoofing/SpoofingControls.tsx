@@ -52,7 +52,7 @@ export function SpoofingControls({
       {totalFailed > 0 && !activeSpooferJobId && (
         <Button
           variant="outline"
-          className="h-11 px-6 font-semibold grow md:grow-0 text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/10"
+          className="h-11 px-6 font-semibold grow md:grow-0 text-signal-warn border-signal-warn/20 hover:bg-signal-warn/10"
           onClick={() => void handleRetryFailedAssets()}
           disabled={isSpoofing || isReplacing || isScanningStudio}
         >
@@ -114,7 +114,7 @@ export function SpoofingControls({
         className={cn(
           'h-11 px-8 font-bold tracking-wide overflow-hidden relative min-w-50 grow md:grow-0',
           replaceError
-            ? 'bg-red-500 hover:bg-red-600 text-white'
+            ? 'bg-danger hover:bg-danger/90 text-white'
             : 'bg-primary text-primary-foreground',
         )}
         onClick={() => {

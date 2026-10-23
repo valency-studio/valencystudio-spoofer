@@ -27,10 +27,8 @@ import {
 import { Button } from '../../ui/button';
 import { Card } from '../../ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../ui/dialog';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
-import { Switch } from '../../ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
+import { AddAccountForm } from './AddAccountForm';
 
 type ApiKeyOwnerDetectResult = {
   ok: boolean;
@@ -262,71 +260,19 @@ export default function AccountsView() {
                     <DialogHeader>
                       <DialogTitle>{t('accounts.addAccountTitle')}</DialogTitle>
                     </DialogHeader>
-                    <div className="flex flex-col gap-3 py-3">
-                      <div className="flex flex-col gap-1.5">
-                        <Label className="text-xs font-semibold">{t('accounts.cookieLabel')}</Label>
-                        <Input
-                          type="password"
-                          value={newCookie}
-                          onChange={(e) => setNewCookie(e.target.value)}
-                          placeholder={t('accounts.cookiePlaceholder')}
-                          className="h-8 text-xs bg-bg-base/70"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <Label className="text-xs font-semibold">{t('accounts.apiKeyLabel')}</Label>
-                        <Input
-                          type="password"
-                          value={newApiKey}
-                          onChange={(e) => setNewApiKey(e.target.value)}
-                          placeholder={t('accounts.apiKeyPlaceholder')}
-                          className="h-8 text-xs bg-bg-base/70"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between rounded-lg border border-border-subtle p-3 bg-bg-base/40">
-                        <div className="space-y-0.5">
-                          <Label className="text-xs font-semibold">
-                            {t('accounts.useForDownloading')}
-                          </Label>
-                          <p className="text-2xs text-text-secondary leading-snug">
-                            {t('accounts.useForDownloadingDesc')}
-                          </p>
-                        </div>
-                        <Switch checked={isDownloader} onCheckedChange={setIsDownloader} />
-                      </div>
-                      <div className="flex items-center justify-between rounded-lg border border-border-subtle p-3 bg-bg-base/40">
-                        <div className="space-y-0.5">
-                          <Label className="text-xs font-semibold">
-                            {t('accounts.useForUploading')}
-                          </Label>
-                          <p className="text-2xs text-text-secondary leading-snug">
-                            {t('accounts.useForUploadingDesc')}
-                          </p>
-                        </div>
-                        <Switch checked={isUploader} onCheckedChange={setIsUploader} />
-                      </div>
-                      <div className="flex justify-end gap-2 pt-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 text-xs"
-                          onClick={() => setIsAddOpen(false)}
-                        >
-                          {t('accounts.cancel')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="h-8 text-xs font-semibold"
-                          onClick={() => void handleAddAccount()}
-                          disabled={isAdding || (!newCookie && !newApiKey)}
-                        >
-                          {isAdding ? (
-                            <RefreshCw className="animate-spin mr-1.5" size={13} />
-                          ) : null}
-                          {t('accounts.add')}
-                        </Button>
-                      </div>
-                    </div>
+                    <AddAccountForm
+                      newCookie={newCookie}
+                      setNewCookie={setNewCookie}
+                      newApiKey={newApiKey}
+                      setNewApiKey={setNewApiKey}
+                      isDownloader={isDownloader}
+                      setIsDownloader={setIsDownloader}
+                      isUploader={isUploader}
+                      setIsUploader={setIsUploader}
+                      isAdding={isAdding}
+                      onSubmit={() => void handleAddAccount()}
+                      onCancel={() => setIsAddOpen(false)}
+                    />
                   </DialogContent>
                 </Dialog>
               </div>
@@ -384,71 +330,19 @@ export default function AccountsView() {
                 <DialogHeader>
                   <DialogTitle>{t('accounts.addAccountTitle')}</DialogTitle>
                 </DialogHeader>
-                <div className="flex flex-col gap-3 py-3">
-                  <div className="flex flex-col gap-1.5">
-                    <Label className="text-xs font-semibold">{t('accounts.cookieLabel')}</Label>
-                    <Input
-                      type="password"
-                      value={newCookie}
-                      onChange={(e) => setNewCookie(e.target.value)}
-                      placeholder={t('accounts.cookiePlaceholder')}
-                      className="h-8 text-xs bg-bg-base/70"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label className="text-xs font-semibold">{t('accounts.apiKeyLabel')}</Label>
-                    <Input
-                      type="password"
-                      value={newApiKey}
-                      onChange={(e) => setNewApiKey(e.target.value)}
-                      placeholder={t('accounts.apiKeyPlaceholder')}
-                      className="h-8 text-xs bg-bg-base/70"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 border border-border-subtle rounded-lg bg-bg-base/40">
-                    <div className="space-y-0.5">
-                      <Label className="text-xs font-semibold">
-                        {t('accounts.useForDownloading')}
-                      </Label>
-                      <p className="text-2xs text-text-secondary leading-snug">
-                        {t('accounts.useForDownloadingDesc')}
-                      </p>
-                    </div>
-                    <Switch checked={isDownloader} onCheckedChange={setIsDownloader} />
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 border border-border-subtle rounded-lg bg-bg-base/40">
-                    <div className="space-y-0.5">
-                      <Label className="text-xs font-semibold">
-                        {t('accounts.useForUploading')}
-                      </Label>
-                      <p className="text-2xs text-text-secondary leading-snug">
-                        {t('accounts.useForUploadingDesc')}
-                      </p>
-                    </div>
-                    <Switch checked={isUploader} onCheckedChange={setIsUploader} />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 pt-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={() => setIsAddOpen(false)}
-                  >
-                    {t('accounts.cancel')}
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="h-8 text-xs font-semibold"
-                    onClick={() => void handleAddAccount()}
-                    disabled={isAdding || (!newCookie && !newApiKey)}
-                  >
-                    {isAdding ? <RefreshCw className="animate-spin mr-1.5" size={13} /> : null}
-                    {t('accounts.add')}
-                  </Button>
-                </div>
+                <AddAccountForm
+                  newCookie={newCookie}
+                  setNewCookie={setNewCookie}
+                  newApiKey={newApiKey}
+                  setNewApiKey={setNewApiKey}
+                  isDownloader={isDownloader}
+                  setIsDownloader={setIsDownloader}
+                  isUploader={isUploader}
+                  setIsUploader={setIsUploader}
+                  isAdding={isAdding}
+                  onSubmit={() => void handleAddAccount()}
+                  onCancel={() => setIsAddOpen(false)}
+                />
               </DialogContent>
             </Dialog>
           </div>
@@ -482,58 +376,19 @@ export default function AccountsView() {
                     <DialogHeader>
                       <DialogTitle>{t('accounts.addAccountTitle')}</DialogTitle>
                     </DialogHeader>
-                    <div className="flex flex-col gap-4 py-4">
-                      <div className="flex flex-col gap-2">
-                        <Label>{t('accounts.cookieLabel')}</Label>
-                        <Input
-                          type="password"
-                          value={newCookie}
-                          onChange={(e) => setNewCookie(e.target.value)}
-                          placeholder={t('accounts.cookiePlaceholder')}
-                        />
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Label>{t('accounts.apiKeyLabel')}</Label>
-                        <Input
-                          type="password"
-                          value={newApiKey}
-                          onChange={(e) => setNewApiKey(e.target.value)}
-                          placeholder={t('accounts.apiKeyPlaceholder')}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 border rounded-md">
-                        <div className="space-y-0.5">
-                          <Label>{t('accounts.useForDownloading')}</Label>
-                          <p className="text-xs text-muted-foreground">
-                            {t('accounts.useForDownloadingDesc')}
-                          </p>
-                        </div>
-                        <Switch checked={isDownloader} onCheckedChange={setIsDownloader} />
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 border rounded-md">
-                        <div className="space-y-0.5">
-                          <Label>{t('accounts.useForUploading')}</Label>
-                          <p className="text-xs text-muted-foreground">
-                            {t('accounts.useForUploadingDesc')}
-                          </p>
-                        </div>
-                        <Switch checked={isUploader} onCheckedChange={setIsUploader} />
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => setIsAddOpen(false)}>
-                        {t('accounts.cancel')}
-                      </Button>
-                      <Button
-                        onClick={() => void handleAddAccount()}
-                        disabled={isAdding || (!newCookie && !newApiKey)}
-                      >
-                        {isAdding ? <RefreshCw className="animate-spin mr-2" size={16} /> : null}
-                        {t('accounts.add')}
-                      </Button>
-                    </div>
+                    <AddAccountForm
+                      newCookie={newCookie}
+                      setNewCookie={setNewCookie}
+                      newApiKey={newApiKey}
+                      setNewApiKey={setNewApiKey}
+                      isDownloader={isDownloader}
+                      setIsDownloader={setIsDownloader}
+                      isUploader={isUploader}
+                      setIsUploader={setIsUploader}
+                      isAdding={isAdding}
+                      onSubmit={() => void handleAddAccount()}
+                      onCancel={() => setIsAddOpen(false)}
+                    />
                   </DialogContent>
                 </Dialog>
               </div>
@@ -593,7 +448,7 @@ export default function AccountsView() {
                         aria-label={t('accounts.deleteAccount')}
                         variant="ghost"
                         size="icon"
-                        className="text-red-500 hover:bg-red-500/10 hover:text-red-600"
+                        className="text-danger hover:bg-danger/10 hover:text-danger"
                         onClick={() => handleRemoveAccount(acc.id)}
                       >
                         <Trash2 size={16} />
@@ -620,15 +475,15 @@ export default function AccountsView() {
                         </div>
                       )}
                       {acc.isUploader && (
-                        <div className="flex items-center gap-1.5 text-sm px-2 py-1 rounded-md w-fit bg-blue-500/10">
-                          <Key size={13} className="text-blue-500" />
-                          <span className="text-blue-500">{t('accounts.uploader')}</span>
+                        <div className="flex items-center gap-1.5 text-sm px-2 py-1 rounded-md w-fit bg-signal-info/10">
+                          <Key size={13} className="text-signal-info" />
+                          <span className="text-signal-info">{t('accounts.uploader')}</span>
                           {secrets?.apiKey && acc.apiKeyValidated === true && (
                             <Tooltip>
                               <TooltipTrigger
                                 render={
                                   <span className="inline-flex">
-                                    <CheckCircle2 size={13} className="text-blue-400" />
+                                    <CheckCircle2 size={13} className="text-signal-info" />
                                   </span>
                                 }
                               />
@@ -642,7 +497,7 @@ export default function AccountsView() {
                         <Tooltip>
                           <TooltipTrigger
                             render={
-                              <div className="text-xs text-red-500 flex items-center gap-1">
+                              <div className="text-xs text-danger flex items-center gap-1">
                                 <ShieldAlert size={12} /> Missing cookie
                               </div>
                             }
@@ -654,7 +509,7 @@ export default function AccountsView() {
                         <Tooltip>
                           <TooltipTrigger
                             render={
-                              <div className="text-xs text-yellow-500 flex items-center gap-1">
+                              <div className="text-xs text-signal-warn flex items-center gap-1">
                                 <ShieldAlert size={12} /> Missing API key
                               </div>
                             }
@@ -669,7 +524,7 @@ export default function AccountsView() {
                           <Tooltip>
                             <TooltipTrigger
                               render={
-                                <div className="text-xs text-red-500 flex items-center gap-1">
+                                <div className="text-xs text-danger flex items-center gap-1">
                                   <ShieldAlert size={12} /> Cookie rejected by Roblox
                                 </div>
                               }
@@ -684,7 +539,7 @@ export default function AccountsView() {
                           <Tooltip>
                             <TooltipTrigger
                               render={
-                                <div className="text-xs text-yellow-500 flex items-center gap-1">
+                                <div className="text-xs text-signal-warn flex items-center gap-1">
                                   <ShieldAlert size={12} /> API key rejected by Roblox
                                 </div>
                               }

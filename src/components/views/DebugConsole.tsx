@@ -39,16 +39,16 @@ interface DebugConsoleProps {
 
 const LEVEL_CONFIG: Record<string, { color: string; bg: string; border: string; dot: string }> = {
   error: {
-    color: 'text-red-400',
-    bg: 'bg-red-500/5',
-    border: 'border-red-500/10',
-    dot: 'bg-red-500',
+    color: 'text-danger',
+    bg: 'bg-danger/5',
+    border: 'border-danger/10',
+    dot: 'bg-danger',
   },
   warn: {
-    color: 'text-yellow-400',
-    bg: 'bg-yellow-500/5',
-    border: 'border-yellow-500/10',
-    dot: 'bg-yellow-500',
+    color: 'text-signal-warn',
+    bg: 'bg-signal-warn/5',
+    border: 'border-signal-warn/10',
+    dot: 'bg-signal-warn',
   },
   success: {
     color: 'text-signal-live',
@@ -57,10 +57,10 @@ const LEVEL_CONFIG: Record<string, { color: string; bg: string; border: string; 
     dot: 'bg-signal-live',
   },
   info: {
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/5',
-    border: 'border-blue-500/10',
-    dot: 'bg-blue-500',
+    color: 'text-signal-info',
+    bg: 'bg-signal-info/5',
+    border: 'border-signal-info/10',
+    dot: 'bg-signal-info',
   },
 };
 

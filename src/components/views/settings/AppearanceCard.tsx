@@ -172,7 +172,7 @@ export default function AppearanceCard() {
           <SelectTrigger className="w-40 h-8 text-xs bg-bg-base/70">
             <SelectValue placeholder="Language" />
           </SelectTrigger>
-          <SelectContent className="z-50 bg-bg-surface border border-border shadow-xl rounded-md p-1">
+          <SelectContent>
             {Object.entries(langOptions).map(([value, label]) => (
               <SelectItem key={value} value={value} className="text-xs">
                 {label}

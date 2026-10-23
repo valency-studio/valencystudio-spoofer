@@ -290,7 +290,7 @@ export default function MusicView() {
             </div>
 
             {tracks.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-border-subtle p-8 text-center text-sm text-text-muted">
+              <p className="rounded-lg border border-dashed border-border-subtle p-6 text-center text-sm text-text-muted">
                 {t('music.empty')}
               </p>
             ) : (

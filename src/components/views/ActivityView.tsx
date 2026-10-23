@@ -226,7 +226,7 @@ export default function ActivityView() {
                                 <button
                                   type="button"
                                   onClick={(e) => handleRetryFailed(job, e)}
-                                  className="flex items-center text-xs font-semibold text-text-muted hover:text-yellow-500 transition-colors cursor-pointer"
+                                  className="flex items-center text-xs font-semibold text-text-muted hover:text-signal-warn transition-colors cursor-pointer"
                                 >
                                   <RotateCcw size={12} className="mr-1.5" />
                                   {t('activity.retryFailed').replace(
@@ -268,8 +268,8 @@ export default function ActivityView() {
                                         className="text-signal-live shrink-0"
                                       />
                                     ) : res.skipped ? (
-                                      <div className="w-3.5 h-3.5 rounded-full border border-yellow-500/50 flex items-center justify-center shrink-0">
-                                        <div className="w-1.5 h-0.5 bg-yellow-500/50 rounded-full" />
+                                      <div className="w-3.5 h-3.5 rounded-full border border-signal-warn/50 flex items-center justify-center shrink-0">
+                                        <div className="w-1.5 h-0.5 bg-signal-warn/50 rounded-full" />
                                       </div>
                                     ) : (
                                       <XCircle size={14} className="text-destructive shrink-0" />
@@ -302,7 +302,7 @@ export default function ActivityView() {
                                       </Tooltip>
                                     )}
                                     {res.reason && res.skipped && (
-                                      <span className="text-yellow-500/80 max-w-50 truncate">
+                                      <span className="text-signal-warn/80 max-w-50 truncate">
                                         {res.reason}
                                       </span>
                                     )}

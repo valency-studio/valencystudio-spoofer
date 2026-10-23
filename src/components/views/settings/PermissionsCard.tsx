@@ -52,7 +52,7 @@ export default function PermissionsCard() {
           <SelectTrigger className="w-56 h-8 text-xs bg-bg-base/70">
             <SelectValue placeholder="Select type" />
           </SelectTrigger>
-          <SelectContent className="z-50 bg-bg-surface border border-border shadow-xl rounded-md p-1">
+          <SelectContent>
             {subjectTypeOptions.map((opt) => (
               <SelectItem key={opt.value} value={opt.value} className="text-xs">
                 {opt.label}

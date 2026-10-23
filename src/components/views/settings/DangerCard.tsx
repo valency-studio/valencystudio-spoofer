@@ -12,12 +12,12 @@ export default function DangerCard() {
 
   return (
     <SettingCard
-      icon={<TriangleAlert size={16} className="text-red-500" />}
+      icon={<TriangleAlert size={16} className="text-danger" />}
       title={t('settings.dangerZone') || 'Danger Zone'}
       description="Irreversible actions and complete configuration reset."
-      className="bg-red-500/5 border-red-500/20"
+      className="bg-danger/5 border-danger/20"
     >
-      <div className="px-4 py-3 flex items-center justify-between gap-4 hover:bg-red-500/10 transition-colors">
+      <div className="px-4 py-3 flex items-center justify-between gap-4 hover:bg-danger/10 transition-colors">
         <div className="space-y-0.5 min-w-0 flex-1">
           <span className="text-xs font-semibold text-text-primary block">Reset All Settings</span>
           <p className="text-2xs text-text-secondary leading-relaxed">
@@ -27,7 +27,7 @@ export default function DangerCard() {
         <Button
           variant="destructive"
           size="sm"
-          className="h-8 px-3 font-semibold text-xs shadow-xs bg-red-500 hover:bg-red-600 text-white shrink-0 rounded-md"
+          className="h-8 px-3 font-semibold text-xs shadow-xs bg-danger hover:bg-danger/90 text-white shrink-0 rounded-md"
           onClick={async () => {
             const confirmed = await ask(
               'Reset all settings to their default values? This cannot be undone.',

@@ -78,7 +78,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center h-screen w-screen bg-bg-base text-text-primary p-8 text-center space-y-4 font-sans antialiased">
-          <div className="text-red-500 mb-4">
+          <div className="text-danger mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="64"
@@ -105,7 +105,7 @@ export class ErrorBoundary extends Component<Props, State> {
               : getTranslation(useLanguage.getState().lang, 'misc.crashReportDisabled')}
           </p>
           <div className="bg-bg-surface border border-border p-4 rounded-xl mt-4 max-w-2xl text-left overflow-auto max-h-48 text-sm w-full font-mono shadow-inner">
-            <div className="text-red-400 font-semibold mb-2">
+            <div className="text-danger font-semibold mb-2">
               {this.state.error?.name}: {this.state.error?.message}
             </div>
           </div>

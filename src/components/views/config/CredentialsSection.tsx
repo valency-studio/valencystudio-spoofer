@@ -236,7 +236,7 @@ export default function CredentialsSection() {
                   : t('explorer.disabled')}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="z-50 bg-bg-surface border border-border shadow-xl rounded-md p-1">
+          <SelectContent>
             <SelectItem value="none" className="text-xs">
               {t('explorer.disabled')}
             </SelectItem>
@@ -307,7 +307,7 @@ export default function CredentialsSection() {
                     userApiKeyStatus === 'success'
                       ? 'text-signal-live'
                       : userApiKeyStatus === 'error'
-                        ? 'text-red-500'
+                        ? 'text-danger'
                         : undefined
                   }
                 />
@@ -363,7 +363,7 @@ export default function CredentialsSection() {
                     groupApiKeyStatus === 'success'
                       ? 'text-signal-live'
                       : groupApiKeyStatus === 'error'
-                        ? 'text-red-500'
+                        ? 'text-danger'
                         : undefined
                   }
                 />

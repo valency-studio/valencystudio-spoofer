@@ -238,7 +238,7 @@ export default function PasteIdsModal({
                     <span className="text-text-muted"> · </span>
                   )}
                   {badReplaceLines > 0 && (
-                    <span className="text-yellow-500">
+                    <span className="text-signal-warn">
                       {badReplaceLines} line{badReplaceLines === 1 ? '' : 's'} skipped (need two IDs
                       per line)
                     </span>

@@ -33,31 +33,32 @@ import { getAssetId } from '../../../utils/explorerTree';
 
 // One map for both the per-asset badge and the per-instance badge. `label` is the
 // fallback only — callers prefer the live status message over it.
-// ponytail: colours stay raw palette because index.css has no token for each stage.
+// ponytail: the six distinct stage hues collapsed into the shared signal tokens;
+// add a per-stage token to index.css only if users actually need to tell them apart.
 const STAGE_BADGES: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   resolving_location: {
     icon: <Loader2 size={10} className="animate-spin" />,
-    color: 'text-blue-400',
+    color: 'text-signal-info',
     label: 'Checking direct Place IDs...',
   },
   discovering_usage: {
     icon: <Loader2 size={10} className="animate-spin" />,
-    color: 'text-purple-400',
+    color: 'text-signal-info',
     label: 'Discovering Place IDs (Asset Usage)...',
   },
   discovering_graph: {
     icon: <Loader2 size={10} className="animate-spin" />,
-    color: 'text-indigo-400',
+    color: 'text-signal-info',
     label: 'Discovering Place IDs (Creator Graph)...',
   },
   downloading: {
     icon: <Download size={10} />,
-    color: 'text-cyan-400',
+    color: 'text-signal-info',
     label: 'Downloading...',
   },
   uploading: {
     icon: <Upload size={10} />,
-    color: 'text-amber-400',
+    color: 'text-signal-warn',
     label: 'Uploading...',
   },
   done: {
@@ -67,7 +68,7 @@ const STAGE_BADGES: Record<string, { icon: React.ReactNode; color: string; label
   },
   error: {
     icon: <AlertCircle size={10} />,
-    color: 'text-red-400',
+    color: 'text-danger',
     label: 'Error',
   },
   skipped: {
@@ -413,7 +414,7 @@ export const ExplorerTreeNode = memo(function ExplorerTreeNode({
           <Tooltip>
             <TooltipTrigger
               render={
-                <div className="flex items-center gap-1 justify-center h-5 px-1.5 rounded border border-purple-500/30 bg-purple-500/10 text-purple-400 shrink-0 text-2xs font-bold ml-1">
+                <div className="flex items-center gap-1 justify-center h-5 px-1.5 rounded border border-signal-spoofed/30 bg-signal-spoofed/10 text-signal-spoofed shrink-0 text-2xs font-bold ml-1">
                   <Ghost size={11} />
                   <span>Ghost ID</span>
                 </div>

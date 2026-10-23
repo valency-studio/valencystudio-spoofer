@@ -201,9 +201,9 @@ export default function ExecutionLogs({
               const containerClass = cn(
                 'py-1.5 px-3 rounded',
                 isError
-                  ? 'text-red-500 bg-red-500/5'
+                  ? 'text-danger bg-danger/5'
                   : isWarn
-                    ? 'text-yellow-500 bg-yellow-500/5'
+                    ? 'text-signal-warn bg-signal-warn/5'
                     : isSuccess
                       ? 'text-signal-live bg-signal-live/5'
                       : 'text-text-primary',

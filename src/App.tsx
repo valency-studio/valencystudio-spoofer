@@ -36,7 +36,7 @@ export default function App() {
   if (maintenance.mode) {
     return (
       <div className="flex flex-col items-center justify-center h-screen w-screen bg-background text-foreground p-8 text-center space-y-4 font-sans antialiased">
-        <div className="text-yellow-500 mb-4">
+        <div className="text-signal-warn mb-4">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="64"

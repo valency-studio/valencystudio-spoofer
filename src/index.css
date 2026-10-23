@@ -118,6 +118,7 @@ input[type='number'] {
   --color-signal-live: var(--signal-live);
   --color-signal-warn: var(--signal-warn);
   --color-signal-spoofed: var(--signal-spoofed);
+  --color-signal-info: var(--signal-info);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -168,6 +169,7 @@ input[type='number'] {
   --signal-live: #12a150; /* connected, succeeded, verified */
   --signal-warn: #b5730b; /* degraded, waiting, upstream trouble */
   --signal-spoofed: #6d43c4; /* this asset has been replaced */
+  --signal-info: #2f6feb; /* neutral, informational log lines */
 
   /* Solid enough to read on white; the card must not disappear into the page. */
   --border-subtle: #e6e6e9;
@@ -212,6 +214,7 @@ input[type='number'] {
   --signal-live: #3fca7d;
   --signal-warn: #e0a132;
   --signal-spoofed: #a683f0;
+  --signal-info: #6a9bff;
 
   --border-subtle: #26262b;
   --border-strong: #3a3a41;
