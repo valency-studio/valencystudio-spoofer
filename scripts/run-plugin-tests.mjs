@@ -3,7 +3,7 @@
 // downloaded once into node_modules/.cache so local runs and CI behave the same.
 // Upgrade path: swap to cargo-installed luau-cli once it ships a Windows binary.
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -50,10 +50,18 @@ function resolveLuauBin() {
   mkdirSync(cacheDir, { recursive: true });
   const zipPath = join(cacheDir, asset);
   execFileSync('curl', ['-fsSL', '-o', zipPath, url], { stdio: 'inherit' });
-  // bsdtar ships with Windows 10+, Linux and macOS and reads zip, so one call works everywhere.
-  execFileSync('tar', ['-xf', zipPath, '-C', cacheDir], { stdio: 'inherit' });
+  // GNU tar cannot read zip, but bsdtar (Windows, macOS) can, and unzip is on
+  // every Linux runner image. Keep both so each platform uses what it has.
+  if (process.platform === 'linux') {
+    execFileSync('unzip', ['-oq', zipPath, '-d', cacheDir], { stdio: 'inherit' });
+  } else {
+    execFileSync('tar', ['-xf', zipPath, '-C', cacheDir], { stdio: 'inherit' });
+  }
   if (!existsSync(binPath)) {
     throw new Error(`Expected ${exe} inside ${asset}`);
+  }
+  if (process.platform !== 'win32') {
+    chmodSync(binPath, 0o755);
   }
   return binPath;
 }
