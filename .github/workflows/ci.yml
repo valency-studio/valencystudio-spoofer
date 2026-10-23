@@ -65,6 +65,9 @@ jobs:
           bun run lint
           bun run test
 
+      - name: Plugin tests
+        run: bun run test:plugin
+
       - name: Build app
         run: bun run build:app
 

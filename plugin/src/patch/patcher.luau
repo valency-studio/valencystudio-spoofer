@@ -35,7 +35,7 @@ local function normalizeAssetId(value: any): string?
 		or string.match(str, "^rbxasset://(%d+)$")
 		or string.match(str, "^id=(%d+)$")
 		or string.match(str, "[?&]id=(%d+)$")
-		or string.match(str, "roblox%.com/asset/%?id=(%d+)$")
+		or string.match(str, "roblox%.com/asset/%?id=(%d+)")
 		or string.match(str, "roblox%.com/library/(%d+)$")
 		or string.match(str, "roblox%.com/catalog/(%d+)$")
 		or string.match(str, "create%.roblox%.com/marketplace/asset/(%d+)$")
@@ -51,6 +51,32 @@ end
 local function toAssetUri(value: any): string?
 	local assetId = normalizeAssetId(value)
 	return if assetId then "rbxassetid://" .. assetId else nil
+end
+
+-- Rewrites an asset ID only where it stands alone in script text.
+--
+-- Matching the bare ID is not enough: a longer ID or an identifier that merely
+-- starts with it also contains it, so mapping 12345 rewrote
+-- "rbxassetid://123456" into "rbxassetid://678906" and "12345ab" into
+-- "67890ab". The trailing capture collects any identifier characters that
+-- follow, and the rewrite is skipped whenever that capture is non-empty.
+--
+-- The prefix capture is kept deliberately narrow (a separator or assignment
+-- token) so literals such as 0x12345 are left alone.
+local function replaceAssetIdToken(text: string, oldId: string, newId: string): string
+	local function rewrite(prefix: string, trailing: string): string?
+		if trailing ~= "" then
+			return nil
+		end
+		return prefix .. newId
+	end
+
+	local result = string.gsub(text, "([=:{,%(%s\"']%s*)" .. oldId .. "([%w_]*)", rewrite)
+	result = string.gsub(result, "(rbxassetid://)" .. oldId .. "([%w_]*)", rewrite)
+	result =
+		string.gsub(result, "(roblox%.com/[Aa]sset/%?[Ii][Dd]=)" .. oldId .. "([%w_]*)", rewrite)
+
+	return result
 end
 
 local CONTENT_PROPERTIES: { [string]: boolean } = {
@@ -432,12 +458,7 @@ local function applyPatch(patch: Patch): (boolean, string?)
 			end
 			source = current
 			for oldId, newId in pairs(patch.value) do
-				local oId, nId = tostring(oldId), tostring(newId)
-				local safePattern = "([=:{,%(%s\"']%s*)" .. oId .. "(%f[%D])"
-				source = string.gsub(source, safePattern, "%1" .. nId .. "%2")
-				source = string.gsub(source, "rbxassetid://" .. oId, "rbxassetid://" .. nId)
-				source =
-					string.gsub(source, "(roblox%.com/[Aa]sset/%?[Ii][Dd]=)" .. oId, "%1" .. nId)
+				source = replaceAssetIdToken(source, tostring(oldId), tostring(newId))
 			end
 		elseif type(patch.value) == "string" then
 			source = patch.value
