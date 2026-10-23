@@ -134,6 +134,8 @@ export default function MusicView() {
       });
       await installFfmpeg();
       setFfmpegInstalled(true);
+      // Re-probe so the dialog closes on its own once the tool is reachable.
+      await refreshTools();
     } catch (error) {
       setFfmpegInstallError(String(error));
     } finally {

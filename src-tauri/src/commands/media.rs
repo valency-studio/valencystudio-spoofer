@@ -64,9 +64,18 @@ struct ToolSpec {
 const FFMPEG: ToolSpec = ToolSpec { program: "ffmpeg", version_arg: "-version" };
 const FFPROBE: ToolSpec = ToolSpec { program: "ffprobe", version_arg: "-version" };
 const YTDLP: ToolSpec = ToolSpec { program: "yt-dlp", version_arg: "--version" };
-const WINGET_INSTALL_FFMPEG_ARGS: [&str; 5] = [
+/// `--id` + `--source winget` are load-bearing. A bare `install ffmpeg` search
+/// spans every configured source; when the `msstore` source is unreachable
+/// (certificate mismatch, offline Store) Winget reports the remaining matches
+/// as ambiguous, and `--disable-interactivity` turns that prompt into exit code
+/// 0x8A15005E even though the winget source has a valid package.
+const WINGET_INSTALL_FFMPEG_ARGS: [&str; 9] = [
     "install",
-    "ffmpeg",
+    "--id",
+    "Gyan.FFmpeg",
+    "--exact",
+    "--source",
+    "winget",
     "--accept-source-agreements",
     "--accept-package-agreements",
     "--disable-interactivity",
@@ -177,16 +186,19 @@ pub async fn check_media_tools() -> Result<MediaTools> {
     Ok(MediaTools { ffmpeg: ffmpeg.is_some(), ffprobe: ffprobe.is_some(), ytdlp: ytdlp.is_some() })
 }
 
-/// Locates a tool by walking PATH and confirms it runs.
+/// Locates a tool by walking PATH plus the machine-wide install locations that
+/// Winget does not always put on the PATH of an already-running process, and
+/// confirms it runs.
 ///
 /// Scanning PATH explicitly rather than relying on the child's own resolution
 /// keeps discovery and the later invocation consistent, and lets the error name
 /// the directories that were searched.
 async fn resolve(spec: ToolSpec) -> Option<std::path::PathBuf> {
-    let path_var = std::env::var_os("PATH")?;
     let candidates = candidate_names(spec.program);
+    let path_var = std::env::var_os("PATH").unwrap_or_default();
+    let dirs = std::env::split_paths(&path_var).chain(extra_search_dirs());
 
-    for dir in std::env::split_paths(&path_var) {
+    for dir in dirs {
         if dir.as_os_str().is_empty() {
             continue;
         }
@@ -217,6 +229,25 @@ async fn resolve(spec: ToolSpec) -> Option<std::path::PathBuf> {
     }
 
     None
+}
+
+/// Directories that hold tools we install but that never reach the PATH of a
+/// process that is already running: Winget writes shims into its `Links` folder
+/// without refreshing the environment, so a successful install would otherwise
+/// look missing until the app restarted.
+///
+/// ponytail: only the Winget shim dir. Add package `bin` folders or
+/// `~/.local/bin` if a tool ever lands there.
+fn extra_search_dirs() -> Vec<std::path::PathBuf> {
+    if !cfg!(windows) {
+        return Vec::new();
+    }
+
+    std::env::var_os("LOCALAPPDATA")
+        .map(|base| {
+            vec![std::path::Path::new(&base).join("Microsoft").join("WinGet").join("Links")]
+        })
+        .unwrap_or_default()
 }
 
 /// Candidate names to try for a program, covering the Windows resolution rules.
@@ -1271,7 +1302,15 @@ mod tests {
 
     #[test]
     fn winget_install_targets_ffmpeg_without_interactive_prompts() {
-        assert_eq!(WINGET_INSTALL_FFMPEG_ARGS[0..2], ["install", "ffmpeg"]);
+        assert_eq!(WINGET_INSTALL_FFMPEG_ARGS[0..2], ["install", "--id"]);
+        assert!(WINGET_INSTALL_FFMPEG_ARGS.contains(&"Gyan.FFmpeg"));
+        assert!(WINGET_INSTALL_FFMPEG_ARGS.contains(&"--exact"));
+        // Pinning the source keeps an unreachable source (e.g. msstore) from
+        // turning the install into an interactive "which one?" prompt.
+        assert_eq!(
+            WINGET_INSTALL_FFMPEG_ARGS.windows(2).find(|pair| pair[0] == "--source"),
+            Some(["--source", "winget"].as_slice())
+        );
         assert!(WINGET_INSTALL_FFMPEG_ARGS.contains(&"--accept-source-agreements"));
         assert!(WINGET_INSTALL_FFMPEG_ARGS.contains(&"--accept-package-agreements"));
         assert!(WINGET_INSTALL_FFMPEG_ARGS.contains(&"--disable-interactivity"));
@@ -1842,6 +1881,17 @@ mod tests {
         })
         .await
         .is_none());
+    }
+
+    #[test]
+    fn winget_shim_directory_is_searched_outside_path() {
+        let dirs = super::extra_search_dirs();
+        if cfg!(windows) {
+            let expected = std::path::Path::new("Microsoft").join("WinGet").join("Links");
+            assert!(dirs.first().is_some_and(|dir| dir.ends_with(&expected)));
+        } else {
+            assert!(dirs.is_empty());
+        }
     }
 
     #[test]
