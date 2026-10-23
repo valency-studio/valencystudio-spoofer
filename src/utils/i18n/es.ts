@@ -171,8 +171,9 @@ export const es: TranslationTree = {
     openSource: 'Abrir origen',
     ytdlpUnavailable:
       'No se pudo instalar yt-dlp automáticamente, así que importar desde un enlace no está disponible.',
-    missingFfmpeg:
-      'ffmpeg no está en tu PATH, así que subir no está disponible. Instala ffmpeg y vuelve a abrir la aplicación.',
+    missingFfprobe:
+      'ffprobe no está en tu instalación de FFmpeg, así que abrir un archivo local no está disponible. Reinstala FFmpeg y vuelve a abrir la aplicación.',
+    retryToolInstall: 'Reintentar',
     ffmpegRequiredTitle: 'FFmpeg no está instalado',
     ffmpegRequiredDescription:
       'FFmpeg es necesario para usar Música. Instálalo ahora con Winget o vuelve a Spoofer.',
@@ -185,7 +186,7 @@ export const es: TranslationTree = {
       'Esto puede tardar un minuto. Mantén la aplicación abierta: el diálogo se cerrará solo cuando FFmpeg esté listo.',
     ffmpegInstallComplete: 'FFmpeg se instaló. Reinicia la aplicación para que se actualice PATH.',
     missingYtDlp:
-      'yt-dlp no está en tu PATH, así que importar desde un enlace no está disponible. Instala yt-dlp y vuelve a abrir la aplicación.',
+      'yt-dlp no está en tu PATH, así que importar desde un enlace no está disponible. Reintenta abajo, o instala yt-dlp y vuelve a abrir la aplicación.',
   },
   nav: {
     clearSearch: 'Limpiar búsqueda',

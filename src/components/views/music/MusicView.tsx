@@ -52,6 +52,7 @@ import {
   SPEED_PRESETS,
   SPEED_RANGE,
 } from '../../../utils/music';
+import { readableError } from '../../../utils/notifyError';
 import { EmptyState } from '../../shared/EmptyState';
 
 export default function MusicView() {
@@ -59,6 +60,7 @@ export default function MusicView() {
   const { updateConfig } = useConfig();
   const {
     tools,
+    toolError,
     tracks,
     error,
     status,
@@ -67,6 +69,7 @@ export default function MusicView() {
     progress,
     uploading,
     refreshTools,
+    installMissingTools,
     refreshQuota,
     resumeValidation,
     uploadTrack,
@@ -111,14 +114,16 @@ export default function MusicView() {
     setImporting(false);
   };
 
-  // Only ffmpeg is warned about. yt-dlp installs itself on first run, so a
-  // missing one means the install failed and is worth surfacing with a retry.
+  // The install dialog only covers a missing ffmpeg, so the banner is left with
+  // what it cannot fix: a missing ffprobe, which disables local import, and a
+  // yt-dlp whose first-run install failed, which the retry here can recover.
   const missing = tools
     ? [
-        !tools.ffmpeg ? t('music.missingFfmpeg') : null,
+        !tools.ffprobe ? t('music.missingFfprobe') : null,
         !tools.ytdlp ? t('music.missingYtDlp') : null,
       ].filter(Boolean)
     : [];
+  const canRetryTools = toolError !== null || (!!tools && !tools.ytdlp);
 
   const returnToSpoofer = () => updateConfig('ui', 'activeTab', 'spoofing');
 
@@ -139,7 +144,7 @@ export default function MusicView() {
       // Re-probe so the dialog closes on its own once the tool is reachable.
       await refreshTools();
     } catch (error) {
-      setFfmpegInstallError(String(error));
+      setFfmpegInstallError(readableError(error));
     } finally {
       stopListening?.();
       setInstallingFfmpeg(false);
@@ -228,14 +233,30 @@ export default function MusicView() {
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
-          {missing.length > 0 && (
-            <div className="flex items-start gap-2 rounded-lg border border-signal-warn/30 bg-signal-warn/10 p-3">
+          {(missing.length > 0 || toolError) && (
+            <div
+              role="status"
+              className="flex items-start gap-3 rounded-lg border border-signal-warn/30 bg-signal-warn/10 p-3"
+            >
               <CircleAlert size={15} className="mt-0.5 shrink-0 text-signal-warn" />
-              <div className="text-sm text-text-secondary">
+              <div className="min-w-0 flex-1 text-sm text-text-secondary">
                 {missing.map((line) => (
                   <p key={line}>{line}</p>
                 ))}
+                {toolError && (
+                  <p className="mt-1 text-xs break-words">{readableError(toolError)}</p>
+                )}
               </div>
+              {canRetryTools && (
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="shrink-0"
+                  onClick={() => void installMissingTools()}
+                >
+                  {t('music.retryToolInstall')}
+                </Button>
+              )}
             </div>
           )}
 
@@ -295,7 +316,9 @@ export default function MusicView() {
 
             {error && (
               <p className="text-sm text-danger" role="alert">
-                {error === 'yt-dlp-unavailable' ? t('music.ytdlpUnavailable') : error}
+                {error === 'yt-dlp-unavailable'
+                  ? t('music.ytdlpUnavailable')
+                  : readableError(error)}
               </p>
             )}
           </section>

@@ -13,6 +13,7 @@ vi.mock('../../../utils/music', async (importOriginal) => {
   return {
     ...actual,
     checkMediaTools: vi.fn(),
+    ensureMediaTools: vi.fn(),
     fetchAudioQuota: vi.fn().mockResolvedValue(null),
     getUploadHistory: vi.fn().mockResolvedValue([]),
     installFfmpeg: vi.fn(),
@@ -93,6 +94,40 @@ describe('MusicView FFmpeg requirement', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Winget gagal memasang FFmpeg');
     expect(screen.getByRole('alert')).toHaveTextContent('Winget is unavailable');
+  });
+
+  it('shows only the readable half of a structured backend error', async () => {
+    // Rust serialises AppError as a JSON string, so a raw render would put the
+    // debug blob on screen.
+    vi.mocked(music.installFfmpeg).mockRejectedValue(
+      new Error(JSON.stringify({ message: 'Winget is unavailable', debug: 'at install_ffmpeg' })),
+    );
+    renderMusicView();
+    await screen.findByRole('dialog');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pasang FFmpeg' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Winget is unavailable');
+    expect(alert).not.toHaveTextContent('at install_ffmpeg');
+  });
+
+  it('offers a retry while yt-dlp is missing', async () => {
+    vi.mocked(music.checkMediaTools).mockResolvedValue({
+      ffmpeg: true,
+      ffprobe: true,
+      ytdlp: false,
+    });
+    vi.mocked(music.ensureMediaTools).mockResolvedValue({
+      tools: { ffmpeg: true, ffprobe: true, ytdlp: false },
+      ytdlpInstalled: false,
+    });
+
+    renderMusicView();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Coba lagi' }));
+
+    await waitFor(() => expect(music.ensureMediaTools).toHaveBeenCalled());
   });
 
   it('lets the user enter Music when FFmpeg is already installed', async () => {

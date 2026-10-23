@@ -173,8 +173,9 @@ export const ru: TranslationTree = {
     openSource: 'Открыть источник',
     ytdlpUnavailable:
       'Не удалось установить yt-dlp автоматически, поэтому импорт по ссылке недоступен.',
-    missingFfmpeg:
-      'ffmpeg не найден в PATH, поэтому загрузка недоступна. Установите ffmpeg и снова откройте приложение.',
+    missingFfprobe:
+      'ffprobe отсутствует в вашей установке FFmpeg, поэтому открытие локального файла недоступно. Переустановите FFmpeg и снова откройте приложение.',
+    retryToolInstall: 'Повторить',
     ffmpegRequiredTitle: 'FFmpeg не установлен',
     ffmpegRequiredDescription:
       'Для работы раздела «Музыка» требуется FFmpeg. Установите его через Winget или вернитесь в Spoofer.',
@@ -188,7 +189,7 @@ export const ru: TranslationTree = {
     ffmpegInstallComplete:
       'FFmpeg установлен. Перезапустите приложение, чтобы применить изменения PATH.',
     missingYtDlp:
-      'yt-dlp не найден в PATH, поэтому импорт по ссылке недоступен. Установите yt-dlp и снова откройте приложение.',
+      'yt-dlp не найден в PATH, поэтому импорт по ссылке недоступен. Повторите ниже или установите yt-dlp и снова откройте приложение.',
   },
   nav: {
     clearSearch: 'Очистить поиск',

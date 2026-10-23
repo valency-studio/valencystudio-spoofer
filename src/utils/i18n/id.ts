@@ -173,8 +173,9 @@ export const id: TranslationTree = {
     openSource: 'Buka sumber',
     ytdlpUnavailable:
       'yt-dlp tidak dapat dipasang otomatis, jadi impor dari tautan tidak tersedia.',
-    missingFfmpeg:
-      'ffmpeg tidak ada di PATH Anda, jadi unggah tidak tersedia. Pasang ffmpeg lalu buka ulang aplikasi.',
+    missingFfprobe:
+      'ffprobe tidak ada di pemasangan FFmpeg Anda, jadi membuka file lokal tidak tersedia. Pasang ulang FFmpeg lalu buka ulang aplikasi.',
+    retryToolInstall: 'Coba lagi',
     ffmpegRequiredTitle: 'FFmpeg belum terpasang',
     ffmpegRequiredDescription:
       'FFmpeg wajib dipasang untuk menggunakan menu Musik. Instal sekarang dengan Winget atau kembali ke Spoofer.',
@@ -188,7 +189,7 @@ export const id: TranslationTree = {
     ffmpegInstallComplete:
       'FFmpeg berhasil dipasang. Buka ulang aplikasi agar PATH FFmpeg terbaca.',
     missingYtDlp:
-      'yt-dlp tidak ada di PATH Anda, jadi impor dari tautan tidak tersedia. Pasang yt-dlp lalu buka ulang aplikasi.',
+      'yt-dlp tidak ada di PATH Anda, jadi impor dari tautan tidak tersedia. Coba lagi di bawah, atau pasang yt-dlp lalu buka ulang aplikasi.',
   },
   nav: {
     clearSearch: 'Bersihkan pencarian',

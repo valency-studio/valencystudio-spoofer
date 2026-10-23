@@ -81,6 +81,19 @@ const WINGET_INSTALL_FFMPEG_ARGS: [&str; 9] = [
     "--disable-interactivity",
 ];
 
+/// The install exit code as Winget itself reports it.
+///
+/// A negative code is a Win32 HRESULT and Winget prints those in hex, so the
+/// decimal form would not line up with the line the user already sees in the
+/// installer output above.
+fn winget_exit_code(code: Option<i32>) -> String {
+    match code {
+        None => "unknown".to_string(),
+        Some(code) if code < 0 => format!("0x{:08X}", code as u32),
+        Some(code) => code.to_string(),
+    }
+}
+
 async fn forward_install_output<R>(app: AppHandle, output: R) -> std::io::Result<()>
 where
     R: AsyncRead + Unpin,
@@ -138,7 +151,7 @@ pub async fn install_ffmpeg(app: AppHandle) -> Result<()> {
         stderr_result?;
 
         if !status.success() {
-            let code = status.code().map_or_else(|| "unknown".to_string(), |code| code.to_string());
+            let code = winget_exit_code(status.code());
             return Err(AppError::Custom(format!(
                 "Winget could not install FFmpeg (exit code {code})."
             )));
@@ -1299,6 +1312,15 @@ mod tests {
         ROBLOX_MAX_UPLOAD_BYTES, SEMITONES_PER_OCTAVE, WINGET_INSTALL_FFMPEG_ARGS,
     };
     use std::path::Path;
+
+    #[test]
+    fn winget_exit_code_matches_the_hex_winget_prints() {
+        use super::winget_exit_code;
+        // 0x8A15005E, the ambiguous-match failure, arrives as this negative i32.
+        assert_eq!(winget_exit_code(Some(-1978335138)), "0x8A15005E");
+        assert_eq!(winget_exit_code(Some(1)), "1");
+        assert_eq!(winget_exit_code(None), "unknown");
+    }
 
     #[test]
     fn winget_install_targets_ffmpeg_without_interactive_prompts() {
