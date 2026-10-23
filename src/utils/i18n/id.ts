@@ -62,9 +62,7 @@ export const id: TranslationTree = {
     loadingHistory: 'Memuat riwayat pekerjaan...',
     noJobHistory: 'Belum ada pekerjaan spoofing.',
     jobsWillAppear: 'Pekerjaan spoofing yang selesai dan sedang berjalan akan muncul di sini.',
-    dropRbxl: 'Letakkan file place atau model Roblox di sini',
     scanningStudio: 'Memindai Roblox Studio...',
-    dropOrClick: 'Letakkan file di sini atau klik untuk menjelajah',
     rbxlOnly: 'Silakan pilih file Roblox yang didukung (.rbxl, .rbxlx, .rbxm, atau .rbxmx)',
     audioQuotaExceeded: 'Batas unggahan audio bulanan sudah tercapai',
     confirmVideoUploads:
@@ -120,7 +118,6 @@ export const id: TranslationTree = {
     pitch: 'Pitch',
     format: 'Format',
     sampleRate: 'Sample rate',
-    speedPresets: 'Preset kecepatan',
     presetNormal: 'Normal',
     presetSlow: 'Lambat',
     presetDefault: 'Default',
@@ -150,10 +147,8 @@ export const id: TranslationTree = {
     processing: 'Roblox sedang memproses...',
     rendering: 'Merender audio...',
     validating: 'Memvalidasi...',
-    acceptedTitle: 'Roblox menerima unggahan ini.',
     rejectedTitle: 'Roblox menolak unggahan ini.',
     dismiss: 'Tutup',
-    uploadHint: 'Edit lagu, lalu unggah ke akun Roblox Anda',
     noUploaderAccount: 'Pilih akun Roblox di menu Akun sebelum mengunggah.',
     quotaLeft: 'Tersisa {remaining} dari {limit} unggahan audio bulan ini.',
     history: 'Riwayat unggahan',
@@ -171,7 +166,6 @@ export const id: TranslationTree = {
     copyId: 'Salin ID aset',
     parts: '{count} bagian',
     willSplit: 'Roblox membatasi unggahan 7 menit, jadi ini menjadi {count} bagian.',
-    exportedSplit: '{count} bagian berhasil diunggah.',
     exported: 'Lagu berhasil diunggah ke Roblox.',
     exportedLabel: 'hasil unggahan',
     editedNote: 'File yang diunggah memakai edit ini. File sumber Anda tidak diubah.',
@@ -179,7 +173,6 @@ export const id: TranslationTree = {
     openSource: 'Buka sumber',
     ytdlpUnavailable:
       'yt-dlp tidak dapat dipasang otomatis, jadi impor dari tautan tidak tersedia.',
-    retryInstall: 'Coba pasang lagi',
     missingFfmpeg:
       'ffmpeg tidak ada di PATH Anda, jadi unggah tidak tersedia. Pasang ffmpeg lalu buka ulang aplikasi.',
     ffmpegRequiredTitle: 'FFmpeg belum terpasang',
@@ -237,6 +230,8 @@ export const id: TranslationTree = {
     madeWith: 'Dibuat dengan hati oleh {team}.',
   },
   spoof: {
+    downloadAll: 'Unduh Semua ({count})',
+    downloadSelected: 'Unduh Terpilih ({count})',
     assetPermissionsProgress: 'Izin Aset',
     manualReplace: 'Ganti & tambah ID manual',
     title: 'Asset Spoofer',
@@ -254,7 +249,7 @@ export const id: TranslationTree = {
     downloadPath: 'Lokasi Unduhan',
     enableSpoofing: 'Aktifkan Spoofing',
     runSpoofer: 'Jalankan Spoofer',
-    spoofSelected: 'Spoof yang Dipilih',
+    spoofSelected: 'Spoof yang Dipilih ({count})',
     spoofAllAssets: 'Spoof Semua Aset ({count})',
     retryReplacing: 'Coba Ganti Lagi di Studio',
     output: 'Keluaran',
@@ -284,6 +279,8 @@ export const id: TranslationTree = {
       'Tidak ada grup yang bisa dikelola. Pastikan akun Anda memiliki izin pengelolaan grup di Roblox.',
   },
   settings: {
+    cookieHint:
+      'Cookie sesi yang membuat aplikasi bertindak atas nama akun Roblox Anda. Perlakukan seperti kata sandi, jangan pernah dibagikan.',
     permissions: 'Izin',
     cacheClearFailed: 'Gagal membersihkan cache',
     cacheEnabled: 'Cache diaktifkan.',
@@ -485,6 +482,7 @@ export const id: TranslationTree = {
     goToBottom: 'Ke Bawah',
   },
   explorer: {
+    pinnedPlaceIdHint: 'ID aset ini dipaksa ke sebuah Place ID, mengabaikan deteksi otomatis.',
     name: 'Nama',
     downloadFailed: 'Unduhan gagal',
     clearFilters: 'Bersihkan filter',

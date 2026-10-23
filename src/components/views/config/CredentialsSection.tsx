@@ -253,9 +253,7 @@ export default function CredentialsSection() {
       <div className="flex flex-col gap-2 p-3.5 rounded-lg border border-border-subtle/60 bg-bg-base/40">
         <div className="space-y-0.5">
           <Label className="text-sm font-semibold text-text-primary">{t('spoof.cookie')}</Label>
-          <p className="text-xs text-text-secondary leading-relaxed">
-            Manual .ROBLOSECURITY authentication token override for downloading assets.
-          </p>
+          <p className="text-xs text-text-secondary leading-relaxed">{t('settings.cookieHint')}</p>
         </div>
         <Input
           type="password"

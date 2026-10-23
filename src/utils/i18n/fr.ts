@@ -62,9 +62,7 @@ export const fr: TranslationTree = {
     loadingHistory: "Chargement de l'historique...",
     noJobHistory: 'Aucun historique de travail trouvé.',
     jobsWillAppear: 'Les travaux que vous exécutez apparaîtront ici.',
-    dropRbxl: 'Déposez .rbxl / .rbxlx',
     scanningStudio: 'Analyse de Studio...',
-    dropOrClick: 'Déposez ou cliquez pour parcourir',
     rbxlOnly: 'Uniquement .rbxl & .rbxlx',
     audioQuotaExceeded: 'Quota audio dépassé',
     confirmVideoUploads: 'Êtes-vous absolument sûr de vouloir activer les envois de vidéos ?',
@@ -119,7 +117,6 @@ export const fr: TranslationTree = {
     pitch: 'Hauteur',
     format: 'Format',
     sampleRate: "Fréquence d'échantillonnage",
-    speedPresets: 'Réglages de vitesse',
     presetNormal: 'Normale',
     presetSlow: 'Lente',
     presetDefault: 'Par défaut',
@@ -149,10 +146,8 @@ export const fr: TranslationTree = {
     processing: 'Roblox est en cours de traitement...',
     rendering: 'Rendu de l’audio...',
     validating: 'Validation...',
-    acceptedTitle: 'Roblox a accepté l’envoi.',
     rejectedTitle: 'Roblox a refusé l’envoi.',
     dismiss: 'Fermer',
-    uploadHint: 'Éditez le morceau puis envoyez-le vers votre compte Roblox',
     noUploaderAccount: 'Sélectionnez un compte Roblox dans Comptes avant l’envoi.',
     quotaLeft: 'Il reste {remaining} téléversements audio sur {limit} ce mois-ci.',
     history: 'Historique des téléversements',
@@ -170,7 +165,6 @@ export const fr: TranslationTree = {
     copyId: 'Copier l’ID de l’actif',
     parts: '{count} parties',
     willSplit: 'Roblox limite les téléversements à 7 minutes, donc ceci devient {count} parties.',
-    exportedSplit: '{count} parties envoyées.',
     exported: 'Morceau envoyé sur Roblox.',
     exportedLabel: 'copie envoyée',
     editedNote:
@@ -179,7 +173,6 @@ export const fr: TranslationTree = {
     openSource: 'Ouvrir la source',
     ytdlpUnavailable:
       'yt-dlp n’a pas pu être installé automatiquement, l’import depuis un lien est donc indisponible.',
-    retryInstall: 'Réessayer l’installation',
     missingFfmpeg:
       "ffmpeg n'est pas dans votre PATH, l'envoi est donc indisponible. Installez ffmpeg puis rouvrez l'application.",
     ffmpegRequiredTitle: "FFmpeg n'est pas installé",
@@ -236,6 +229,8 @@ export const fr: TranslationTree = {
     madeWith: 'Fait avec soin par {team}.',
   },
   spoof: {
+    downloadAll: 'Tout télécharger ({count})',
+    downloadSelected: 'Télécharger la sélection ({count})',
     assetPermissionsProgress: "Permissions d'assets",
     manualReplace: 'Remplacement et ajout manuels',
     title: "Usurpation d'Assets",
@@ -279,10 +274,12 @@ export const fr: TranslationTree = {
     audioQuotaUnavailable: 'Quota audio : indisponible',
     noGroupsFound:
       "Aucun groupe trouvé. Ajoutez des informations d'identification dans la Configuration, puis sélectionnez un utilisateur.",
-    spoofSelected: 'Usurper la sélection',
+    spoofSelected: 'Usurper la sélection ({count})',
     spoofAllAssets: 'Usurper tous les actifs ({count})',
   },
   settings: {
+    cookieHint:
+      "Un cookie de session qui permet à l'app d'agir en tant que votre compte Roblox. Traitez-le comme un mot de passe, ne le partagez jamais.",
     permissions: 'Autorisations',
     cacheClearFailed: 'Échec du vidage du cache',
     cacheEnabled: 'Cache activé.',
@@ -492,6 +489,7 @@ export const fr: TranslationTree = {
     goToBottom: 'Aller en bas',
   },
   explorer: {
+    pinnedPlaceIdHint: 'Cet ID a été forcé sur un Place ID, ignorant la détection automatique.',
     name: 'Nom',
     downloadFailed: 'Échec du téléchargement',
     clearFilters: 'Effacer les filtres',

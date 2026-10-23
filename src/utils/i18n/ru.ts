@@ -62,9 +62,7 @@ export const ru: TranslationTree = {
     loadingHistory: 'Загрузка истории...',
     noJobHistory: 'История работ не найдена.',
     jobsWillAppear: 'Здесь будут отображаться запущенные вами работы.',
-    dropRbxl: 'Перетащите .rbxl / .rbxlx',
     scanningStudio: 'Сканирование Studio...',
-    dropOrClick: 'Перетащите или нажмите для выбора',
     rbxlOnly: 'Только .rbxl и .rbxlx',
     audioQuotaExceeded: 'Квота аудио превышена',
     confirmVideoUploads: 'Вы абсолютно уверены, что хотите включить загрузку видео?',
@@ -119,7 +117,6 @@ export const ru: TranslationTree = {
     pitch: 'Высота тона',
     format: 'Формат',
     sampleRate: 'Частота дискретизации',
-    speedPresets: 'Пресеты скорости',
     presetNormal: 'Обычная',
     presetSlow: 'Медленная',
     presetDefault: 'По умолчанию',
@@ -149,10 +146,8 @@ export const ru: TranslationTree = {
     processing: 'Roblox обрабатывает...',
     rendering: 'Рендер аудио...',
     validating: 'Проверка...',
-    acceptedTitle: 'Roblox принял загрузку.',
     rejectedTitle: 'Roblox отклонил загрузку.',
     dismiss: 'Закрыть',
-    uploadHint: 'Отредактируйте трек, затем загрузите его в аккаунт Roblox',
     noUploaderAccount: 'Перед загрузкой выберите аккаунт Roblox в разделе Аккаунты.',
     quotaLeft: 'Осталось {remaining} из {limit} загрузок аудио в этом месяце.',
     history: 'История загрузок',
@@ -171,7 +166,6 @@ export const ru: TranslationTree = {
     parts: 'частей: {count}',
     willSplit:
       'Roblox ограничивает загрузку 7 минутами, поэтому это будет разделено на {count} частей.',
-    exportedSplit: 'Загружено {count} частей.',
     exported: 'Трек загружен в Roblox.',
     exportedLabel: 'загруженная копия',
     editedNote: 'Загруженные файлы сохраняют эти изменения. Исходный файл не затрагивается.',
@@ -179,7 +173,6 @@ export const ru: TranslationTree = {
     openSource: 'Открыть источник',
     ytdlpUnavailable:
       'Не удалось установить yt-dlp автоматически, поэтому импорт по ссылке недоступен.',
-    retryInstall: 'Попробовать установить снова',
     missingFfmpeg:
       'ffmpeg не найден в PATH, поэтому загрузка недоступна. Установите ffmpeg и снова откройте приложение.',
     ffmpegRequiredTitle: 'FFmpeg не установлен',
@@ -235,6 +228,8 @@ export const ru: TranslationTree = {
     madeWith: 'Сделано с любовью {team}.',
   },
   spoof: {
+    downloadAll: 'Скачать всё ({count})',
+    downloadSelected: 'Скачать выбранные ({count})',
     assetPermissionsProgress: 'Права на ассеты',
     manualReplace: 'Ручная замена и добавление ID',
     title: 'Обозреватель',
@@ -252,7 +247,7 @@ export const ru: TranslationTree = {
     downloadPath: 'Путь загрузки',
     enableSpoofing: 'Включить подмену',
     runSpoofer: 'Запустить подмену',
-    spoofSelected: 'Подменить выбранное',
+    spoofSelected: 'Подменить выбранное ({count})',
     spoofAllAssets: 'Подменить все ресурсы ({count})',
     retryReplacing: 'Повторить замену',
     output: 'Вывод',
@@ -282,6 +277,8 @@ export const ru: TranslationTree = {
       'Группы не найдены. Добавьте учетные данные в настройках, затем выберите пользователя.',
   },
   settings: {
+    cookieHint:
+      'Сессионный cookie, позволяющий приложению действовать от имени вашего аккаунта Roblox. Обращайтесь с ним как с паролем и никому не передавайте.',
     permissions: 'Разрешения',
     cacheClearFailed: 'Не удалось очистить кэш',
     cacheEnabled: 'Кэш включён.',
@@ -479,6 +476,7 @@ export const ru: TranslationTree = {
     goToBottom: 'Вниз',
   },
   explorer: {
+    pinnedPlaceIdHint: 'Этот ID принудительно привязан к Place ID, минуя автоопределение.',
     name: 'Имя',
     downloadFailed: 'Скачивание не удалось',
     clearFilters: 'Сбросить фильтры',

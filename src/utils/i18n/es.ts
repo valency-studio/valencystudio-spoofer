@@ -62,9 +62,7 @@ export const es: TranslationTree = {
     loadingHistory: 'Cargando historial...',
     noJobHistory: 'No se encontró historial de trabajos.',
     jobsWillAppear: 'Los trabajos que ejecutes aparecerán aquí.',
-    dropRbxl: 'Suelta .rbxl / .rbxlx',
     scanningStudio: 'Escaneando Studio...',
-    dropOrClick: 'Suelta o haz clic para buscar',
     rbxlOnly: 'Solo .rbxl y .rbxlx',
     audioQuotaExceeded: 'Cuota de audio excedida',
     confirmVideoUploads:
@@ -118,7 +116,6 @@ export const es: TranslationTree = {
     pitch: 'Tono',
     format: 'Formato',
     sampleRate: 'Frecuencia de muestreo',
-    speedPresets: 'Ajustes de velocidad',
     presetNormal: 'Normal',
     presetSlow: 'Lenta',
     presetDefault: 'Predeterminado',
@@ -148,10 +145,8 @@ export const es: TranslationTree = {
     processing: 'Roblox está procesando...',
     rendering: 'Renderizando el audio...',
     validating: 'Validando...',
-    acceptedTitle: 'Roblox aceptó la subida.',
     rejectedTitle: 'Roblox rechazó la subida.',
     dismiss: 'Descartar',
-    uploadHint: 'Edita el track y súbelo a tu cuenta de Roblox',
     noUploaderAccount: 'Selecciona una cuenta de Roblox en Cuentas antes de subir.',
     quotaLeft: 'Quedan {remaining} de {limit} subidas de audio este mes.',
     history: 'Historial de subidas',
@@ -169,7 +164,6 @@ export const es: TranslationTree = {
     copyId: 'Copiar ID del activo',
     parts: '{count} partes',
     willSplit: 'Roblox limita las subidas a 7 minutos, así que esto se divide en {count} partes.',
-    exportedSplit: 'Subidas {count} partes.',
     exported: 'Track subido a Roblox.',
     exportedLabel: 'copia subida',
     editedNote: 'Los archivos subidos conservan estos cambios. Tu archivo original no se toca.',
@@ -177,7 +171,6 @@ export const es: TranslationTree = {
     openSource: 'Abrir origen',
     ytdlpUnavailable:
       'No se pudo instalar yt-dlp automáticamente, así que importar desde un enlace no está disponible.',
-    retryInstall: 'Intentar instalar de nuevo',
     missingFfmpeg:
       'ffmpeg no está en tu PATH, así que subir no está disponible. Instala ffmpeg y vuelve a abrir la aplicación.',
     ffmpegRequiredTitle: 'FFmpeg no está instalado',
@@ -233,6 +226,8 @@ export const es: TranslationTree = {
     madeWith: 'Hecho con cariño por {team}.',
   },
   spoof: {
+    downloadAll: 'Descargar todo ({count})',
+    downloadSelected: 'Descargar seleccionados ({count})',
     assetPermissionsProgress: 'Permisos de assets',
     manualReplace: 'Reemplazo y añadir ID manual',
     title: 'Suplantador de Assets',
@@ -276,10 +271,12 @@ export const es: TranslationTree = {
     audioQuotaUnavailable: 'Cuota de audio: no disponible',
     noGroupsFound:
       'No se encontraron grupos. Agrega credenciales en Configuración, luego selecciona un usuario.',
-    spoofSelected: 'Falsificar seleccionados',
+    spoofSelected: 'Falsificar seleccionados ({count})',
     spoofAllAssets: 'Falsificar todos los activos ({count})',
   },
   settings: {
+    cookieHint:
+      'Una cookie de sesión que permite a la app actuar como tu cuenta de Roblox. Trátala como una contraseña y nunca la compartas.',
     permissions: 'Permisos',
     cacheClearFailed: 'No se pudo borrar la caché',
     cacheEnabled: 'Caché activada.',
@@ -486,6 +483,7 @@ export const es: TranslationTree = {
     goToBottom: 'Ir al fondo',
   },
   explorer: {
+    pinnedPlaceIdHint: 'Este ID de activo se fijó a un Place ID, anulando la detección automática.',
     name: 'Nombre',
     downloadFailed: 'Falló la descarga',
     clearFilters: 'Limpiar filtros',

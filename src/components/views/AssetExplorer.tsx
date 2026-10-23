@@ -1511,11 +1511,11 @@ export default function AssetExplorer({
                         ? t('spoof.runSpoofer') + '…'
                         : config.spoofing.downloadOnly
                           ? selectedCount > 0
-                            ? `Download Selected (${selectedCount})`
-                            : `Download All (${stats.displayed})`
+                            ? t('spoof.downloadSelected').replace('{count}', String(selectedCount))
+                            : t('spoof.downloadAll').replace('{count}', String(stats.displayed))
                           : selectedCount > 0
-                            ? `Spoof Selected (${selectedCount})`
-                            : `Spoof All Assets (${stats.displayed})`}
+                            ? t('spoof.spoofSelected').replace('{count}', String(selectedCount))
+                            : t('spoof.spoofAllAssets').replace('{count}', String(stats.displayed))}
                     </Button>
                     <PopoverTrigger
                       render={

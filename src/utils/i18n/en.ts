@@ -62,9 +62,7 @@ export const en: TranslationTree = {
     loadingHistory: 'Loading job history...',
     noJobHistory: 'No spoofing jobs yet.',
     jobsWillAppear: 'Completed and in-progress spoofing jobs will appear here.',
-    dropRbxl: 'Drop a Roblox place or model file here',
     scanningStudio: 'Scanning Roblox Studio...',
-    dropOrClick: 'Drop a file here or click to browse',
     rbxlOnly: 'Please choose a supported Roblox file (.rbxl, .rbxlx, .rbxm, or .rbxmx)',
     audioQuotaExceeded: 'Monthly audio upload limit reached',
     confirmVideoUploads:
@@ -120,7 +118,6 @@ export const en: TranslationTree = {
     pitch: 'Pitch',
     format: 'Format',
     sampleRate: 'Sample rate',
-    speedPresets: 'Speed presets',
     presetNormal: 'Normal',
     presetSlow: 'Slow',
     presetDefault: 'Default',
@@ -150,10 +147,8 @@ export const en: TranslationTree = {
     processing: 'Roblox is processing...',
     rendering: 'Rendering audio...',
     validating: 'Validating...',
-    acceptedTitle: 'Roblox accepted the upload.',
     rejectedTitle: 'Roblox rejected the upload.',
     dismiss: 'Dismiss',
-    uploadHint: 'Edit the track, then upload to Roblox',
     noUploaderAccount: 'Select a Roblox account in Accounts before uploading.',
     quotaLeft: '{remaining} of {limit} audio uploads left this month.',
     history: 'Upload history',
@@ -171,7 +166,6 @@ export const en: TranslationTree = {
     copyId: 'Copy asset ID',
     parts: '{count} parts',
     willSplit: 'Roblox caps uploads at 7 minutes, so this becomes {count} parts.',
-    exportedSplit: 'Uploaded {count} parts.',
     exported: 'Track uploaded to Roblox.',
     exportedLabel: 'uploaded copy',
     editedNote: 'Uploaded files keep these edits. Your source file is untouched.',
@@ -179,7 +173,6 @@ export const en: TranslationTree = {
     openSource: 'Open source',
     ytdlpUnavailable:
       'yt-dlp could not be installed automatically, so importing from a link is unavailable.',
-    retryInstall: 'Try installing again',
     missingFfmpeg:
       'ffmpeg is not on your PATH, so uploading is unavailable. Install ffmpeg and reopen the app.',
     ffmpegRequiredTitle: 'FFmpeg is not installed',
@@ -235,6 +228,8 @@ export const en: TranslationTree = {
     madeWith: 'Made with care by {team}.',
   },
   spoof: {
+    downloadAll: 'Download All ({count})',
+    downloadSelected: 'Download Selected ({count})',
     assetPermissionsProgress: 'Asset Permissions',
     manualReplace: 'Manual Replace & Add IDs',
     title: 'Asset Spoofer',
@@ -252,7 +247,7 @@ export const en: TranslationTree = {
     downloadPath: 'Download Path',
     enableSpoofing: 'Enable Spoofing',
     runSpoofer: 'Run Spoofer',
-    spoofSelected: 'Spoof Selected',
+    spoofSelected: 'Spoof Selected ({count})',
     spoofAllAssets: 'Spoof All Assets ({count})',
     retryReplacing: 'Retry Replacing in Studio',
     output: 'Output',
@@ -282,6 +277,8 @@ export const en: TranslationTree = {
       'No manageable groups found. Make sure your account has group management permissions in Roblox.',
   },
   settings: {
+    cookieHint:
+      'A session cookie that lets the app act as your Roblox account. Treat it like a password and never share it.',
     permissions: 'Permissions',
     cacheClearFailed: 'Failed to clear cache',
     cacheEnabled: 'Cache enabled.',
@@ -485,6 +482,7 @@ export const en: TranslationTree = {
     goToBottom: 'Go to Bottom',
   },
   explorer: {
+    pinnedPlaceIdHint: 'This asset ID was force-pinned to a Place ID, overriding auto-detection.',
     name: 'Name',
     downloadFailed: 'Download failed',
     clearFilters: 'Clear filters',

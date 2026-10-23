@@ -555,8 +555,11 @@ export default function AssetInspectorPanel({
                                 </div>
                               }
                             />
-                            <TooltipContent className="whitespace-nowrap font-mono text-xs">
-                              Pinned Place ID: {pinnedPid}
+                            <TooltipContent className="font-mono text-xs">
+                              <span className="block">Pinned Place ID: {pinnedPid}</span>
+                              <span className="block font-sans text-muted-foreground">
+                                {t('explorer.pinnedPlaceIdHint')}
+                              </span>
                             </TooltipContent>
                           </Tooltip>
                         )}
