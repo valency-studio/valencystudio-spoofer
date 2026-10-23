@@ -51,7 +51,15 @@ function DialogContent({
           // treats a responsive variant (`sm:max-w-sm`) as a different group
           // from `max-w-lg`, so a caller's width would be silently overridden
           // at >=640px instead of replacing the default.
-          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[min(calc(100%-2rem),24rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none',
+          // Centred with a 1rem gutter on all four sides. Width uses `w-*` and
+          // the preferred size uses `max-w-*`, so the two multiply: the panel
+          // is the smaller of the caller's width and the window minus the
+          // gutter. Putting the gutter in `max-w-*` instead would let a
+          // caller's `max-w-lg` replace it and push the panel past the window
+          // edge on a narrow window. The height clamp keeps a tall body
+          // (installer log, long form) inside the window; it scrolls as a
+          // whole rather than clipping the footer.
+          'fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-[24rem] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto overscroll-contain rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none',
           className,
         )}
         {...props}
