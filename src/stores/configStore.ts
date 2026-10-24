@@ -13,10 +13,8 @@ export const AppConfigSchema = z.object({
     autoCookieStudio: z.boolean().default(true),
     autoCookieBrowser: z.boolean().default(false),
     skipOwned: z.boolean().default(false),
-    enablePluginSpoofing: z.boolean().default(false),
     memoryInjectionEnabled: z.boolean().default(false),
     clipboardMonitoring: z.boolean().default(false),
-    forcePlaceIds: z.string().default(''),
     excludedUserIds: z.string().default(''),
     excludedGroupIds: z.string().default(''),
     concurrentSpoofing: z.boolean().default(true),
@@ -37,16 +35,10 @@ export const AppConfigSchema = z.object({
   spoofing: z.object({
     selectedUser: z.string().default('none'),
     selectedGroup: z.string().default('none'),
-    animation: z.boolean().default(true),
     audio: z.boolean().default(true),
-    images: z.boolean().default(true),
-    meshes: z.boolean().default(true),
-    videos: z.boolean().default(true),
-    scriptRefs: z.boolean().default(true),
     cookie: z.string().default(''),
     apiKey: z.string().default(''),
     groupApiKey: z.string().default(''),
-    enableSpoofing: z.boolean().default(false),
     uploadTypes: z.array(z.string()).default(['animation', 'audio', 'image', 'mesh', 'script_ref']),
     downloadOnly: z.boolean().default(false),
     downloadPath: z.string().default(''),
@@ -65,12 +57,6 @@ export const AppConfigSchema = z.object({
   ui: z.object({
     activeTab: z.string().default('spoofing'),
     assetExplorerOpen: z.boolean().default(false),
-    homeUpdateSections: z.array(z.string()).default(['changelog']),
-    settingsSections: z.array(z.string()).default(['account', 'general', 'quickSettings', 'debug']),
-    configSections: z
-      .array(z.string())
-      .default(['credentials', 'assetProcessing', 'routing', 'exclusions']),
-    spoofingSections: z.array(z.string()).default(['targets', 'execution']),
     tutorialCompleted: z.boolean().default(false),
   }),
   accounts: z
@@ -100,10 +86,8 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
     autoCookieStudio: true,
     autoCookieBrowser: false,
     skipOwned: false,
-    enablePluginSpoofing: false,
     memoryInjectionEnabled: false,
     clipboardMonitoring: false,
-    forcePlaceIds: '',
     excludedUserIds: '',
     excludedGroupIds: '',
     concurrentSpoofing: true,
@@ -123,16 +107,10 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   spoofing: {
     selectedUser: 'none',
     selectedGroup: 'none',
-    animation: true,
     audio: true,
-    images: true,
-    meshes: true,
-    videos: true,
-    scriptRefs: true,
     cookie: '',
     apiKey: '',
     groupApiKey: '',
-    enableSpoofing: false,
     uploadTypes: ['animation', 'audio', 'image', 'mesh', 'script_ref'],
     downloadOnly: false,
     downloadPath: '',
@@ -148,10 +126,6 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   ui: {
     activeTab: 'spoofing',
     assetExplorerOpen: false,
-    homeUpdateSections: ['changelog'],
-    settingsSections: ['account', 'general', 'quickSettings', 'debug'],
-    configSections: ['credentials', 'assetProcessing', 'routing', 'exclusions'],
-    spoofingSections: ['targets', 'execution'],
     tutorialCompleted: false,
   },
   accounts: [],
@@ -168,12 +142,6 @@ const mergeKnownKeys = <T extends Record<string, unknown>>(
     }
   });
   return next;
-};
-
-const mergeSections = (savedSections: unknown, defaultSections: string[]) => {
-  if (!Array.isArray(savedSections)) return defaultSections;
-  const next = savedSections.filter((section: string) => defaultSections.includes(section));
-  return next.length > 0 ? next : defaultSections;
 };
 
 interface ConfigState {
@@ -214,18 +182,7 @@ export const useConfigStore = create<ConfigState>((set, get) => {
         debug: mergeKnownKeys(DEFAULT_APP_CONFIG.debug, p.debug),
         spoofing: mergeKnownKeys(DEFAULT_APP_CONFIG.spoofing, p.spoofing),
         permissions: mergeKnownKeys(DEFAULT_APP_CONFIG.permissions, p.permissions),
-        ui: {
-          ...mergeKnownKeys(DEFAULT_APP_CONFIG.ui, p.ui),
-          settingsSections: mergeSections(
-            p.ui?.settingsSections,
-            DEFAULT_APP_CONFIG.ui.settingsSections,
-          ),
-          configSections: mergeSections(p.ui?.configSections, DEFAULT_APP_CONFIG.ui.configSections),
-          spoofingSections: mergeSections(
-            p.ui?.spoofingSections,
-            DEFAULT_APP_CONFIG.ui.spoofingSections,
-          ),
-        },
+        ui: mergeKnownKeys(DEFAULT_APP_CONFIG.ui, p.ui),
         accounts: Array.isArray(p.accounts) ? p.accounts : DEFAULT_APP_CONFIG.accounts,
       };
       const parsed = AppConfigSchema.safeParse(candidate);

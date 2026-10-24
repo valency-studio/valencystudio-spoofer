@@ -1,7 +1,7 @@
 import * as tauriCore from '@tauri-apps/api/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DEFAULT_APP_CONFIG, useConfigStore } from './configStore';
+import { AppConfigSchema, DEFAULT_APP_CONFIG, useConfigStore } from './configStore';
 
 vi.mock('../utils/tauriRuntime', () => ({
   isTauriRuntime: vi.fn().mockReturnValue(true),
@@ -98,5 +98,81 @@ describe('configStore', () => {
     await useConfigStore.getState().saveSecrets();
 
     expect(invokeMock).not.toHaveBeenCalled();
+  });
+
+  // Existing installs still carry the keys this schema no longer declares. They must be
+  // dropped silently on load, never fail validation, and never resurrect a removed slice.
+  it('migrates a saved config containing removed keys to defaults', async () => {
+    const parsed = AppConfigSchema.safeParse({
+      ...DEFAULT_APP_CONFIG,
+      spoofing: {
+        ...DEFAULT_APP_CONFIG.spoofing,
+        enableSpoofing: true,
+        animation: false,
+        images: false,
+        meshes: false,
+        videos: false,
+        scriptRefs: false,
+      },
+    });
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.spoofing).not.toHaveProperty('enableSpoofing');
+
+    const legacy = {
+      general: { desktopNotifications: false },
+      advanced: { enablePluginSpoofing: true, forcePlaceIds: '123456789' },
+      spoofing: {
+        animation: false,
+        images: false,
+        meshes: false,
+        videos: false,
+        scriptRefs: false,
+        enableSpoofing: true,
+        audio: false,
+      },
+      ui: {
+        homeUpdateSections: ['changelog', 'announcements'],
+        settingsSections: ['account'],
+        configSections: ['credentials'],
+        spoofingSections: ['targets'],
+      },
+      accounts: [],
+    };
+    mockLocalStorage.setItem('ValencyStudio - Spoofer_Config', JSON.stringify(legacy));
+
+    vi.resetModules();
+    const fresh = await import('./configStore');
+    const { config } = fresh.useConfigStore.getState();
+
+    expect(config.general.desktopNotifications).toBe(false);
+    expect(config.advanced).toEqual(fresh.DEFAULT_APP_CONFIG.advanced);
+    expect(config.ui).toEqual(fresh.DEFAULT_APP_CONFIG.ui);
+    expect(config.spoofing).toEqual({
+      ...fresh.DEFAULT_APP_CONFIG.spoofing,
+      audio: false,
+      cookie: '',
+      apiKey: '',
+      groupApiKey: '',
+    });
+    for (const removed of [
+      'animation',
+      'images',
+      'meshes',
+      'videos',
+      'scriptRefs',
+      'enableSpoofing',
+    ]) {
+      expect(config.spoofing).not.toHaveProperty(removed);
+    }
+    expect(config.advanced).not.toHaveProperty('enablePluginSpoofing');
+    expect(config.advanced).not.toHaveProperty('forcePlaceIds');
+    for (const removed of [
+      'homeUpdateSections',
+      'settingsSections',
+      'configSections',
+      'spoofingSections',
+    ]) {
+      expect(config.ui).not.toHaveProperty(removed);
+    }
   });
 });

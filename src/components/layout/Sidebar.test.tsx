@@ -16,7 +16,6 @@ vi.mock('../../contexts/ConfigContext', () => ({
   useConfig: () => ({
     config: {
       ui: { theme: 'dark', language: 'en' },
-      advanced: { forcePlaceIds: '' },
       spoofing: { selectedUser: 'none', selectedGroup: 'none', cookie: '', apiKey: '' },
       accounts: [],
     },

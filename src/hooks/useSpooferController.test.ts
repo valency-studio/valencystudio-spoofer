@@ -44,7 +44,6 @@ const emptyConfig = {
     enableArchiveRecovery: false,
     proxyUrl: '',
     operationPollIntervalMs: 250,
-    forcePlaceIds: '',
     discoveryConcurrency: 30,
   },
 };
