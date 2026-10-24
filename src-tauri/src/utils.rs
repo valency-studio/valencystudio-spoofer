@@ -220,6 +220,173 @@ fn system_proxy() -> Option<String> {
     None
 }
 
+#[cfg(windows)]
+fn read_registry_path(
+    hive: windows_sys::Win32::System::Registry::HKEY,
+    subkey: &str,
+) -> Option<String> {
+    use windows_sys::Win32::System::Registry::{
+        RegCloseKey, RegOpenKeyExW, RegQueryValueExW, KEY_READ, REG_EXPAND_SZ, REG_SZ,
+    };
+
+    fn encw(s: &str) -> Vec<u16> {
+        s.encode_utf16().chain(std::iter::once(0)).collect()
+    }
+
+    let subkey_w = encw(subkey);
+    let value_w = encw("Path");
+
+    unsafe {
+        let mut hkey: windows_sys::Win32::System::Registry::HKEY = std::ptr::null_mut();
+        if RegOpenKeyExW(hive, subkey_w.as_ptr(), 0, KEY_READ, &mut hkey) != 0 {
+            return None;
+        }
+
+        // Two passes: the first sizes the value, the second reads it. A single
+        // fixed buffer would silently truncate a long PATH, which is exactly the
+        // case this function exists to handle.
+        let mut needed: u32 = 0;
+        let mut value_type: u32 = 0;
+        let probe = RegQueryValueExW(
+            hkey,
+            value_w.as_ptr(),
+            std::ptr::null_mut(),
+            &mut value_type,
+            std::ptr::null_mut(),
+            &mut needed,
+        );
+        if probe != 0 || needed == 0 || (value_type != REG_SZ && value_type != REG_EXPAND_SZ) {
+            RegCloseKey(hkey);
+            return None;
+        }
+
+        let mut buf: Vec<u16> = vec![0u16; needed.div_ceil(2) as usize + 1];
+        let mut buf_len: u32 = (buf.len() * 2) as u32;
+        let read = RegQueryValueExW(
+            hkey,
+            value_w.as_ptr(),
+            std::ptr::null_mut(),
+            &mut value_type,
+            buf.as_mut_ptr().cast::<u8>(),
+            &mut buf_len,
+        );
+        RegCloseKey(hkey);
+        if read != 0 {
+            return None;
+        }
+
+        buf.truncate(buf_len.div_ceil(2) as usize);
+        let nul = buf.iter().position(|&c| c == 0).unwrap_or(buf.len());
+        let raw = String::from_utf16_lossy(&buf[..nul]);
+        if raw.trim().is_empty() {
+            return None;
+        }
+
+        if value_type == REG_EXPAND_SZ {
+            Some(expand_environment_strings(&raw))
+        } else {
+            Some(raw)
+        }
+    }
+}
+
+#[cfg(windows)]
+fn expand_environment_strings(raw: &str) -> String {
+    use windows_sys::Win32::System::Environment::ExpandEnvironmentStringsW;
+
+    let mut input: Vec<u16> = raw.encode_utf16().chain(std::iter::once(0)).collect();
+    let needed = unsafe { ExpandEnvironmentStringsW(input.as_ptr(), std::ptr::null_mut(), 0) };
+    if needed == 0 {
+        return raw.to_string();
+    }
+
+    let mut out: Vec<u16> = vec![0u16; needed as usize];
+    let written = unsafe { ExpandEnvironmentStringsW(input.as_ptr(), out.as_mut_ptr(), needed) };
+    if written == 0 || written > needed {
+        return raw.to_string();
+    }
+
+    input.clear();
+    out.truncate(written.saturating_sub(1) as usize);
+    String::from_utf16_lossy(&out)
+}
+
+/// Merges PATH entries into one value, dropping empties and keeping the first
+/// occurrence of each entry.
+///
+/// Windows PATH lookups are case-insensitive and the same directory is often
+/// present in both the machine and user PATH, so duplicates are collapsed on a
+/// case-insensitive comparison; first wins, which keeps the search order the
+/// user already had.
+fn merge_path_entries<I>(entries: I) -> String
+where
+    I: IntoIterator<Item = String>,
+{
+    let mut seen: Vec<String> = Vec::new();
+    let mut unique: Vec<String> = Vec::new();
+
+    for entry in entries {
+        let trimmed = entry.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        let key = trimmed.to_lowercase();
+        if seen.contains(&key) {
+            continue;
+        }
+        seen.push(key);
+        unique.push(trimmed.to_string());
+    }
+
+    match std::env::join_paths(&unique) {
+        Ok(joined) => joined.to_string_lossy().into_owned(),
+        // Only reachable if an entry itself contains the path separator, which
+        // cannot happen for values that came out of `split_paths`.
+        Err(_) => {
+            unique.into_iter().filter(|entry| !entry.contains(';')).collect::<Vec<_>>().join(";")
+        }
+    }
+}
+
+/// Re-reads PATH from the registry and installs it into this process.
+///
+/// Winget writes its shims into the registry PATH, but a process that is
+/// already running keeps the copy it inherited at launch. Without this, an
+/// FFmpeg install that just succeeded looks missing until the app restarts.
+///
+/// ponytail: machine + user PATH only; no per-process or App Paths lookups.
+pub fn refresh_path_from_registry() {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::System::Registry::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
+
+        let machine = read_registry_path(
+            HKEY_LOCAL_MACHINE,
+            "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
+        );
+        let user = read_registry_path(HKEY_CURRENT_USER, "Environment");
+        let current = std::env::var("PATH").ok();
+
+        if machine.is_none() && user.is_none() {
+            warn!("Could not read PATH from the registry; leaving the process PATH unchanged.");
+            return;
+        }
+
+        let entries = [machine, user, current]
+            .into_iter()
+            .flatten()
+            .flat_map(|value| std::env::split_paths(&value).collect::<Vec<_>>())
+            .filter_map(|path| path.to_str().map(std::string::ToString::to_string))
+            .collect::<Vec<_>>();
+
+        let merged = merge_path_entries(entries);
+        if merged.is_empty() {
+            return;
+        }
+        std::env::set_var("PATH", merged);
+    }
+}
+
 #[must_use]
 pub fn extract_retry_after(response: &reqwest::Response, attempt: Option<u32>) -> Option<u64> {
     let mut needs_wait = false;
@@ -462,6 +629,69 @@ mod tests {
             normalize_roblox_cookie("'_|WARNING:-DO-NOT-SHARE-THIS|_'"),
             "_|WARNING:-DO-NOT-SHARE-THIS|_"
         );
+    }
+
+    #[test]
+    fn test_merge_path_entries_drops_duplicates_case_insensitively() {
+        let merged = merge_path_entries(vec![
+            r"C:\Windows".to_string(),
+            r"C:\Tools".to_string(),
+            r"c:\windows".to_string(),
+            r"C:\TOOLS".to_string(),
+        ]);
+        let parts: Vec<&str> = merged.split(';').collect();
+        assert_eq!(parts, vec![r"C:\Windows", r"C:\Tools"]);
+    }
+
+    #[test]
+    fn test_merge_path_entries_skips_empty_and_whitespace() {
+        let merged =
+            merge_path_entries(vec![String::new(), "   ".to_string(), r"C:\Bin".to_string()]);
+        assert_eq!(merged, r"C:\Bin");
+    }
+
+    #[test]
+    fn test_merge_path_entries_first_occurrence_wins() {
+        let merged = merge_path_entries(vec![
+            r"C:\First".to_string(),
+            r"C:\Second".to_string(),
+            r"C:\First".to_string(),
+        ]);
+        assert_eq!(merged, r"C:\First;C:\Second");
+    }
+
+    #[test]
+    fn test_merge_path_entries_empty_input_is_empty() {
+        assert_eq!(merge_path_entries(Vec::new()), "");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_read_registry_path_finds_machine_path() {
+        use windows_sys::Win32::System::Registry::HKEY_LOCAL_MACHINE;
+
+        let machine = read_registry_path(
+            HKEY_LOCAL_MACHINE,
+            "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
+        );
+        let machine = machine.expect("machine PATH must be readable from the registry");
+        assert!(
+            machine.to_lowercase().contains("system32"),
+            "machine PATH should contain System32, got: {machine}"
+        );
+
+        assert!(
+            read_registry_path(HKEY_LOCAL_MACHINE, "SOFTWARE\\ThisKeyDoesNotExist12345").is_none(),
+            "a missing key must return None rather than garbage"
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_refresh_path_from_registry_keeps_system32() {
+        refresh_path_from_registry();
+        let path = std::env::var("PATH").expect("PATH must remain set after a refresh");
+        assert!(path.to_lowercase().contains("system32"));
     }
 
     #[test]

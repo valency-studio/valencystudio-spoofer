@@ -7,6 +7,7 @@ use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
 use tokio::process::Command;
 
 use crate::error::AppError;
+use crate::utils::refresh_path_from_registry;
 
 type Result<T> = crate::error::Result<T>;
 
@@ -159,6 +160,11 @@ pub async fn install_ffmpeg(app: AppHandle) -> Result<()> {
                 "Winget could not install FFmpeg (exit code {code})."
             )));
         }
+
+        // Winget updates the system PATH in the registry but the running process
+        // still has the inherited copy. Read the fresh value so the next
+        // `check_media_tools` call can find FFmpeg without a restart.
+        refresh_path_from_registry();
 
         Ok(())
     }
