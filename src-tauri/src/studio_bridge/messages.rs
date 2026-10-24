@@ -550,6 +550,44 @@ fn extract_runtime_load_ids(source: &str) -> Vec<RuntimeLoadRef> {
     results
 }
 
+/// First store slot per `(category, assetId)`. The duplicate branch of
+/// `analyze_records` used to `find` that slot by scanning the whole category
+/// store, which is quadratic once a place yields hundreds of thousands of
+/// records; recording the slot at push time makes the lookup O(1).
+type FirstAssetIndices = HashMap<&'static str, HashMap<String, usize>>;
+
+/// Records `slot` as the first store slot seen for `(category, asset_id)`.
+fn remember_first_asset(
+    first_asset_indices: &mut FirstAssetIndices,
+    category: &'static str,
+    asset_id: &str,
+    slot: usize,
+) {
+    first_asset_indices.entry(category).or_default().entry(asset_id.to_string()).or_insert(slot);
+}
+
+/// Pushes `asset` onto `store`, remembering its slot for the duplicate branch.
+fn push_asset(
+    store: &mut AssetStore,
+    first_asset_indices: &mut FirstAssetIndices,
+    category: &'static str,
+    asset: Value,
+) {
+    if let Some(asset_id) = asset["assetId"].as_str() {
+        remember_first_asset(first_asset_indices, category, asset_id, store.assets.len());
+    }
+    store.assets.push(asset);
+}
+
+/// The slot of the first asset stored for `(category, asset_id)`, if any.
+fn first_asset_slot(
+    first_asset_indices: &FirstAssetIndices,
+    category: &'static str,
+    asset_id: &str,
+) -> Option<usize> {
+    first_asset_indices.get(category)?.get(asset_id).copied()
+}
+
 #[must_use]
 pub fn analyze_records(
     records: &[StudioRecord],
@@ -563,6 +601,7 @@ pub fn analyze_records(
     let mut seen_instance_tokens: HashSet<(String, String, String)> = HashSet::new();
 
     let mut category_id_indices: HashMap<(&'static str, String, String), usize> = HashMap::new();
+    let mut first_asset_indices: FirstAssetIndices = FirstAssetIndices::new();
 
     for record in records {
         if record.property == "KeyframeSequence" {
@@ -643,15 +682,20 @@ pub fn analyze_records(
                         )) {
                             Entry::Vacant(e) => {
                                 e.insert(animations.assets.len());
-                                animations.assets.push(json!({
-                                    "kind": record.class_name,
-                                    "name": var_name.clone().unwrap_or_else(|| record.name.clone()),
-                                    "fullName": record.full_name,
-                                    "property": record.property,
-                                    "assetId": asset_id,
-                                    "instanceCount": 1,
-                                    "sourceHint": "animation"
-                                }));
+                                push_asset(
+                                    &mut animations,
+                                    &mut first_asset_indices,
+                                    "animation",
+                                    json!({
+                                        "kind": record.class_name,
+                                        "name": var_name.clone().unwrap_or_else(|| record.name.clone()),
+                                        "fullName": record.full_name,
+                                        "property": record.property,
+                                        "assetId": asset_id,
+                                        "instanceCount": 1,
+                                        "sourceHint": "animation"
+                                    }),
+                                );
                             }
                             Entry::Occupied(e) => {
                                 if let Some(existing) = animations.assets.get_mut(*e.get()) {
@@ -671,15 +715,20 @@ pub fn analyze_records(
                         )) {
                             Entry::Vacant(e) => {
                                 e.insert(sounds.assets.len());
-                                sounds.assets.push(json!({
-                                    "kind": record.class_name,
-                                    "name": var_name.clone().unwrap_or_else(|| record.name.clone()),
-                                    "fullName": record.full_name,
-                                    "property": record.property,
-                                    "assetId": asset_id,
-                                    "instanceCount": 1,
-                                    "sourceHint": "sound"
-                                }));
+                                push_asset(
+                                    &mut sounds,
+                                    &mut first_asset_indices,
+                                    "sound",
+                                    json!({
+                                        "kind": record.class_name,
+                                        "name": var_name.clone().unwrap_or_else(|| record.name.clone()),
+                                        "fullName": record.full_name,
+                                        "property": record.property,
+                                        "assetId": asset_id,
+                                        "instanceCount": 1,
+                                        "sourceHint": "sound"
+                                    }),
+                                );
                             }
                             Entry::Occupied(e) => {
                                 if let Some(existing) = sounds.assets.get_mut(*e.get()) {
@@ -699,15 +748,20 @@ pub fn analyze_records(
                         )) {
                             Entry::Vacant(e) => {
                                 e.insert(images.assets.len());
-                                images.assets.push(json!({
-                                    "kind": record.class_name,
-                                    "name": var_name.clone().unwrap_or_else(|| record.name.clone()),
-                                    "fullName": record.full_name,
-                                    "property": record.property,
-                                    "assetId": asset_id,
-                                    "instanceCount": 1,
-                                    "sourceHint": "image"
-                                }));
+                                push_asset(
+                                    &mut images,
+                                    &mut first_asset_indices,
+                                    "image",
+                                    json!({
+                                        "kind": record.class_name,
+                                        "name": var_name.clone().unwrap_or_else(|| record.name.clone()),
+                                        "fullName": record.full_name,
+                                        "property": record.property,
+                                        "assetId": asset_id,
+                                        "instanceCount": 1,
+                                        "sourceHint": "image"
+                                    }),
+                                );
                             }
                             Entry::Occupied(e) => {
                                 if let Some(existing) = images.assets.get_mut(*e.get()) {
@@ -727,15 +781,20 @@ pub fn analyze_records(
                         )) {
                             Entry::Vacant(e) => {
                                 e.insert(meshes.assets.len());
-                                meshes.assets.push(json!({
-                                    "kind": record.class_name,
-                                    "name": var_name.clone().unwrap_or_else(|| record.name.clone()),
-                                    "fullName": record.full_name,
-                                    "property": record.property,
-                                    "assetId": asset_id,
-                                    "instanceCount": 1,
-                                    "sourceHint": "mesh"
-                                }));
+                                push_asset(
+                                    &mut meshes,
+                                    &mut first_asset_indices,
+                                    "mesh",
+                                    json!({
+                                        "kind": record.class_name,
+                                        "name": var_name.clone().unwrap_or_else(|| record.name.clone()),
+                                        "fullName": record.full_name,
+                                        "property": record.property,
+                                        "assetId": asset_id,
+                                        "instanceCount": 1,
+                                        "sourceHint": "mesh"
+                                    }),
+                                );
                             }
                             Entry::Occupied(e) => {
                                 if let Some(existing) = meshes.assets.get_mut(*e.get()) {
@@ -771,15 +830,20 @@ pub fn analyze_records(
         {
             for asset_id in extract_rich_text_asset_ids(&record.value) {
                 if seen.insert(("richtext".to_string(), record.token.clone(), asset_id.clone())) {
-                    images.assets.push(json!({
-                        "kind": record.class_name,
-                        "name": record.name.clone(),
-                        "fullName": record.full_name,
-                        "property": record.property,
-                        "assetId": asset_id,
-                        "instanceCount": 1,
-                        "sourceHint": "richtext"
-                    }));
+                    push_asset(
+                        &mut images,
+                        &mut first_asset_indices,
+                        "image",
+                        json!({
+                            "kind": record.class_name,
+                            "name": record.name.clone(),
+                            "fullName": record.full_name,
+                            "property": record.property,
+                            "assetId": asset_id,
+                            "instanceCount": 1,
+                            "sourceHint": "richtext"
+                        }),
+                    );
                 }
             }
 
@@ -800,15 +864,20 @@ pub fn analyze_records(
                                 _ => continue,
                             };
                             e.insert(store.assets.len());
-                            store.assets.push(json!({
-                                "kind": record.class_name,
-                                "name": record.name.clone(),
-                                "fullName": record.full_name,
-                                "property": record.property,
-                                "assetId": asset_id,
-                                "instanceCount": 1,
-                                "sourceHint": "embedded"
-                            }));
+                            push_asset(
+                                store,
+                                &mut first_asset_indices,
+                                category,
+                                json!({
+                                    "kind": record.class_name,
+                                    "name": record.name.clone(),
+                                    "fullName": record.full_name,
+                                    "property": record.property,
+                                    "assetId": asset_id,
+                                    "instanceCount": 1,
+                                    "sourceHint": "embedded"
+                                }),
+                            );
                         }
                         Entry::Occupied(e) => {
                             let store = match category {
@@ -861,15 +930,20 @@ pub fn analyze_records(
                                 _ => continue,
                             };
                             e.insert(store.assets.len());
-                            store.assets.push(json!({
-                                "kind": record.class_name,
-                                "name": record.name.clone(),
-                                "fullName": record.full_name,
-                                "property": record.property,
-                                "assetId": asset_id,
-                                "instanceCount": 1,
-                                "sourceHint": "deepscan"
-                            }));
+                            push_asset(
+                                store,
+                                &mut first_asset_indices,
+                                category,
+                                json!({
+                                    "kind": record.class_name,
+                                    "name": record.name.clone(),
+                                    "fullName": record.full_name,
+                                    "property": record.property,
+                                    "assetId": asset_id,
+                                    "instanceCount": 1,
+                                    "sourceHint": "deepscan"
+                                }),
+                            );
                         }
                         Entry::Occupied(e) => {
                             let store = match category {
@@ -954,13 +1028,19 @@ pub fn analyze_records(
                 "mesh" => &mut meshes,
                 _ => continue,
             };
-            if let Some(last) = store.assets.iter_mut().find(|a| a["assetId"] == asset_id) {
+            // O(1): the slot of the first asset for this (category, assetId) was
+            // recorded at push time, so no scan of the category store is needed.
+            let existing = first_asset_slot(&first_asset_indices, category, asset_id)
+                .and_then(|slot| store.assets.get_mut(slot))
+                .filter(|a| a["assetId"] == asset_id);
+            if let Some(existing) = existing {
                 if seen_instance_tokens.insert((
                     category.to_string(),
                     asset_id.to_string(),
                     record.token.clone(),
                 )) {
-                    last["instanceCount"] = json!(last["instanceCount"].as_u64().unwrap_or(1) + 1);
+                    existing["instanceCount"] =
+                        json!(existing["instanceCount"].as_u64().unwrap_or(1) + 1);
                 }
             }
             continue;
@@ -979,10 +1059,10 @@ pub fn analyze_records(
             "instanceCount": 1
         });
         match category {
-            "animation" => animations.assets.push(asset),
-            "sound" => sounds.assets.push(asset),
-            "image" => images.assets.push(asset),
-            "mesh" => meshes.assets.push(asset),
+            "animation" => push_asset(&mut animations, &mut first_asset_indices, category, asset),
+            "sound" => push_asset(&mut sounds, &mut first_asset_indices, category, asset),
+            "image" => push_asset(&mut images, &mut first_asset_indices, category, asset),
+            "mesh" => push_asset(&mut meshes, &mut first_asset_indices, category, asset),
             _ => {}
         }
     }
@@ -1013,6 +1093,36 @@ fn path_matches_target(target: &str, record_full_name: &str) -> bool {
         return true;
     }
     false
+}
+
+/// `(?<![0-9])asset_id(?![0-9])`, implemented without compiling a `Regex` per
+/// mapping key: `plan_patches` takes up to 5,000 mappings and used to compile
+/// one regex per key on every call, which dominated the work. Because
+/// `normalize_asset_id` only ever yields ids made of digits, "preceded/followed
+/// by a non-digit" is exactly "neighbouring byte is not an ASCII digit".
+fn bounded_replace(value: &str, asset_id: &str, new_id: &str) -> String {
+    if asset_id.is_empty() {
+        return value.to_string();
+    }
+    let bytes = value.as_bytes();
+    let mut out = String::with_capacity(value.len());
+    let mut last = 0;
+    for (start, matched) in value.match_indices(asset_id) {
+        let end = start + matched.len();
+        let touches_digit = (start > 0 && bytes[start - 1].is_ascii_digit())
+            || bytes.get(end).is_some_and(u8::is_ascii_digit);
+        if touches_digit {
+            continue;
+        }
+        out.push_str(&value[last..start]);
+        out.push_str(new_id);
+        last = end;
+    }
+    if last == 0 {
+        return value.to_string();
+    }
+    out.push_str(&value[last..]);
+    out
 }
 
 #[must_use]
@@ -1048,15 +1158,6 @@ pub fn plan_patches(records: &[StudioRecord], mappings: &[Value]) -> Vec<Value> 
 
     let mut patches = Vec::new();
     let mut mesh_patches: HashMap<String, Value> = HashMap::new();
-
-    let bounded_re_cache: HashMap<&str, Regex> = mapping_map
-        .keys()
-        .filter_map(|id| {
-            let pattern = format!(r"(?<![0-9]){}(?![0-9])", regex::escape(id));
-            #[allow(clippy::unwrap_used)]
-            Regex::new(&pattern).ok().map(|re| (*id, re))
-        })
-        .collect();
 
     for record in records {
         if matches!(
@@ -1116,12 +1217,8 @@ pub fn plan_patches(records: &[StudioRecord], mappings: &[Value]) -> Vec<Value> 
             continue;
         }
 
-        let do_bounded_replace = |value: &str| -> String {
-            bounded_re_cache
-                .get(asset_id)
-                .map(|re| re.replace_all(value, *new_id).into_owned())
-                .unwrap_or_else(|| value.replace(asset_id, new_id))
-        };
+        let do_bounded_replace =
+            |value: &str| -> String { bounded_replace(value, asset_id, new_id) };
 
         if record.property.starts_with("__Attribute__:") {
             let attr_name = &record.property["__Attribute__:".len()..];
@@ -1474,6 +1571,170 @@ mod tests {
         assert_eq!(patches.len(), 1);
 
         assert_eq!(patches[0]["value"], 67890u64);
+    }
+
+    #[test]
+    fn many_record_store_keeps_order_and_bumps_duplicate_counts() {
+        // 2,000 records. Id 12345678 repeats for 1,000 records sharing one
+        // token, so every repeat after the first hits the duplicate branch: it
+        // used to rescan the whole category store looking for the slot
+        // (quadratic), which is why this also guards the O(1) slot index.
+        let mut records = Vec::new();
+        for _ in 0..1_000 {
+            records.push(StudioRecord {
+                token: "shared".into(),
+                class_name: "Animation".into(),
+                name: "Shared".into(),
+                full_name: "Workspace.Shared".into(),
+                property: "__Attribute__:RunAnimationId".into(),
+                value: "rbxassetid://12345678".into(),
+            });
+        }
+        for i in 0..1_000_u32 {
+            records.push(StudioRecord {
+                token: format!("uniq-{i}"),
+                class_name: "Animation".into(),
+                name: format!("Uniq{i}"),
+                full_name: format!("Workspace.Model{i}.Uniq"),
+                property: "__Attribute__:RunAnimationId".into(),
+                value: format!("rbxassetid://{}", 20_000_000 + i),
+            });
+        }
+
+        let (animations, sounds, images, meshes, script_refs) = analyze_records(&records);
+
+        // One entry per distinct (token, assetId): the repeated records must not
+        // create extra entries.
+        assert_eq!(animations.assets.len(), 1_001);
+        assert_eq!(animations.assets[0]["assetId"], "12345678");
+        // Insertion order is preserved: the shared id stays first, the unique
+        // ids follow in record order.
+        for (i, asset) in animations.assets.iter().enumerate().skip(1) {
+            assert_eq!(asset["assetId"], (20_000_000 + (i as u64) - 1).to_string());
+            assert_eq!(asset["instanceCount"], 1);
+        }
+        assert!(sounds.assets.is_empty());
+        assert!(images.assets.is_empty());
+        assert!(meshes.assets.is_empty());
+        assert!(script_refs.assets.is_empty());
+    }
+
+    #[test]
+    fn duplicate_records_increment_instance_count_without_second_entry() {
+        let records = vec![
+            record("AnimationId", "rbxassetid://12345678"),
+            record("AnimationId", "rbxassetid://12345678"),
+            record("AnimationId", "rbxassetid://12345678"),
+        ];
+        let (animations, _, _, _, _) = analyze_records(&records);
+        let (single, _, _, _, _) = analyze_records(&records[..1]);
+
+        // Repeats must not add entries beyond the first record's.
+        assert_eq!(animations.assets.len(), single.assets.len());
+        assert_eq!(animations.assets[0]["assetId"], "12345678");
+        let total: u64 =
+            animations.assets.iter().map(|a| a["instanceCount"].as_u64().unwrap_or(1)).sum();
+        let single_total: u64 =
+            single.assets.iter().map(|a| a["instanceCount"].as_u64().unwrap_or(1)).sum();
+        assert!(total > single_total, "duplicate records must increment instanceCount");
+    }
+
+    #[test]
+    fn duplicate_branch_bumps_first_store_entry() {
+        // One "AnimationId" record reaches the store twice: first through the
+        // embedded path (slot 0, no token bookkeeping) then through the
+        // normalize path (slot 1). The duplicate branch must behave like the
+        // old full-store `find` and bump the first entry, not the second.
+        let records = vec![
+            record("AnimationId", "rbxassetid://12345678"),
+            record("AnimationId", "rbxassetid://12345678"),
+            record("AnimationId", "rbxassetid://12345678"),
+        ];
+        let (animations, _, _, _, _) = analyze_records(&records);
+        assert_eq!(animations.assets.len(), 2);
+        assert_eq!(animations.assets[0]["assetId"], "12345678");
+        assert_eq!(animations.assets[0]["instanceCount"], 3);
+        assert_eq!(animations.assets[1]["assetId"], "12345678");
+        assert_eq!(animations.assets[1]["instanceCount"], 1);
+    }
+
+    #[test]
+    fn bounded_replace_skips_longer_numbers_on_both_sides() {
+        assert_eq!(bounded_replace("12345", "12345", "99999"), "99999");
+        assert_eq!(bounded_replace("912345", "12345", "99999"), "912345");
+        assert_eq!(bounded_replace("123459", "12345", "99999"), "123459");
+        assert_eq!(bounded_replace("a12345b", "12345", "99999"), "a99999b");
+        assert_eq!(bounded_replace("12345 12345", "12345", "99999"), "99999 99999");
+        assert_eq!(bounded_replace("112345", "12345", "99999"), "112345");
+        assert_eq!(bounded_replace("12345 1234567", "12345", "99999"), "99999 1234567");
+        assert_eq!(bounded_replace("rbxassetid://12345", "12345", "99999"), "rbxassetid://99999");
+        assert_eq!(bounded_replace("no match", "12345", "99999"), "no match");
+    }
+
+    #[test]
+    fn set_property_replacement_keeps_longer_number_intact() {
+        // The mapping id is a substring of the second number, so only the
+        // bounded occurrence may be rewritten.
+        let records = vec![StudioRecord {
+            token: "20".into(),
+            class_name: "Sound".into(),
+            name: "Short".into(),
+            full_name: "Workspace.Short".into(),
+            property: "SoundId".into(),
+            value: ".SoundId = 1234567 and 12345678".into(),
+        }];
+        let patches =
+            plan_patches(&records, &[json!({"originalId": "1234567", "newId": "9999999"})]);
+        assert_eq!(patches.len(), 1);
+        assert_eq!(patches[0]["value"], ".SoundId = 9999999 and 12345678");
+    }
+
+    #[test]
+    fn attribute_replacement_keeps_longer_number_intact() {
+        let records = vec![StudioRecord {
+            token: "22".into(),
+            class_name: "Part".into(),
+            name: "Part".into(),
+            full_name: "Workspace.Part".into(),
+            property: "__Attribute__:MeshId".into(),
+            value: ".MeshId = 1234567 and 12345678".into(),
+        }];
+        let patches =
+            plan_patches(&records, &[json!({"originalId": "1234567", "newId": "9999999"})]);
+        assert_eq!(patches.len(), 1);
+        assert_eq!(patches[0]["value"], ".MeshId = 9999999 and 12345678");
+    }
+
+    #[test]
+    fn mesh_patch_merge_still_carries_both_ids() {
+        let records = vec![
+            StudioRecord {
+                token: "mesh-1".into(),
+                class_name: "MeshPart".into(),
+                name: "MeshPart".into(),
+                full_name: "Workspace.MeshPart".into(),
+                property: "MeshId".into(),
+                value: "rbxassetid://1111111".into(),
+            },
+            StudioRecord {
+                token: "mesh-1".into(),
+                class_name: "MeshPart".into(),
+                name: "MeshPart".into(),
+                full_name: "Workspace.MeshPart".into(),
+                property: "TextureID".into(),
+                value: "rbxassetid://2222222".into(),
+            },
+        ];
+        let mappings = vec![
+            json!({"originalId": "1111111", "newId": "3333333"}),
+            json!({"originalId": "2222222", "newId": "4444444"}),
+        ];
+        let patches = plan_patches(&records, &mappings);
+        assert_eq!(patches.len(), 1);
+        assert_eq!(patches[0]["action"], "replaceMeshPart");
+        assert_eq!(patches[0]["token"], "mesh-1");
+        assert_eq!(patches[0]["meshId"], "3333333");
+        assert_eq!(patches[0]["textureId"], "4444444");
     }
 
     #[test]
