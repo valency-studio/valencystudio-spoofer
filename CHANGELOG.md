@@ -4,6 +4,34 @@ All notable changes to ValencyStudio - Spoofer are documented here. Versions
 follow [Semantic Versioning](https://semver.org/); release tags are derived
 from `package.json` by CI.
 
+## [3.0.6] - 2026-10-25
+
+### Fixed
+
+- **The desktop app now builds again.** `install_ffmpeg` called a
+  `refresh_path_from_registry` helper that was never committed, so `cargo check`
+  failed with `E0425` on every platform. The missing helper is implemented: it
+  re-reads `PATH` from the machine and user registry hives, expands
+  `REG_EXPAND_SZ` entries, and merges them into the running process. Without it
+  a successful Winget FFmpeg install stayed invisible until the app restarted,
+  because Winget writes shims into the registry while a running process keeps
+  the environment it inherited at launch.
+- **Large places no longer stall the Studio scan.** `analyze_records` looked up
+  a record's store slot by scanning the whole category store, which is
+  quadratic once a place yields hundreds of thousands of records. The slot is
+  now recorded when the asset is pushed, making the lookup constant time.
+- **Applying many replacements is no longer dominated by regex compilation.**
+  `plan_patches` compiled one regular expression per mapped asset id on every
+  call, up to 5,000 compilations each time. The bounded match is now a
+  neighbour-byte scan with identical semantics, so a mapping whose id is a
+  substring of a longer id still leaves the longer id untouched.
+- **Twelve settings that never did anything are gone.** They were written to
+  local storage but read by no code, so changing them had no effect: the
+  per-type spoofing booleans (`animation`, `images`, `meshes`, `videos`,
+  `scriptRefs`), `enableSpoofing`, `enablePluginSpoofing`, `forcePlaceIds` and
+  the four `ui.*Sections` arrays. Existing configurations still load; the
+  removed keys are ignored.
+
 ## [3.0.3] - 2026-10-14
 
 ### Added
